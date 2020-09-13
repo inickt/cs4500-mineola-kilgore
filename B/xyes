@@ -5,15 +5,9 @@ exec racket -tm "$0" -- ${1+"$@"}
 #lang racket/base
 
 (require "Other/xyes.rkt")
-(require racket/stream)
 
 (provide main)
-#|
-(define (main . a)
-  ;; this could just use xyes logic, but we wanted to separate them for testing
-  (xyes a))
-|#
 
 (define (main . a)
-  (for ([i (xyes-stream a)]) (displayln i)))
+  (for ([i (xyes a)]) (displayln i)))
   

@@ -9,5 +9,6 @@ exec racket -tm "$0" -- ${1+"$@"}
 (provide main)
 
 (define (main . a)
+  ;; Print every element in the stream
   (for ([i (xyes a)]) (displayln i)))
   

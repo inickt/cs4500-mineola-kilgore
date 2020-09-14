@@ -5,7 +5,6 @@
          racket/string
          rackunit)
 
-;+---------------------------------------------------------------------------------------------------+
 (provide xyes LIM COUNT MSG)
 
 ;+---------------------------------------------------------------------------------------------------+
@@ -14,18 +13,18 @@
 (define MSG "hello world")
 
 ;+---------------------------------------------------------------------------------------------------+
-;; Formats the list of command line args as a single string
+;; Formats the list of args as a single string
 ;; format-args: [Listof String] Bool -> String
 (define (format-args args lim)
   (define loStr (if lim (rest args) args))
   (if (empty? loStr) MSG (string-join loStr " ")))
 
-(check-equal? (format-args '() #f) "hello world")
-(check-equal? (format-args '("hello") #f) "hello")
-(check-equal? (format-args '(LIM) #t) "hello world")
-(check-equal? (format-args '(LIM "hi") #t) "hi")
+(check-equal? (format-args '() #f) MSG)
+(check-equal? (format-args '("hello" "there") #f) "hello there")
+(check-equal? (format-args '(LIM) #t) MSG)
+(check-equal? (format-args '(LIM "hi" "hello") #t) "hi hello")
 
-;; TODO Prints the arg str 20 times or infinitely
+;; Creates a stream of the arg str 20 times or infinitely
 ;; output-stream: String Bool -> [Stream String]
 (define (output-stream argstr limit)
   (if limit
@@ -37,8 +36,8 @@
               (build-list COUNT (λ (x) MSG)))
 (check-equal? (stream-first (output-stream "hi" #f))
               "hi")
-(check-equal? (stream-ref (output-stream "1 2 3" #f) 100)
-              "1 2 3")
+(check-equal? (stream->list (stream-take (output-stream "1 2 3" #f) 100))
+              (build-list 100 (λ (x) "1 2 3")))
 
 ;; Creates a stream of the args joined by a space 20 times or infinitely depending on
 ;; whether the '-limit' flag is supplied first
@@ -49,17 +48,21 @@
 
 (check-equal? (stream-first (xyes '()))
               MSG)
-(check-equal? (stream-ref (xyes '()) 100)
-              MSG)
+(check-equal? (stream->list (stream-take (xyes '()) 100))
+              (build-list 100 (λ (x) MSG)))
 (check-equal? (stream-first (xyes '("hi")))
               "hi")
-(check-equal? (stream-ref (xyes '("hi")) 100)
-              "hi")
+(check-equal? (stream->list (stream-take (xyes '("hi")) 100))
+              (build-list 100 (λ (x) "hi")))
+(check-equal? (stream-first (xyes '("-limithello")))
+              "-limithello")
+(check-equal? (stream->list (stream-take (xyes '("-limithello")) 100))
+              (build-list 100 (λ (x) "-limithello")))
+(check-equal? (stream-first (xyes (list "hi" "hello" "1" LIM)))
+              (string-append "hi hello 1 " LIM))
+(check-equal? (stream->list (stream-take (xyes (list "hi" "hello" "1" LIM)) 100))
+              (build-list 100 (λ (x) (string-append "hi hello 1 " LIM))))
 (check-equal? (stream->list (xyes (list LIM)))
               (build-list COUNT (λ (x) MSG)))
 (check-equal? (stream->list (xyes (list LIM "1 2 3")))
               (build-list COUNT (λ (x) "1 2 3")))
-(check-equal? (stream-first (xyes (list "1 2 3" LIM)))
-              (string-append "1 2 3" " " LIM))
-(check-equal? (stream-ref (xyes (list "1 2 3" LIM)) 100)
-              (string-append "1 2 3" " " LIM))

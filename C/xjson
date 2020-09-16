@@ -1,0 +1,11 @@
+#! /bin/sh
+#|
+exec racket -tm "$0" -- ${1+"$@"}
+|#
+#lang racket/base
+
+(require "Other/xjson.rkt")
+
+(provide main)
+
+(define (main) (xjson))

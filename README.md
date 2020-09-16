@@ -1,4 +1,4 @@
-# README
+# Mineola
 
 This repository contains the work of Nick Thompson and Jake Hansen for Prof. Matthias Felleisen's section of CS4500 Software Development in the Fall 2020 term.
 
@@ -12,7 +12,6 @@ xyes will continuously print out the value of args as written, or `hello world` 
 
 ##### OPTIONS
 `-limit` is the only supported flag for this program, and limits the output to 20 lines.
-
 
 ### File strucutre
 ```
@@ -31,11 +30,8 @@ Contains auxiliary files for this assignment
 ##### xyes.rkt
 The source code for xyes
 
-<br/>
-
-demonstrate how to run the test harness for each milestone;
-
-explain how to run the complete set of internal unit tests and the individual ones.
+### Tests
+Tests can be run using the command `raco test B/` when you are in the root of the repository.
 
 <!---
 These characters are useful for creating filestructure diagrams:

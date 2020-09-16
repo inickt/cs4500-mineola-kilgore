@@ -51,14 +51,13 @@
 ; - A json list with the count as the first element and the json sequence in reversed order
 (define (xjson . a)
   (define json-list (read-input))
-  (newline)
   (write-json (count-seq json-list))
   (newline)
   (write-json (count-and-reverse json-list))
   (newline))
 (check-equal?
  (with-output-to-string (λ () (with-input-from-string "" xjson)))
- "\n{\"count\":0,\"seq\":[]}\n[0]\n")
+ "{\"count\":0,\"seq\":[]}\n[0]\n")
 (check-equal?
  (map string->jsexpr
       (string-split (with-output-to-string (λ () (with-input-from-string TEST-JSON-STR xjson))) "\n"))

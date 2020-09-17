@@ -19,8 +19,8 @@
 ;+---------------------------------------------------------------------------------------------------+
 ; Functions
 
-; -> [Listof jsexpr?]
-; Build list of json inputs until eof
+; read-input: -> [Listof jsexpr?]
+; Build list of json expressions from inputs until EOF
 (define (read-input)
   (define json-obj (read-json))
   (if (eof-object? json-obj) '() (cons json-obj (read-input))))
@@ -28,7 +28,7 @@
 (check-equal? (with-input-from-string "1" read-input) '(1))
 (check-equal? (with-input-from-string TEST-JSON-STR read-input) TEST-JSON)
 
-; [Listof jsexpr?] -> [Hashof symbol? jsexpr?]
+; count-seq: [Listof jsexpr?] -> [Hashof symbol? jsexpr?]
 ; Create a hashmap with the count and original sequence
 (define (count-seq json-list)
   (hash
@@ -37,7 +37,7 @@
 (check-equal? (count-seq '()) (hash CNT 0 SEQ '()))
 (check-equal? (count-seq TEST-JSON) (hash CNT 4 SEQ TEST-JSON))
 
-; [Listof jsexpr?] -> [Listof jsexpr?]
+; count-and-reverse: [Listof jsexpr?] -> [Listof jsexpr?]
 ; Cons the number of json objects to the reversed list
 (define (count-and-reverse json-list)
   (cons
@@ -46,10 +46,11 @@
 (check-equal? (count-and-reverse '()) '(0))
 (check-equal? (count-and-reverse TEST-JSON) (cons 4 (reverse TEST-JSON)))
 
+; xjson: -> void?
 ; Read json from STDIN until EOF, then write two json objects
 ; - A json object with the count of json objects and the orignal sequence
 ; - A json list with the count as the first element and the json sequence in reversed order
-(define (xjson . a)
+(define (xjson)
   (define json-list (read-input))
   (write-json (count-seq json-list))
   (newline)

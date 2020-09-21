@@ -10,10 +10,10 @@
 ;+---------------------------------------------------------------------------------------------------+
 ; Constants
 
-(define ERR-NUM-ARGS "Incorrect number of arguments.\nCorrect usage: ./xgui [positive integer]")
-(define ERR-BAD-SIZE
-  (string-append "Invalid size, must be an integer greater than 0.\n"
-                 "Correct usage: ./xgui [positive integer]"))
+(define ERR-NUM-ARGS "Incorrect number of arguments.
+Correct usage: ./xgui [positive integer]")
+(define ERR-BAD-SIZE "Invalid size, must be an integer greater than 0.
+Correct usage: ./xgui [positive integer]")
 
 ;+---------------------------------------------------------------------------------------------------+
 ; Functions
@@ -34,7 +34,7 @@
 (check-equal? (check-legal-input '("100")) void)
 
 ; hexagon-clicked: Nat Int Int MouseEvent -> HandlerResult
-; TODO
+; Stops the world if a mouse click is within the given hexagon size
 (define (hexagon-clicked size x y me)
   (if (and (string=? me "button-down")
            (>= y 0)
@@ -106,4 +106,4 @@
   (define size (string->number (first args)))
   ; suppress printing the final world state to stdout
   (with-output-to-string (λ () (run-hex size)))
-  void)
+  (void))

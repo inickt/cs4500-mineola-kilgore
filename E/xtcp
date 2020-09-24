@@ -4,8 +4,13 @@ exec racket -tm "$0" -- ${1+"$@"}
 |#
 #lang racket/base
 
-(require "Other/xtcp.rkt")
+(require racket/cmdline
+         "Other/xtcp.rkt")
 
 (provide main)
 
-(define main xtcp)
+(define main
+  (command-line
+   #:program "xtcp"
+   #:args ([port (number->string DEFAULT-PORT)])
+   (xtcp (string->number port))))

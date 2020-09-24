@@ -8,7 +8,7 @@
          racket/tcp
          rackunit)
 
-(provide xtcp)
+(provide xtcp DEFAULT-PORT)
 
 ;+---------------------------------------------------------------------------------------------------+
 ; Constants

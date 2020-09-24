@@ -9,7 +9,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 (provide main)
 
-(define main
+(define (main . a)
   (command-line
    #:program "xtcp"
    #:args ([port (number->string DEFAULT-PORT)])

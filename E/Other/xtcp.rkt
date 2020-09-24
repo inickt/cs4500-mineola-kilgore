@@ -42,7 +42,7 @@
 (check-equal? (count-seq '()) (hash CNT 0 SEQ '()))
 (check-equal? (count-seq TEST-JSON) (hash CNT 4 SEQ TEST-JSON))
 
-;; count-and-reverse : (listof jsexpr?) -> [Listof jsexpr?]
+;; count-and-reverse : (listof jsexpr?) -> (listof jsexpr?)
 ;; Cons the number of json objects to the reversed list
 (define (count-and-reverse json-list)
   (cons
@@ -79,7 +79,7 @@
   ; not using current-custodian since it will close the repl
   (parameterize ([current-custodian (make-custodian)])
     (define listener (tcp-listen port))
-    ; result : [Maybe (list input-port? output-port?)]
+    ; result : (or/c false? (list/c input-port? output-port?))
     (define result (sync/timeout TIMEOUT (tcp-accept-evt listener)))
     ; handle timeout
     (when (and (boolean? result) (not result))

@@ -87,4 +87,5 @@
       (error "Timed out waiting for connection"))
     ; handle connection
     (xjson (first result) (second result))
+    (flush-output (second result))
     (custodian-shutdown-all (current-custodian))))

@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require json
+         racket/bool
          racket/list
          racket/port
          racket/string
@@ -82,7 +83,7 @@
     ; result : (or/c false? (list/c input-port? output-port?))
     (define result (sync/timeout TIMEOUT (tcp-accept-evt listener)))
     ; handle timeout
-    (when (and (boolean? result) (not result))
+    (when (false? result)
       (custodian-shutdown-all (current-custodian))
       (error "Timed out waiting for connection"))
     ; handle connection

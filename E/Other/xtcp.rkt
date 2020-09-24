@@ -79,9 +79,8 @@
   ; make a custodian to close tcp connection and its input/output ports
   ; not using current-custodian since it will close the repl
   (parameterize ([current-custodian (make-custodian)])
-    (define listener (tcp-listen port))
     ; result : (or/c false? (list/c input-port? output-port?))
-    (define result (sync/timeout TIMEOUT (tcp-accept-evt listener)))
+    (define result (sync/timeout TIMEOUT (tcp-accept-evt (tcp-listen port))))
     ; handle timeout
     (when (false? result)
       (custodian-shutdown-all (current-custodian))

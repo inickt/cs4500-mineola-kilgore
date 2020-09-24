@@ -3,8 +3,8 @@
 (require json
          racket/list
          racket/port
-         racket/tcp
          racket/string
+         racket/tcp
          rackunit)
 
 (provide xtcp)

@@ -56,29 +56,31 @@ Unfortunately, we don't explicitly state that this is a demoable milestone we ne
   - is each paragraph dedicated to a single topic? does it come with a
     thesis statement that specifies the topic?
 
-
+Yes, we had dedicated paragraphs for each of our topics. We used subheadings to divide up our memos to address each topic. Some shorter paragraphs with subheadings did not have direct thesis statements, but our larger, explanatory parts of our memos did.  
 
 
   - do sentences make a point? do they run on?
 
-
+Yes, our sentences made a point. Our goal was to be concise so there would be less ambiguity in our memos. Run on sentences and filler words can obscure important technical details and make a spec hard to reason about. 
 
 
   - do sentences connect via old words/new words so that readers keep
     reading?
 
-
+Yes, in our systems introduction we introduced the idea of Model-View-Controller stacks (MVC) and introduces names for each of the corresponding parts needed for the game/tournament systems. These names were used across the rest of the systems and milestone memos. 
 
 
   - are all sentences complete? Are they missing verbs? Objects? Other
     essential words?
 
+Yes, our sentences are complete and are not missing verbs/objects. As stated above, we wanted to fit as much technical information absolut our design into our systems memo as possible, so we limited filler words. 
 
 
   - did you make sure that the spelling is correct? ("It's" is *not* a
     possesive; it's short for "it is". "There" is different from
     "their", a word that is too popular for your generation.)
 
+Yes, we checked our grammar as we were writing the memos and both did a final pass before submission. 
 
 
 The ideal feedback are pointers to specific senetences in your memo.

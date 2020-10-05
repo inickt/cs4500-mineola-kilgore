@@ -1,16 +1,25 @@
 #lang racket/base
 
+(provide tile?
+         hole?
+         draw-tile)
+
 (require 2htdp/image
          racket/math
          lang/posn)
 
-(define TILE-BACKGROUND-COLOR "SkyBlue")
-(define TILE-HOLE-BACKGROUND-COLOR "LightGray")
-(define TILE-OUTLINE-COLOR "Black")
+;; +-------------------------------------------------------------------------------------------------+
+
+(define TILE-BACKGROUND-COLOR 'skyblue)
+(define TILE-HOLE-BACKGROUND-COLOR 'lightgray)
+(define TILE-OUTLINE-COLOR 'black)
 (define TILE-MAX-FISH 5)
-(define FISH
+
+(define FISH-COLOR 'coral)
+(define FISH-FEATURE-COLOR 'black)
+(define FISH-IMAGE
   (overlay/offset
-   (circle 2 'solid 'black)
+   (circle 2 'solid FISH-FEATURE-COLOR)
    -37 1
    (add-curve
     (add-curve
@@ -26,13 +35,15 @@
             (make-pulled-point 3/4 -24 20 -10 1/2 20)
             (make-posn 0 -20))
       'solid
-      'blue)
+      FISH-COLOR)
      78 15 250 1/2
      80 25 100 1/2
-     'black)
+     FISH-FEATURE-COLOR)
     65 20 200 3/2
     70 27 0 1
-    'black)))
+    FISH-FEATURE-COLOR)))
+
+;; +-------------------------------------------------------------------------------------------------+
 
 ;; A Tile is a natural number.
 ;; - 0 is a hole/tile with no fish
@@ -40,13 +51,11 @@
 
 ;; tile? : any? -> boolean?
 ;; Is the given item a tile?
-(define (tile? tile)
-  (natural? tile))
+(define tile? natural?)
 
 ;; hole? : tile? -> boolean?
 ;; Is the given tile a hole?
-(define (hole? tile)
-  (zero? tile))
+(define hole? zero?)
 
 ;; draw-tile : tile? size -> image?
 ;; Draws a tile with the given number of fish, or a hole tile if empty
@@ -55,15 +64,15 @@
   (define fish-size (* 2 (/ size (add1 (max tile TILE-MAX-FISH)))))
   (define background-color (if (hole? tile) TILE-HOLE-BACKGROUND-COLOR TILE-BACKGROUND-COLOR))
   (overlay (draw-fish-stack tile fish-size)
-           (draw-hexagon size "outline" TILE-OUTLINE-COLOR)
-           (draw-hexagon size "solid" background-color)))
+           (draw-hexagon size 'outline TILE-OUTLINE-COLOR)
+           (draw-hexagon size 'solid background-color)))
 
 ;; draw-fish-stack : tile? positive? -> image?
 ;; Draws the given number of fish stacked, where each fish has the given height
 (define (draw-fish-stack tile height)
   (if (hole? tile)
       empty-image
-      (above (scale (/ height (image-height FISH)) FISH)
+      (above (scale (/ height (image-height FISH-IMAGE)) FISH-IMAGE)
              (draw-fish-stack (sub1 tile) height))))
 
 
@@ -79,3 +88,21 @@
                  (make-posn size (* 2 size)))
            mode
            color))
+
+;; +-------------------------------------------------------------------------------------------------+
+(module+ test
+  (require rackunit)
+  ;; draw-tile
+  (check-equal? (image-width (draw-tile 0 10)) 30)
+  (check-equal? (image-height (draw-tile 0 10)) 20)
+  (check-equal? (image-width (draw-tile 3 100)) 300)
+  (check-equal? (image-height (draw-tile 3 100)) 200)
+  ;; draw-fish-stack
+  (check-equal? (image-height (draw-fish-stack 0 5)) 0)
+  (check-equal? (image-height (draw-fish-stack 1 5)) 5)
+  (check-equal? (image-height (draw-fish-stack 2 5)) 10)
+  ;; draw-hexagon
+  (check-equal? (image-width (draw-hexagon 10 'solid 'black)) 30)
+  (check-equal? (image-height (draw-hexagon 10 'solid 'black)) 20)
+  (check-equal? (image-width (draw-hexagon 100 'solid 'black)) 300)
+  (check-equal? (image-height (draw-hexagon 100 'solid 'black)) 200))

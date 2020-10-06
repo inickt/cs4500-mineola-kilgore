@@ -1,9 +1,11 @@
 #lang racket/base
 
-(require lang/posn
+(require 2htdp/image
+         lang/posn
          json
          racket/contract
          racket/format
+         racket/list
          "tile.rkt")
 
 ;; +-------------------------------------------------------------------------------------------------+
@@ -58,6 +60,112 @@
   (vector-ref (vector-ref board (posn-x posn))
               (posn-y posn)))
 
+;; draw-board : board? positive? -> image?
+;; Draws the given game board
+(define (draw-board board size)
+  (foldr (λ (tiles sofar)
+           (overlay/xy (draw-board-column (vector->list tiles) #t size)
+                       (* 4 size) 0
+                       sofar))
+         empty-image
+         (vector->list board)))
+
+;; draw-board-column : (listof tile?) boolean? -> image?
+;; Draws a column of tiles
+(define (draw-board-column tiles left size)
+  (if (empty? tiles)
+      empty-image
+      (overlay/xy (draw-tile (first tiles) size)
+                  (if left 0 (* size -2)) size
+                  (draw-board-column (rest tiles) (not left) size))))
+
+;; board-columns : board? -> PosInt
+;; Number of columns in the board
+(define (board-columns board)
+  (vector-length board))
+
+;; board-rows : board? -> PosInt
+;; Number of rows in the board
+(define (board-rows board)
+  (vector-length (vector-ref board 0)))
+
+;; posn-within-board? : Posn Board -> boolean?
+;; Is the given position on the board?
+(define (posn-within-board? posn board)
+  (and (>= (posn-x posn) 0)
+       (< (posn-x posn) (board-columns board))
+       (>= (posn-y posn) 0)
+       (< (posn-y posn) (board-rows board))))
+
+#|
+
+  ______          ______          ______
+ /      \        /      \        /      \
+/ (0, 0) \______/ (1, 0) \______/ (2, 0) \______
+\        /      \        /      \        /      \
+ \______/ (0, 1) \______/ (1, 1) \______/ (2, 1) \
+ /      \        /      \        /      \        /
+/ (0, 2) \______/ (1, 2) \______/ (2, 2) \______/
+\        /      \        /      \        /      \
+ \______/ (0, 3) \______/ (1, 3) \______/ (2, 3) \
+ /      \        /      \        /      \        /
+/ (0, 4) \______/ (1, 4) \______/ (2, 4) \______/
+\        /      \        /      \        /      \
+ \______/ (0, 5) \______/ (1, 5) \______/ (2, 5) \
+ /      \        /      \        /      \        / 
+/ (0, 6) \______/ (1, 6) \______/ (2, 6) \______/
+\        /      \        /      \        /
+ \______/        \______/        \______/
+|#
+
+(define (top-hexagon-posn posn)
+  (make-posn (posn-x posn) (- (posn-y posn) 2)))
+
+(define (bottom-hexagon-posn posn)
+  (make-posn (posn-x posn) (+ (posn-y posn) 2)))
+
+(define (right-top-hexagon-posn posn)
+  (make-posn (if (even? (posn-y posn))
+                 (posn-x posn)
+                 (add1 (posn-x posn)))
+             (sub1 (posn-y posn))))
+
+(define (right-bottom-hexagon-posn posn)
+  (make-posn (if (even? (posn-y posn))
+                 (posn-x posn)
+                 (add1 (posn-x posn)))
+             (add1 (posn-y posn))))
+
+(define (left-top-hexagon-posn posn)
+  (make-posn (if (odd? (posn-y posn))
+                 (posn-x posn)
+                 (sub1 (posn-x posn)))
+             (sub1 (posn-y posn))))
+
+(define (left-bottom-hexagon-posn posn)
+  (make-posn (if (odd? (posn-y posn))
+                 (posn-x posn)
+                 (sub1 (posn-x posn)))
+             (add1 (posn-y posn))))
+
+
+;; valid-movements : Posn Board -> (listof Posn)
+(define (valid-movements posn board)
+  (append (valid-movements-direction posn board top-hexagon-posn)
+          (valid-movements-direction posn board bottom-hexagon-posn)
+          (valid-movements-direction posn board right-top-hexagon-posn)
+          (valid-movements-direction posn board right-bottom-hexagon-posn)
+          (valid-movements-direction posn board left-top-hexagon-posn)
+          (valid-movements-direction posn board left-bottom-hexagon-posn)))
+
+(define (valid-movements-direction posn board mover)
+  (define moved (mover posn))
+  (if (and (posn-within-board? moved board) (not (hole? (get-tile moved board))))
+      (cons moved (valid-movements-direction moved board mover))
+      '()))
+  
+  
+
 ;; +-------------------------------------------------------------------------------------------------+
 
 (module+ test
@@ -96,4 +204,3 @@
 
 
 
-  

@@ -9,11 +9,12 @@
          lang/posn)
 
 ;; +-------------------------------------------------------------------------------------------------+
+;; CONSTANTS
 
 (define TILE-BACKGROUND-COLOR 'skyblue)
 (define TILE-HOLE-BACKGROUND-COLOR 'lightgray)
 (define TILE-OUTLINE-COLOR 'black)
-(define TILE-MAX-FISH 5)
+(define TILE-FISH-SCALE-CUTOFF 5)
 
 (define FISH-COLOR 'coral)
 (define FISH-FEATURE-COLOR 'black)
@@ -44,12 +45,13 @@
     FISH-FEATURE-COLOR)))
 
 ;; +-------------------------------------------------------------------------------------------------+
+;; PROVIDED
 
 ;; A Tile is a natural number.
 ;; - 0 is a hole/tile with no fish
 ;; - Otherwise it represents the number of fish on a tile
 
-;; tile? : any? -> boolean?
+;; tile? : any/c -> boolean?
 ;; Is the given item a tile?
 (define tile? natural?)
 
@@ -61,11 +63,17 @@
 ;; Draws a tile with the given number of fish, or a hole tile if empty
 ;; The size of the resulting image has a height of 2*size and a width of 3*size
 (define (draw-tile tile size)
-  (define fish-size (* 2 (/ size (add1 (max tile TILE-MAX-FISH)))))
+  ;; pixel height of each fish will be the same for each fish under TILE-FISH-SCALE-CUTOFF,
+  ;; or scaled proportionally to fit more fish if above TILE-FISH-SCALE-CUTOFF.
+  ;; add1 to add half a fish height above and below
+  (define fish-height (* 2 (/ size (add1 (max tile TILE-FISH-SCALE-CUTOFF)))))
   (define background-color (if (hole? tile) TILE-HOLE-BACKGROUND-COLOR TILE-BACKGROUND-COLOR))
-  (overlay (draw-fish-stack tile fish-size)
+  (overlay (draw-fish-stack tile fish-height)
            (draw-hexagon size 'outline TILE-OUTLINE-COLOR)
            (draw-hexagon size 'solid background-color)))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL
 
 ;; draw-fish-stack : tile? positive? -> image?
 ;; Draws the given number of fish stacked, where each fish has the given height
@@ -74,7 +82,6 @@
       empty-image
       (above (scale (/ height (image-height FISH-IMAGE)) FISH-IMAGE)
              (draw-fish-stack (sub1 tile) height))))
-
 
 ;; draw-hexagon : natural? mode? image-color? -> image?
 ;; Draws a hexagon with the givan size, drawing mode, and color
@@ -90,6 +97,8 @@
            color))
 
 ;; +-------------------------------------------------------------------------------------------------+
+;; TESTS
+
 (module+ test
   (require rackunit)
   ;; draw-tile

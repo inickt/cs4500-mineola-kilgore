@@ -1,24 +1,41 @@
 #lang racket/base
 
-(require lang/posn
-         json
+(require 2htdp/image
+         lang/posn
          racket/contract
          racket/format
+         racket/list
          "tile.rkt")
 
 ;; +-------------------------------------------------------------------------------------------------+
 
-;; A Board is a (vectorof (vectorof tile?)) and uses a doubled coordinate system to represent a grid
-;; of tesselated hexagons. The coordinates for a Board following format:
-#| TODO: change back to normal coords
-(0,0)     (2,0)     (4,0) ... (n,0)
-     (1,1)     (3,1)      
-(0,2)     (2,2)     (4,2)     (n,2)
-     (1,3)     (3,3)
-(0,4)     (2,4)     (4,4)     (n,4)
-...                            ...
-(0,m)     (2,m)     (4,m) ... (n,m)
-|#
+;; A Board is a (vectorof (vectorof tile?)) and uses an offset coordinate system to represent a grid
+;; of tesselated hexagons.
+;;
+;; The following is a visual representation of a 3x7 board:
+;;     ______          ______          ______
+;;    /      \        /      \        /      \
+;;   / (0, 0) \______/ (1, 0) \______/ (2, 0) \______
+;;   \        /      \        /      \        /      \
+;;    \______/ (0, 1) \______/ (1, 1) \______/ (2, 1) \
+;;    /      \        /      \        /      \        /
+;;   / (0, 2) \______/ (1, 2) \______/ (2, 2) \______/
+;;   \        /      \        /      \        /      \
+;;    \______/ (0, 3) \______/ (1, 3) \______/ (2, 3) \
+;;    /      \        /      \        /      \        /
+;;   / (0, 4) \______/ (1, 4) \______/ (2, 4) \______/
+;;   \        /      \        /      \        /      \
+;;    \______/ (0, 5) \______/ (1, 5) \______/ (2, 5) \
+;;    /      \        /      \        /      \        /
+;;   / (0, 6) \______/ (1, 6) \______/ (2, 6) \______/
+;;   \        /      \        /      \        /
+;;    \______/        \______/        \______/
+;;
+
+;; board? : any/c -> boolean?
+;; Is the given value a board?
+(define (board? value)
+  ((vectorof (vectorof tile? #:flat? #t) #:flat? #t) value))
 
 ;; make-board-with-holes : natural? natural? (listof posn?) ... -> board?
 #;
@@ -35,11 +52,6 @@
 ;; Create a game board of the given width and height filled with the given tile
 (define (make-even-board width height tile)
   (build-vector width (λ (x) (make-vector height tile))))
-
-;; reachable-posns : board? posn? -> (listof posn?)
-#;
-(define (reachable-posns board current)
-  ...)
 
 ;; remove-tile! : posn? board? -> board?
 ;; SIDE EFFECTS: board
@@ -58,7 +70,111 @@
   (vector-ref (vector-ref board (posn-x posn))
               (posn-y posn)))
 
+;; draw-board : board? positive? -> image?
+;; Draws the given game board
+(define (draw-board board size)
+  (foldr (λ (tiles sofar)
+           (overlay/xy (draw-board-column (vector->list tiles) size)
+                       (* 4 size) 0
+                       sofar))
+         empty-image
+         (vector->list board)))
+
+;; draw-board-column : (listof tile?) positive? [boolean?] -> image?
+;; Draws a column of tiles
+(define (draw-board-column tiles size [left #t])
+  (if (empty? tiles)
+      empty-image
+      (overlay/xy (draw-tile (first tiles) size)
+                  ;; if this tile is on the right, then we need to shift the
+                  ;; recursively drawn image left, hence using -2
+                  (if left 0 (* size -2))
+                  size
+                  (draw-board-column (rest tiles) size (not left)))))
+
+;; board-columns : board? -> PosInt
+;; Number of columns in the board
+(define (board-columns board)
+  (vector-length board))
+
+;; board-rows : board? -> PosInt
+;; Number of rows in the board
+(define (board-rows board)
+  (vector-length (vector-ref board 0)))
+
+;; posn-within-board? : posn? board? -> boolean?
+;; Is the given position on the board?
+(define (posn-within-board? posn board)
+  (and (>= (posn-x posn) 0)
+       (< (posn-x posn) (board-columns board))
+       (>= (posn-y posn) 0)
+       (< (posn-y posn) (board-rows board))))
+
+;; top-hexagon-posn : posn? -> posn?
+;; Produces the position directly above the given hexagon coordinate position
+(define (top-hexagon-posn posn)
+  (make-posn (posn-x posn) (- (posn-y posn) 2)))
+
+;; bottom-hexagon-posn : posn? -> posn?
+;; Produces the position directly below the given hexagon coordinate position
+(define (bottom-hexagon-posn posn)
+  (make-posn (posn-x posn) (+ (posn-y posn) 2)))
+
+;; top-right-hexagon-posn : posn? -> posn?
+;; Produces the position directly to the top right of the given hexagon coordinate position
+(define (top-right-hexagon-posn posn)
+  (make-posn (if (even? (posn-y posn))
+                 (posn-x posn)
+                 (add1 (posn-x posn)))
+             (sub1 (posn-y posn))))
+
+;; bottom-right-hexagon-posn : posn? -> posn?
+;; Produces the position directly to the bottom right of the given hexagon coordinate position
+(define (bottom-right-hexagon-posn posn)
+  (make-posn (if (even? (posn-y posn))
+                 (posn-x posn)
+                 (add1 (posn-x posn)))
+             (add1 (posn-y posn))))
+
+;; top-left-hexagon-posn : posn? -> posn?
+;; Produces the position directly to the top left of the given hexagon coordinate position
+(define (top-left-hexagon-posn posn)
+  (make-posn (if (odd? (posn-y posn))
+                 (posn-x posn)
+                 (sub1 (posn-x posn)))
+             (sub1 (posn-y posn))))
+
+;; bottom-left-hexagon-posn : posn? -> posn?
+;; Produces the position directly to the bottom left of the given hexagon coordinate position
+(define (bottom-left-hexagon-posn posn)
+  (make-posn (if (odd? (posn-y posn))
+                 (posn-x posn)
+                 (sub1 (posn-x posn)))
+             (add1 (posn-y posn))))
+
+;; valid-movements : posn? board? -> (listof posn?)
+;; Creates a list of valid movements on the board, starting from the top and moving clockwise
+(define (valid-movements posn board)
+  ;; TODO: Add error when posn is a hole
+  (define (moves mover)
+    (valid-movements-direction posn board mover))
+  (append (moves top-hexagon-posn)
+          (moves top-right-hexagon-posn)
+          (moves bottom-right-hexagon-posn)
+          (moves bottom-hexagon-posn)
+          (moves bottom-left-hexagon-posn)
+          (moves top-left-hexagon-posn)))
+
+;; valid-movements-direction : posn? board? (posn? -> posn?) -> (listof posn?)
+;; Creates a list of valid movements on the board in a given direction
+(define (valid-movements-direction posn board mover)
+  (define moved (mover posn))
+  (if (and (posn-within-board? moved board) (not (hole? (get-tile moved board))))
+      (cons moved (valid-movements-direction moved board mover))
+      '()))
+
 ;; +-------------------------------------------------------------------------------------------------+
+;; TESTS
 
 (module+ test
   (require rackunit)
@@ -96,4 +212,3 @@
 
 
 
-  

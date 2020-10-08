@@ -19,7 +19,7 @@ Fish
 └── README.md
 ```
 
-### Planning
+### Common
 Contains all information for building a spec for a Fish tournament and game systems.
 
 ##### board.rkt
@@ -35,7 +35,7 @@ Provides a predicate for a Board, and functions to:
 Contains the data and function definitions describing a tile.
 Provides predicates for Tile and Hole, and a function to draw a tile.
 
-### Common
+### Planning
 Contains all files dictating the common ontology for the Fish game system.
 
 ##### systems.pdf

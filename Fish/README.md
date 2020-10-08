@@ -22,7 +22,7 @@ Fish
 ### Planning
 Contains all information for building a spec for a Fish tournament and game systems.
 
-###### board.rkt
+##### board.rkt
 Contains the data and function definitions describing a Fish board.
 Provides a predicate for a Board, and functions to:
  1. Create a board with specified width, height, holes, and some minimum number of 1-fish tiles.
@@ -31,23 +31,23 @@ Provides a predicate for a Board, and functions to:
  4. Remove a tile from a board, creating a hole.
  5. Determine the legal moves from a given tile.
 
-###### tile.rkt
+##### tile.rkt
 Contains the data and function definitions describing a tile.
 Provides predicates for Tile and Hole, and a function to draw a tile.
 
 ### Common
 Contains all files dictating the common ontology for the Fish game system.
 
-###### systems.pdf
+##### systems.pdf
 A memo release for planning the systems that the complete Fish game and tournament systems would require.
 
-###### milestones.pdf
+##### milestones.pdf
 A memo release stating the intended milestones for the Fish game and tournament systems, including demoable intermediate steps.
 
-###### self-1.md
+##### self-1.md
 A self reflective document describing our thoughts on systems.pdf and milestones.pdf in hindsight.
 
-###### game-state.md
+##### game-state.md
 A memo release describing the components we believe are needed to complete the Fish game system's data definitions. Additionally, this file describes the external interface we would like to provide, through which players may interact with a game of Fish.
 
 ## Testing

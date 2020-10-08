@@ -4,7 +4,7 @@
          lang/posn
          racket/contract
          racket/format
-         racket/lsist
+         racket/list
          racket/math
          racket/vector
          "tile.rkt")
@@ -324,6 +324,37 @@
                                               #(#(0 1) #(1 1)))))
  
   ;; Internal Helper Functions
+  ;; get-tile
+  (check-equal? (get-tile (make-posn 0 0) #(#(0 0) #(0 0))) 0)
+  (check-equal? (get-tile (make-posn 0 1) #(#(0 1) #(2 3))) 1)
+  (check-equal? (get-tile (make-posn 1 0) #(#(0 1) #(2 3))) 2)
+  (check-equal? (get-tile (make-posn 1 1) #(#(0 1) #(2 3))) 3)
+  ;; board-columns
+  (check-equal? (board-columns #(#())) 1)
+  (check-equal? (board-columns #(#(1 2 3) #(1 2 3))) 2)
+  ;; board-rows
+  (check-equal? (board-rows #(#())) 0)
+  (check-equal? (board-rows #(#(1 2 3) #(1 2 3))) 3)
+  ;; posn-within-bounds?
+  (check-true (posn-within-bounds? (make-posn 0 0) 3 3))
+  (check-true (posn-within-bounds? (make-posn 1 2) 3 3))
+  (check-true (not (posn-within-bounds? (make-posn -1 0) 3 3)))
+  (check-true (not (posn-within-bounds? (make-posn 0 -1) 3 3)))
+  (check-true (not (posn-within-bounds? (make-posn 3 0) 3 3)))
+  (check-true (not (posn-within-bounds? (make-posn 0 3) 3 3)))
+  ;; set-tile!
+  (define test-set-tile!-board (make-even-board 3 3 1))
+  (check-equal? (set-tile! (make-posn 0 0) 0 test-set-tile!-board)
+                #(#(0 1 1) #(1 1 1) #(1 1 1)))
+  (check-equal? (set-tile! (make-posn 1 1) 2 test-set-tile!-board)
+                #(#(0 1 1) #(1 2 1) #(1 1 1)))
+  (check-equal? (set-tile! (make-posn 2 2) 3 test-set-tile!-board)
+                #(#(0 1 1) #(1 2 1) #(1 1 3)))
+  (check-equal? test-set-tile!-board #(#(0 1 1) #(1 2 1) #(1 1 3)))
+  ;; draw-board
+
+  
+  ;; draw-board-column
   ;; random-list-with-min-1s
   (check-equal? (random-list-with-min-1s 0 0 5) '())
   (check-equal? (random-list-with-min-1s 3 3 5) (list 1 1 1))

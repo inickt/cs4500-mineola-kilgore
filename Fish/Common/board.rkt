@@ -183,7 +183,7 @@
                   (draw-board-column (rest tiles) size (not left)))))
 
 ;; random-list-with-min-1s : natural? natural? natural? -> (listof tile?)
-;; INVARIANT: size >= min-1s
+;; INVARIANT: length >= min-1s
 ;; Builds a list of tiles with no holes, a max size for each tile, and a minimum number of 1s
 (define (random-list-with-min-1s length min-1s max-tile-size)
   (shuffle (append (build-list min-1s (λ (x) 1))
@@ -247,11 +247,11 @@
 (module+ test
   (require rackunit)
 
-  ;; Testing helper functions
+  ;; Testing Helper Functions
   (define (board-to-flat-list board)
     (foldr append '() (vector->list (vector-map vector->list board))))
   
-  ;; Provided functions
+  ;; Provided Functions
   ;; make-board-with-holes
   (check-equal? (make-board-with-holes 1 1 '() 1) #(#(1)))
   (check-equal? (make-board-with-holes 1 1 (list (make-posn 0 0)) 0) #(#(0)))
@@ -321,14 +321,88 @@
   (check-exn exn:fail? (λ () (valid-movements (make-posn 4 4)
                                               (make-even-board 3 3 1))))
   (check-exn exn:fail? (λ () (valid-movements (make-posn 0 0)
-                                              #(#(0 1) #(1 1))))))
-  
-
-
-
-
-
-
-
-
-
+                                              #(#(0 1) #(1 1)))))
+ 
+  ;; Internal Helper Functions
+  ;; random-list-with-min-1s
+  (check-equal? (random-list-with-min-1s 0 0 5) '())
+  (check-equal? (random-list-with-min-1s 3 3 5) (list 1 1 1))
+  (check-true (>= (count (λ (x) (= x 1)) (random-list-with-min-1s 10 3 5))
+                  3))
+  ;; top-hexagon-posn
+  (check-equal? (top-hexagon-posn (make-posn 1 2))
+                (make-posn 1 0))
+  (check-equal? (top-hexagon-posn (make-posn 2 3))
+                (make-posn 2 1))
+  (check-equal? (top-hexagon-posn (make-posn 0 0))
+                (make-posn 0 -2))
+  ;; bottom-hexagon-posn
+  (check-equal? (bottom-hexagon-posn (make-posn 1 2))
+                (make-posn 1 4))
+  (check-equal? (bottom-hexagon-posn (make-posn 2 3))
+                (make-posn 2 5))
+  (check-equal? (bottom-hexagon-posn (make-posn 0 0))
+                (make-posn 0 2))
+  ;; top-right-hexagon-posn
+  (check-equal? (top-right-hexagon-posn (make-posn 1 2))
+                (make-posn 1 1))
+  (check-equal? (top-right-hexagon-posn (make-posn 2 3))
+                (make-posn 3 2))
+  (check-equal? (top-right-hexagon-posn (make-posn 0 0))
+                (make-posn 0 -1))
+  ;; bottom-right-hexagon-posn
+  (check-equal? (bottom-right-hexagon-posn (make-posn 1 2))
+                (make-posn 1 3))
+  (check-equal? (bottom-right-hexagon-posn (make-posn 2 3))
+                (make-posn 3 4))
+  (check-equal? (bottom-right-hexagon-posn (make-posn 0 0))
+                (make-posn 0 1))
+  ;; top-left-hexagon-posn
+  (check-equal? (top-left-hexagon-posn (make-posn 1 2))
+                (make-posn 0 1))
+  (check-equal? (top-left-hexagon-posn (make-posn 2 3))
+                (make-posn 2 2))
+  (check-equal? (top-left-hexagon-posn (make-posn 0 0))
+                (make-posn -1 -1))
+  ;; bottom-left-hexagon-posn
+  (check-equal? (bottom-left-hexagon-posn (make-posn 1 2))
+                (make-posn 0 3))
+  (check-equal? (bottom-left-hexagon-posn (make-posn 2 3))
+                (make-posn 2 4))
+  (check-equal? (bottom-left-hexagon-posn (make-posn 0 0))
+                (make-posn -1 1))
+  ;; valid-movements-direction
+  (check-equal? (valid-movements-direction (make-posn 0 0)
+                                           #(#(1))
+                                           top-hexagon-posn)
+                '())
+  (check-equal? (valid-movements-direction (make-posn 1 4)
+                                           #(#(1 1 1 1 1)
+                                             #(1 1 1 1 1))
+                                           bottom-right-hexagon-posn)
+                '())
+  (check-equal? (valid-movements-direction (make-posn 1 4)
+                                           #(#(1 2 3 4 1)
+                                             #(1 0 1 0 1))
+                                           top-right-hexagon-posn)
+                '())
+  (check-equal? (valid-movements-direction (make-posn 1 0)
+                                           #(#(1 3 3 4 0)
+                                             #(1 0 0 2 0))
+                                           bottom-left-hexagon-posn)
+                (list (make-posn 0 1) (make-posn 0 2)))
+  (check-equal? (valid-movements-direction (make-posn 1 0)
+                                           #(#(1 3 3 4 0)
+                                             #(1 0 0 2 0))
+                                           bottom-hexagon-posn)
+                '())
+  (check-equal? (valid-movements-direction (make-posn 0 0)
+                                           #(#(1 3 3 4 0)
+                                             #(1 0 0 2 0))
+                                           bottom-hexagon-posn)
+                (list (make-posn 0 2)))
+  (check-equal? (valid-movements-direction (make-posn 0 1)
+                                           #(#(1 3 3 4 0)
+                                             #(1 0 0 2 0))
+                                           top-left-hexagon-posn)
+                (list (make-posn 0 0))))

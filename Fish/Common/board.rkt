@@ -244,8 +244,12 @@
 
 (module+ test
   (require rackunit)
+
+  ;; Testing helper functions
   (define (board-to-flat-list board)
     (foldr append '() (vector->list (vector-map vector->list board))))
+  
+  ;; Provided functions
   ;; make-board-with-holes
   (check-equal? (make-board-with-holes 1 1 '() 1) #(#(1)))
   (check-equal? (make-board-with-holes 1 1 (list (make-posn 0 0)) 0) #(#(0)))

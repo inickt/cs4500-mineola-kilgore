@@ -67,17 +67,15 @@
   (define num-tiles (- (* width height) (length filtered-holes)))
   
   ;; Error checking
-  (when (or (<= width 0) (<= height 0))
-    (error (~a "Error: cannot build a board with width " width " and/or height " height)))
   (when (< num-tiles min-1s)
     (error (~a "Error: Impossible to create a board with the specified holes "
                "and min number of 1-fish tiles")))
   
   (define start-board (make-even-board width height 0))
   (define random-tiles (random-list-with-min-1s num-tiles min-1s max-fish))
-  (displayln random-tiles)
-  (for ([x (build-list width (λ (x) x))])
-    (for ([y (build-list height (λ (x) x))]
+  
+  (for ([x width])
+    (for ([y height]
           #:unless (member (make-posn x y) filtered-holes))
       (set-tile! (make-posn x y)
                  (first random-tiles)
@@ -101,7 +99,11 @@
 ;; valid-movements : posn? board? -> (listof posn?)
 ;; Creates a list of valid movements on the board, starting from the top and moving clockwise
 (define (valid-movements posn board)
-  ;; TODO: Add error when posn is a hole
+  (when (not (posn-within-bounds? posn (board-columns board) (board-rows board)))
+    (error (~a posn " not within the bounds of the given board")))
+  (when (hole? (get-tile posn board))
+    (error (~a posn " is a hole, no movements can be made from this tile")))
+
   (define (moves mover)
     (valid-movements-direction posn board mover))
   (append (moves top-hexagon-posn)
@@ -171,9 +173,10 @@
 ;; random-list-with-min-1s : natural? natural? natural? -> (listof tile?)
 ;; INVARIANT: size >= min-1s
 ;; Builds a list of tiles with no holes, a max size for each tile, and a minimum number of 1s
-(define (random-list-with-min-1s size min-1s max-tile-size)
+(define (random-list-with-min-1s length min-1s max-tile-size)
   (shuffle (append (build-list min-1s (λ (x) 1))
-                   (build-list (- size min-1s) (λ (x) (add1 (random max-tile-size)))))))
+                   ;; add1 shifts the output range from [0, max-tile-size) to [1, max-tile-size]
+                   (build-list (- length min-1s) (λ (x) (add1 (random max-tile-size)))))))
 
 ;; top-hexagon-posn : posn? -> posn?
 ;; Produces the position directly above the given hexagon coordinate position

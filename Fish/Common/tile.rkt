@@ -1,12 +1,13 @@
 #lang racket/base
 
-(provide tile?
-         hole?
-         draw-tile)
-
 (require 2htdp/image
+         racket/contract
          racket/math
          lang/posn)
+
+(provide (contract-out [tile? (-> any/c boolean?)])
+         (contract-out [hole? (-> tile? boolean?)])
+         (contract-out [draw-tile (-> tile? positive? image?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -59,7 +60,7 @@
 ;; Is the given tile a hole?
 (define hole? zero?)
 
-;; draw-tile : tile? size -> image?
+;; draw-tile : tile? positive? -> image?
 ;; Draws a tile with the given number of fish, or a hole tile if empty
 ;; The size of the resulting image has a height of 2*size and a width of 3*size
 (define (draw-tile tile size)

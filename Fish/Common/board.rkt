@@ -16,7 +16,6 @@
          (contract-out [valid-movements (-> posn? board? (listof posn?))]))
 
 ;; TODO:
-;; - test test test
 ;; - design task
 ;; - readme
 ;; - testme
@@ -352,9 +351,21 @@
                 #(#(0 1 1) #(1 2 1) #(1 1 3)))
   (check-equal? test-set-tile!-board #(#(0 1 1) #(1 2 1) #(1 1 3)))
   ;; draw-board
-
-  
+  (check-equal? (image-width (draw-board (make-even-board 3 2 1) 10))
+                130)
+  (check-equal? (image-height (draw-board (make-even-board 3 3 1) 10))
+                40)
   ;; draw-board-column
+  (check-equal? (image-width (draw-board-column '() 10))
+                0)
+  (check-equal? (image-width (draw-board-column '(1) 10))
+                30)
+  (check-equal? (image-width (draw-board-column '(1 2 3 4) 10))
+                50)
+  (check-equal? (image-height (draw-board-column '(1) 10))
+                20)
+  (check-equal? (image-height (draw-board-column '(1 2 3 4) 10))
+                50)
   ;; random-list-with-min-1s
   (check-equal? (random-list-with-min-1s 0 0 5) '())
   (check-equal? (random-list-with-min-1s 3 3 5) (list 1 1 1))

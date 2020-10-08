@@ -23,6 +23,7 @@
 ;; CONSTANTS
 
 (define MAX-FISH-PER-TILE 5)
+(define posint? (and/c integer? positive?))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
@@ -59,7 +60,7 @@
           (not/c vector-empty?))
    value))
 
-;; make-board-with-holes : natural? natural? (listof posn?) natural? -> board?
+;; make-board-with-holes : posint? posint? (listof posn?) natural? -> board?
 ;; Creates a board with 
 (define (make-board-with-holes width height holes min-1s [max-fish MAX-FISH-PER-TILE])
   (define filtered-holes
@@ -68,8 +69,13 @@
   
   ;; Error checking
   (when (< num-tiles min-1s)
-    (error (~a "Error: Impossible to create a board with the specified holes "
-               "and min number of 1-fish tiles")))
+    (raise-arguments-error 'make-board-with-holes
+                           (~a  "Impossible to create a board with the specified holes "
+                                "and min number of 1-fish tiles")
+                           "width" width
+                           "height" height
+                           "holes" holes
+                           "min-1s" min-1s))
   
   (define start-board (make-even-board width height 0))
   (define random-tiles (random-list-with-min-1s num-tiles min-1s max-fish))
@@ -83,7 +89,7 @@
       (set! random-tiles (rest random-tiles))))
   start-board)
 
-;; make-even-board : PosInt PosInt natural? natural? tile? -> board?
+;; make-even-board : posint? posint? natural? natural? tile? -> board?
 ;; Create a game board of the given width and height filled with the given tile
 (define (make-even-board width height tile)
   (build-vector width (λ (x) (make-vector height tile))))
@@ -93,16 +99,20 @@
 ;; Removes the tile at the given doubled position from the board
 (define (remove-tile! posn board)
   (when (hole? (get-tile posn board))
-    (error (~a posn " is already a hole and cannot be removed")))
+    (raise-argument-error 'remove-tile! (~a posn " is already a hole and cannot be removed") 0))
   (set-tile! posn 0 board))
 
 ;; valid-movements : posn? board? -> (listof posn?)
 ;; Creates a list of valid movements on the board, starting from the top and moving clockwise
 (define (valid-movements posn board)
   (when (not (posn-within-bounds? posn (board-columns board) (board-rows board)))
-    (error (~a posn " not within the bounds of the given board")))
+    (raise-argument-error 'valid-movements
+                          (~a posn " not within the bounds of the given board")
+                          0))
   (when (hole? (get-tile posn board))
-    (error (~a posn " is a hole, no movements can be made from this tile")))
+    (raise-argument-error 'valid-movements
+                          (~a posn " is a hole, no movements can be made from this tile")
+                          0))
 
   (define (moves mover)
     (valid-movements-direction posn board mover))
@@ -122,12 +132,12 @@
   (vector-ref (vector-ref board (posn-x posn))
               (posn-y posn)))
 
-;; board-columns : board? -> PosInt
+;; board-columns : board? -> posint?
 ;; Number of columns in the board
 (define (board-columns board)
   (vector-length board))
 
-;; board-rows : board? -> PosInt
+;; board-rows : board? -> posint?
 ;; Number of rows in the board
 (define (board-rows board)
   (vector-length (vector-ref board 0)))
@@ -178,6 +188,15 @@
                    ;; add1 shifts the output range from [0, max-tile-size) to [1, max-tile-size]
                    (build-list (- length min-1s) (λ (x) (add1 (random max-tile-size)))))))
 
+;; valid-movements-direction : posn? board? (posn? -> posn?) -> (listof posn?)
+;; Creates a list of valid movements on the board in a given direction
+(define (valid-movements-direction posn board mover)
+  (define moved (mover posn))
+  (if (and (posn-within-bounds? moved (board-columns board) (board-rows board))
+           (not (hole? (get-tile moved board))))
+      (cons moved (valid-movements-direction moved board mover))
+      '()))
+
 ;; top-hexagon-posn : posn? -> posn?
 ;; Produces the position directly above the given hexagon coordinate position
 (define (top-hexagon-posn posn)
@@ -220,20 +239,36 @@
                  (sub1 (posn-x posn)))
              (add1 (posn-y posn))))
 
-;; valid-movements-direction : posn? board? (posn? -> posn?) -> (listof posn?)
-;; Creates a list of valid movements on the board in a given direction
-(define (valid-movements-direction posn board mover)
-  (define moved (mover posn))
-  (if (and (posn-within-bounds? moved (board-columns board) (board-rows board))
-           (not (hole? (get-tile moved board))))
-      (cons moved (valid-movements-direction moved board mover))
-      '()))
-
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
 
 (module+ test
   (require rackunit)
+  (define (board-to-flat-list board)
+    (foldr append '() (vector->list (vector-map vector->list board))))
+  ;; make-board-with-holes
+  (check-equal? (make-board-with-holes 1 1 '() 1) #(#(1)))
+  (check-equal? (make-board-with-holes 1 1 (list (make-posn 0 0)) 0) #(#(0)))
+  (check-equal? (make-board-with-holes 3 3 (list (make-posn 0 0)
+                                                 (make-posn 0 2)
+                                                 (make-posn 1 1)
+                                                 (make-posn 2 1))
+                                       5)
+                #(#(0 1 0) #(1 0 1) #(1 0 1)))
+  (check-equal? (board-columns (make-board-with-holes 10 9 '() 15)) 10)
+  (check-equal? (board-rows (make-board-with-holes 10 9 '() 15)) 9)
+  (check-equal?
+   (count hole? (board-to-flat-list
+                 (make-board-with-holes 10 10
+                                        (list (make-posn 0 0) (make-posn 9 4) (make-posn 2 3)
+                                              (make-posn 6 1) (make-posn 3 4) (make-posn 4 0)
+                                              (make-posn 2 2) (make-posn 7 1) (make-posn 8 11))
+                                        15)))
+   8)
+  (check-true (>= (count (λ (x) (= x 1)) (board-to-flat-list (make-board-with-holes 10 10 '() 15)))
+                  15))
+  (check-exn exn:fail? (λ () (make-board-with-holes 1 1 '() 2)))
+  (check-exn exn:fail? (λ () (make-board-with-holes 3 3 (list (make-posn 1 1)) 9)))
   ;; make-even-board
   (check-equal? (make-even-board 1 1 2) #(#(2)))
   (check-equal? (make-even-board 2 3 1)
@@ -257,7 +292,30 @@
   (check-exn exn:fail? (λ () (remove-tile! (make-posn 2 1)
                                            #(#(2 2)
                                              #(2 2)
-                                             #(2 0))))))
+                                             #(2 0)))))
+  ;; valid-movements
+  (check-equal? (valid-movements (make-posn 1 2) #(#(1 1 1 1 1) #(1 1 1 1 1)))
+                (list (make-posn 1 0)
+                      (make-posn 1 1)
+                      (make-posn 1 3)
+                      (make-posn 1 4)
+                      (make-posn 0 3)
+                      (make-posn 0 4)
+                      (make-posn 0 1)
+                      (make-posn 0 0)))
+  (check-equal? (valid-movements (make-posn 0 2) #(#(1 1 1 1 1) #(1 1 1 1 1)))
+                (list (make-posn 0 0)
+                      (make-posn 0 1)
+                      (make-posn 1 0)
+                      (make-posn 0 3)
+                      (make-posn 1 4)
+                      (make-posn 0 4)))
+  (check-equal? (valid-movements (make-posn 1 2) #(#(0 0 0 0 0) #(0 0 1 0 0)))
+                '())
+  (check-exn exn:fail? (λ () (valid-movements (make-posn 4 4)
+                                              (make-even-board 3 3 1))))
+  (check-exn exn:fail? (λ () (valid-movements (make-posn 0 0)
+                                              #(#(0 1) #(1 1))))))
   
 
 

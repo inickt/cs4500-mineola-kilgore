@@ -13,12 +13,8 @@
          (contract-out [make-board-with-holes (-> posint? posint? (listof posn?) natural? board?)])
          (contract-out [make-even-board (-> posint? posint? tile? board?)])
          (contract-out [remove-tile! (-> posn? board? board?)])
-         (contract-out [valid-movements (-> posn? board? (listof posn?))]))
-
-;; TODO:
-;; - design task
-;; - readme
-;; - testme
+         (contract-out [valid-movements (-> posn? board? (listof posn?))])
+         (contract-out [draw-board (-> board? positive? image?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -124,6 +120,16 @@
           (moves bottom-left-hexagon-posn)
           (moves top-left-hexagon-posn)))
 
+;; draw-board : board? positive? -> image?
+;; Draws the given game board
+(define (draw-board board size)
+  (foldr (λ (tiles sofar)
+           (overlay/xy (draw-board-column (vector->list tiles) size)
+                       (* 4 size) 0
+                       sofar))
+         empty-image
+         (vector->list board)))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
@@ -158,16 +164,6 @@
                (posn-y posn)
                new-tile)
   board)
-
-;; draw-board : board? positive? -> image?
-;; Draws the given game board
-(define (draw-board board size)
-  (foldr (λ (tiles sofar)
-           (overlay/xy (draw-board-column (vector->list tiles) size)
-                       (* 4 size) 0
-                       sofar))
-         empty-image
-         (vector->list board)))
 
 ;; draw-board-column : (listof tile?) positive? [boolean?] -> image?
 ;; Draws a column of tiles

@@ -1,23 +1,25 @@
 #lang racket/base
 
-(provide ;board?
- ;make-board-with-holes
- make-even-board
- remove-tile!)
-
 (require 2htdp/image
          lang/posn
          racket/contract
          racket/format
-         racket/list
+         racket/lsist
+         racket/math
          racket/vector
          "tile.rkt")
 
+(provide (contract-out [board? (-> any/c boolean?)])
+         (contract-out [make-board-with-holes (-> posint? posint? (listof posn?) natural? board?)])
+         (contract-out [make-even-board (-> posint? posint? tile? board?)])
+         (contract-out [remove-tile! (-> posn? board? board?)])
+         (contract-out [valid-movements (-> posn? board? (listof posn?))]))
+
 ;; TODO:
-;; - provide with contracts
-;; - clarity comments
 ;; - test test test
 ;; - design task
+;; - readme
+;; - testme
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -89,7 +91,7 @@
       (set! random-tiles (rest random-tiles))))
   start-board)
 
-;; make-even-board : posint? posint? natural? natural? tile? -> board?
+;; make-even-board : posint? posint? tile? -> board?
 ;; Create a game board of the given width and height filled with the given tile
 (define (make-even-board width height tile)
   (build-vector width (λ (x) (make-vector height tile))))

@@ -52,7 +52,7 @@ A memo release describing the components we believe are needed to complete the F
 
 ## Testing
 
-Testing is handled by `raco`, Racket's command line tools. All tests can be run by running
+Testing is handled by `raco`, Racket's command line tools. All tests can be run by executing
 ```
 raco test .
 ```

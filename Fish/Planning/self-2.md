@@ -9,10 +9,10 @@ Under each of the following elements below, indicate below where your
 TAs can find:
 
 - the data description of tiles, including an interpretation:
-https://github.ccs.neu.edu/CS4500-F20/mineola/blob/a27166fc4aa75109955095c99ddb8a2bf58a4231/Fish/Common/tile.rkt#L51
+https://github.ccs.neu.edu/CS4500-F20/mineola/blob/a27166fc4aa75109955095c99ddb8a2bf58a4231/Fish/Common/tile.rkt#L51-L53
 
 - the data description of boards, include an interpretation:
-https://github.ccs.neu.edu/CS4500-F20/mineola/blob/a27166fc4aa75109955095c99ddb8a2bf58a4231/Fish/Common/board.rkt#L28
+https://github.ccs.neu.edu/CS4500-F20/mineola/blob/a27166fc4aa75109955095c99ddb8a2bf58a4231/Fish/Common/board.rkt#L28-L49
 
 - the functionality for removing a tile:
   - purpose:

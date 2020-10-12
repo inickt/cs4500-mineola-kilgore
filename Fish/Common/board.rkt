@@ -14,6 +14,7 @@
          (contract-out [make-even-board (-> posint? posint? tile? board?)])
          (contract-out [remove-tile! (-> posn? board? board?)])
          (contract-out [valid-movements (-> posn? board? (listof posn?))])
+         (contract-out [valid-tile? (-> posn? board? boolean?)])
          (contract-out [draw-board (-> board? positive? image?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
@@ -120,6 +121,12 @@
           (moves bottom-left-hexagon-posn)
           (moves top-left-hexagon-posn)))
 
+;; valid-tile? : posn? board -> boolean?
+;; Is the given posn on the board and not a hole?
+(define (valid-tile? posn board)
+  (and (posn-within-bounds? posn (board-columns board) (board-rows board))
+       (not (hole? (get-tile posn board)))))
+
 ;; draw-board : board? positive? -> image?
 ;; Draws the given game board
 (define (draw-board board size)
@@ -181,7 +188,7 @@
 ;; INVARIANT: length >= min-1s
 ;; Builds a list of tiles with no holes, a max size for each tile, and a minimum number of 1s
 (define (random-list-with-min-1s length min-1s max-tile-size)
-  (shuffle (append (build-list min-1s (λ (x) 1))
+  (shuffle (append (make-list min-1s 1)
                    ;; add1 shifts the output range from [0, max-tile-size) to [1, max-tile-size]
                    (build-list (- length min-1s) (λ (x) (add1 (random max-tile-size)))))))
 
@@ -189,8 +196,7 @@
 ;; Creates a list of valid movements on the board in a given direction
 (define (valid-movements-direction posn board mover)
   (define moved (mover posn))
-  (if (and (posn-within-bounds? moved (board-columns board) (board-rows board))
-           (not (hole? (get-tile moved board))))
+  (if (valid-tile? moved board)
       (cons moved (valid-movements-direction moved board mover))
       '()))
 
@@ -317,6 +323,15 @@
                                               (make-even-board 3 3 1))))
   (check-exn exn:fail? (λ () (valid-movements (make-posn 0 0)
                                               #(#(0 1) #(1 1)))))
+  ;; valid-tile?
+  (check-false (valid-tile? (make-posn -1 0) (make-even-board 3 3 1)))
+  (check-false (valid-tile? (make-posn 0 0) #(#(0 1) #(1 1))))
+  (check-true (valid-tile? (make-posn 0 1) #(#(0 1) #(1 1))))
+  ;; draw-board
+  (check-equal? (image-width (draw-board (make-even-board 3 2 1) 10))
+                130)
+  (check-equal? (image-height (draw-board (make-even-board 3 3 1) 10))
+                40)
  
   ;; Internal Helper Functions
   ;; get-tile
@@ -333,10 +348,10 @@
   ;; posn-within-bounds?
   (check-true (posn-within-bounds? (make-posn 0 0) 3 3))
   (check-true (posn-within-bounds? (make-posn 1 2) 3 3))
-  (check-true (not (posn-within-bounds? (make-posn -1 0) 3 3)))
-  (check-true (not (posn-within-bounds? (make-posn 0 -1) 3 3)))
-  (check-true (not (posn-within-bounds? (make-posn 3 0) 3 3)))
-  (check-true (not (posn-within-bounds? (make-posn 0 3) 3 3)))
+  (check-false (posn-within-bounds? (make-posn -1 0) 3 3))
+  (check-false (posn-within-bounds? (make-posn 0 -1) 3 3))
+  (check-false (posn-within-bounds? (make-posn 3 0) 3 3))
+  (check-false (posn-within-bounds? (make-posn 0 3) 3 3))
   ;; set-tile!
   (define test-set-tile!-board (make-even-board 3 3 1))
   (check-equal? (set-tile! (make-posn 0 0) 0 test-set-tile!-board)
@@ -346,11 +361,6 @@
   (check-equal? (set-tile! (make-posn 2 2) 3 test-set-tile!-board)
                 #(#(0 1 1) #(1 2 1) #(1 1 3)))
   (check-equal? test-set-tile!-board #(#(0 1 1) #(1 2 1) #(1 1 3)))
-  ;; draw-board
-  (check-equal? (image-width (draw-board (make-even-board 3 2 1) 10))
-                130)
-  (check-equal? (image-height (draw-board (make-even-board 3 3 1) 10))
-                40)
   ;; draw-board-column
   (check-equal? (image-width (draw-board-column '() 10))
                 0)

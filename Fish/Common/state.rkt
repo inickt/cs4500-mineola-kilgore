@@ -99,14 +99,39 @@
 
 (module+ test
   (require rackunit)
-
+  ;; Testing Helpers
+  ;; Provided Functions
   ;; place-penguin
+  
 
-
-  ;; INTERNAL
+  ;; Internal Helper Functions
   ;; shift-turn-order
+  (check-equal? (shift-turn-order '(black white)) '(white black))
+  (check-equal? (shift-turn-order '(black white red)) '(white red black))
+  (check-equal? (shift-turn-order '(black white red brown)) '(white red brown black))
 
   ;; penguins-per-player
 
   ;; add-penguin-posn
+  (check-equal? (add-penguin-posn
+                 (hash 'RED (list (make-posn 0 0))
+                       'WHITE (list (make-posn 1 1))
+                       'BROWN (list (make-posn 0 1)))
+                 'BLACK
+                 (make-posn 1 0))
+                (hash 'RED (list (make-posn 0 0))
+                      'WHITE (list (make-posn 1 1))
+                      'BROWN (list (make-posn 0 1))
+                      'BLACK (list (make-posn 1 0))))
+  (check-equal? (add-penguin-posn
+                 (hash 'RED (list (make-posn 2 4) (make-posn 0 3))
+                       'WHITE (list (make-posn 1 1) (make-posn 3 0))
+                       'BROWN (list (make-posn 0 1) (make-posn 3 3))
+                       'BLACK (list (make-posn 1 0) (make-posn 2 2)))
+                 'WHITE
+                 (make-posn 1 3))
+                (hash 'RED (list (make-posn 2 4) (make-posn 0 3))
+                      'WHITE (list (make-posn 1 3) (make-posn 1 1) (make-posn 3 0))
+                      'BROWN (list (make-posn 0 1) (make-posn 3 3))
+                      'BLACK (list (make-posn 1 0) (make-posn 2 2))))
   )

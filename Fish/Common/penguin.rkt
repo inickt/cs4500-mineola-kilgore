@@ -6,7 +6,8 @@
 
 (provide penguin?
          penguin=?
-         draw-penguin)
+         draw-penguin
+         PENGUIN-COLORS)
 
 ;; A Penguin is one of:
 ;; - 'red
@@ -19,6 +20,7 @@
 (define WHITE 'white)
 (define BROWN 'brown)
 (define BLACK 'black)
+(define PENGUIN-COLORS (list RED WHITE BROWN BLACK))
 (define penguin? (symbols RED WHITE BROWN BLACK))
 (define penguin=? symbol=?)
 

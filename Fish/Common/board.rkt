@@ -6,15 +6,12 @@
          racket/format
          racket/list
          racket/math
-         racket/vector
          "./tile.rkt")
 
 (provide (contract-out [board? (-> any/c boolean?)])
          (contract-out [make-board-with-holes (-> posint? posint? (listof posn?) natural? board?)])
          (contract-out [make-even-board (-> posint? posint? tile? board?)])
-         (contract-out [make-board-from-2d-list
-                        (-> (non-empty-listof (non-empty-listof tile?)) board?)])
-         (contract-out [remove-tile! (-> posn? board? board?)])
+         (contract-out [remove-tile (-> posn? board? board?)])
          (contract-out [valid-movements (-> posn? board? (listof posn?))])
          (contract-out [valid-tile? (-> posn? board? boolean?)])
          (contract-out [draw-board (-> board? positive? image?)]))
@@ -28,8 +25,8 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; A Board is a (vectorof (vectorof tile?)) and uses an offset coordinate system to represent a grid
-;; of tesselated hexagons.
+;; A Board is a (non-empty-listof (non-empty-listof tile?)) and uses an offset coordinate system to
+;; represent a grid of tesselated hexagons.
 ;;
 ;; The following is a visual representation of a 3x7 board:
 ;;     ______          ______          ______
@@ -54,11 +51,9 @@
 ;; board? : any/c -> boolean?
 ;; Is the given value a board?
 (define (board? value)
-  ((and/c (vectorof (and/c (vectorof tile? #:flat? #t)
-                           (not/c vector-empty?))
-                    #:flat? #t)
-          (not/c vector-empty?))
-   value))
+  (and ((non-empty-listof (non-empty-listof tile?)) value)
+       (let ((height (length (first value))))
+         (andmap (λ (lst) (= (length lst) height)) value))))
 
 ;; make-board-with-holes : posint? posint? (listof posn?) natural? -> board?
 ;; Creates a board with 
@@ -83,34 +78,23 @@
   (for ([x width])
     (for ([y height]
           #:unless (member (make-posn x y) filtered-holes))
-      (set-tile! (make-posn x y)
-                 (first random-tiles)
-                 start-board)
+      (set! start-board (set-tile (make-posn x y)
+                                  (first random-tiles)
+                                  start-board))
       (set! random-tiles (rest random-tiles))))
   start-board)
 
 ;; make-even-board : posint? posint? tile? -> board?
 ;; Create a game board of the given width and height filled with the given tile
 (define (make-even-board width height tile)
-  (build-vector width (λ (x) (make-vector height tile))))
+  (build-list width (λ (x) (make-list height tile))))
 
-;; make-board-from-2d-list : (non-empty-listof (non-empty-listof tile?)) -> board?
-;; Create a bord from a [column, row] indexed 2d list of Tiles
-(define (make-board-from-2d-list lolot)
-  (define height (length (first lolot)))
-  (when (not (andmap (λ (lst) (= (length lst) height)) lolot))
-    (raise-argument-error 'make-board-from-2d-list
-                          (~a "All columns are not equal height: " lolot)
-                          0))
-  (list->vector (map list->vector lolot)))
-
-;; remove-tile! : posn? board? -> board?
-;; SIDE EFFECTS: board
+;; remove-tile : posn? board? -> board?
 ;; Removes the tile at the given doubled position from the board
-(define (remove-tile! posn board)
+(define (remove-tile posn board)
   (when (hole? (get-tile posn board))
     (raise-argument-error 'remove-tile! (~a posn " is already a hole and cannot be removed") 0))
-  (set-tile! posn 0 board))
+  (set-tile posn 0 board))
 
 ;; valid-movements : posn? board? -> (listof posn?)
 ;; Creates a list of valid movements on the board, starting from the top and moving clockwise
@@ -143,11 +127,11 @@
 ;; Draws the given game board
 (define (draw-board board size)
   (foldr (λ (tiles sofar)
-           (overlay/xy (draw-board-column (vector->list tiles) size)
+           (overlay/xy (draw-board-column tiles size)
                        (* 4 size) 0
                        sofar))
          empty-image
-         (vector->list board)))
+         board))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -155,18 +139,18 @@
 ;; get-tile : posn? board? -> tile?
 ;; Returns the tile at the given (valid) position on the board
 (define (get-tile posn board)
-  (vector-ref (vector-ref board (posn-x posn))
-              (posn-y posn)))
+  (list-ref (list-ref board (posn-x posn))
+            (posn-y posn)))
 
 ;; board-columns : board? -> posint?
 ;; Number of columns in the board
 (define (board-columns board)
-  (vector-length board))
+  (length board))
 
 ;; board-rows : board? -> posint?
 ;; Number of rows in the board
 (define (board-rows board)
-  (vector-length (vector-ref board 0)))
+  (length (first board)))
 
 ;; posn-within-bounds? : posn? natural? natural? -> boolean?
 ;; Is the given posn-x on [0, width) and posn-y on [0, height)?
@@ -176,13 +160,16 @@
        (>= (posn-y posn) 0)
        (< (posn-y posn) height)))
 
-;; set-tile! : posn? tile? board? -> board?
+;; set-tile : posn? tile? board? -> board?
 ;; Sets the tile at the given posn on the board
-(define (set-tile! posn new-tile board)
-  (vector-set! (vector-ref board (posn-x posn))
-               (posn-y posn)
-               new-tile)
-  board)
+(define (set-tile posn new-tile board)
+  (for/list ([col board]
+             [col-idx (length board)])
+    (for/list ([row col]
+               [row-idx (length col)])
+      (if (and (= (posn-x posn) col-idx) (= (posn-y posn) row-idx))
+          new-tile
+          (get-tile (make-posn col-idx row-idx) board)))))
 
 ;; draw-board-column : (listof tile?) positive? [boolean?] -> image?
 ;; Draws a column of tiles
@@ -256,24 +243,23 @@
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
-
 (module+ test
   (require rackunit)
 
   ;; Testing Helper Functions
   (define (board-to-flat-list board)
-    (foldr append '() (vector->list (vector-map vector->list board))))
+    (foldr append '()  board))
   
   ;; Provided Functions
   ;; make-board-with-holes
-  (check-equal? (make-board-with-holes 1 1 '() 1) #(#(1)))
-  (check-equal? (make-board-with-holes 1 1 (list (make-posn 0 0)) 0) #(#(0)))
+  (check-equal? (make-board-with-holes 1 1 '() 1) '((1)))
+  (check-equal? (make-board-with-holes 1 1 (list (make-posn 0 0)) 0) '((0)))
   (check-equal? (make-board-with-holes 3 3 (list (make-posn 0 0)
                                                  (make-posn 0 2)
                                                  (make-posn 1 1)
                                                  (make-posn 2 1))
                                        5)
-                #(#(0 1 0) #(1 0 1) #(1 0 1)))
+                '((0 1 0) (1 0 1) (1 0 1)))
   (check-equal? (board-columns (make-board-with-holes 10 9 '() 15)) 10)
   (check-equal? (board-rows (make-board-with-holes 10 9 '() 15)) 9)
   (check-equal?
@@ -289,37 +275,31 @@
   (check-exn exn:fail? (λ () (make-board-with-holes 1 1 '() 2)))
   (check-exn exn:fail? (λ () (make-board-with-holes 3 3 (list (make-posn 1 1)) 9)))
   ;; make-even-board
-  (check-equal? (make-even-board 1 1 2) #(#(2)))
+  (check-equal? (make-even-board 1 1 2) '((2)))
   (check-equal? (make-even-board 2 3 1)
-                #(#(1 1 1)
-                  #(1 1 1)))
+                '((1 1 1)
+                  (1 1 1)))
   (check-equal? (make-even-board 3 2 4)
-                #(#(4 4)
-                  #(4 4)
-                  #(4 4)))
-  ;; make-board-from-2d-list
-  (check-equal? (make-board-from-2d-list '((1 0 1) (3 4 5)))
-                #(#(1 0 1) #(3 4 5)))
-  (check-equal? (make-board-from-2d-list '((1 1) (1 1) (1 1) (1 1)))
-                (make-even-board 4 2 1))
-  (check-exn exn:fail? (λ () (make-board-from-2d-list '(() (1)))))
-  ;; remove-tile!
-  (check-equal? (remove-tile! (make-posn 0 0) (make-even-board 2 3 1))
-                #(#(0 1 1)
-                  #(1 1 1)))
-  (check-equal? (remove-tile! (make-posn 0 1) (make-even-board 2 3 1))
-                #(#(1 0 1)
-                  #(1 1 1)))
-  (check-equal? (remove-tile! (make-posn 2 1) (make-even-board 3 2 2))
-                #(#(2 2)
-                  #(2 2)
-                  #(2 0)))
-  (check-exn exn:fail? (λ () (remove-tile! (make-posn 2 1)
-                                           #(#(2 2)
-                                             #(2 2)
-                                             #(2 0)))))
+                '((4 4)
+                  (4 4)
+                  (4 4)))
+  ;; remove-tile
+  (check-equal? (remove-tile (make-posn 0 0) (make-even-board 2 3 1))
+                '((0 1 1)
+                  (1 1 1)))
+  (check-equal? (remove-tile (make-posn 0 1) (make-even-board 2 3 1))
+                '((1 0 1)
+                  (1 1 1)))
+  (check-equal? (remove-tile (make-posn 2 1) (make-even-board 3 2 2))
+                '((2 2)
+                  (2 2)
+                  (2 0)))
+  (check-exn exn:fail? (λ () (remove-tile (make-posn 2 1)
+                                          '((2 2)
+                                            (2 2)
+                                            (2 0)))))
   ;; valid-movements
-  (check-equal? (valid-movements (make-posn 1 2) #(#(1 1 1 1 1) #(1 1 1 1 1)))
+  (check-equal? (valid-movements (make-posn 1 2) '((1 1 1 1 1) (1 1 1 1 1)))
                 (list (make-posn 1 0)
                       (make-posn 1 1)
                       (make-posn 1 3)
@@ -328,41 +308,41 @@
                       (make-posn 0 4)
                       (make-posn 0 1)
                       (make-posn 0 0)))
-  (check-equal? (valid-movements (make-posn 0 2) #(#(1 1 1 1 1) #(1 1 1 1 1)))
+  (check-equal? (valid-movements (make-posn 0 2) '((1 1 1 1 1) (1 1 1 1 1)))
                 (list (make-posn 0 0)
                       (make-posn 0 1)
                       (make-posn 1 0)
                       (make-posn 0 3)
                       (make-posn 1 4)
                       (make-posn 0 4)))
-  (check-equal? (valid-movements (make-posn 1 2) #(#(0 0 0 0 0) #(0 0 1 0 0)))
+  (check-equal? (valid-movements (make-posn 1 2) '((0 0 0 0 0) (0 0 1 0 0)))
                 '())
   (check-exn exn:fail? (λ () (valid-movements (make-posn 4 4)
                                               (make-even-board 3 3 1))))
   (check-exn exn:fail? (λ () (valid-movements (make-posn 0 0)
-                                              #(#(0 1) #(1 1)))))
+                                              '((0 1) (1 1)))))
   ;; valid-tile?
   (check-false (valid-tile? (make-posn -1 0) (make-even-board 3 3 1)))
-  (check-false (valid-tile? (make-posn 0 0) #(#(0 1) #(1 1))))
-  (check-true (valid-tile? (make-posn 0 1) #(#(0 1) #(1 1))))
+  (check-false (valid-tile? (make-posn 0 0) '((0 1) (1 1))))
+  (check-true (valid-tile? (make-posn 0 1) '((0 1) (1 1))))
   ;; draw-board
   (check-equal? (image-width (draw-board (make-even-board 3 2 1) 10))
                 130)
   (check-equal? (image-height (draw-board (make-even-board 3 3 1) 10))
                 40)
- 
+  
   ;; Internal Helper Functions
   ;; get-tile
-  (check-equal? (get-tile (make-posn 0 0) #(#(0 0) #(0 0))) 0)
-  (check-equal? (get-tile (make-posn 0 1) #(#(0 1) #(2 3))) 1)
-  (check-equal? (get-tile (make-posn 1 0) #(#(0 1) #(2 3))) 2)
-  (check-equal? (get-tile (make-posn 1 1) #(#(0 1) #(2 3))) 3)
+  (check-equal? (get-tile (make-posn 0 0) '((0 0) (0 0))) 0)
+  (check-equal? (get-tile (make-posn 0 1) '((0 1) (2 3))) 1)
+  (check-equal? (get-tile (make-posn 1 0) '((0 1) (2 3))) 2)
+  (check-equal? (get-tile (make-posn 1 1) '((0 1) (2 3))) 3)
   ;; board-columns
-  (check-equal? (board-columns #(#())) 1)
-  (check-equal? (board-columns #(#(1 2 3) #(1 2 3))) 2)
+  (check-equal? (board-columns '(())) 1)
+  (check-equal? (board-columns '((1 2 3) (1 2 3))) 2)
   ;; board-rows
-  (check-equal? (board-rows #(#())) 0)
-  (check-equal? (board-rows #(#(1 2 3) #(1 2 3))) 3)
+  (check-equal? (board-rows '(())) 0)
+  (check-equal? (board-rows '((1 2 3) (1 2 3))) 3)
   ;; posn-within-bounds?
   (check-true (posn-within-bounds? (make-posn 0 0) 3 3))
   (check-true (posn-within-bounds? (make-posn 1 2) 3 3))
@@ -370,15 +350,14 @@
   (check-false (posn-within-bounds? (make-posn 0 -1) 3 3))
   (check-false (posn-within-bounds? (make-posn 3 0) 3 3))
   (check-false (posn-within-bounds? (make-posn 0 3) 3 3))
-  ;; set-tile!
-  (define test-set-tile!-board (make-even-board 3 3 1))
-  (check-equal? (set-tile! (make-posn 0 0) 0 test-set-tile!-board)
-                #(#(0 1 1) #(1 1 1) #(1 1 1)))
-  (check-equal? (set-tile! (make-posn 1 1) 2 test-set-tile!-board)
-                #(#(0 1 1) #(1 2 1) #(1 1 1)))
-  (check-equal? (set-tile! (make-posn 2 2) 3 test-set-tile!-board)
-                #(#(0 1 1) #(1 2 1) #(1 1 3)))
-  (check-equal? test-set-tile!-board #(#(0 1 1) #(1 2 1) #(1 1 3)))
+  ;; set-tile
+  (define test-set-tile-board (make-even-board 3 3 1))
+  (check-equal? (set-tile (make-posn 0 0) 0 test-set-tile-board)
+                '((0 1 1) (1 1 1) (1 1 1)))
+  (check-equal? (set-tile (make-posn 1 1) 2 test-set-tile-board)
+                '((1 1 1) (1 2 1) (1 1 1)))
+  (check-equal? (set-tile (make-posn 2 2) 3 test-set-tile-board)
+                '((1 1 1) (1 1 1) (1 1 3)))
   ;; draw-board-column
   (check-equal? (image-width (draw-board-column '() 10))
                 0)
@@ -439,36 +418,36 @@
                 (make-posn -1 1))
   ;; valid-movements-direction
   (check-equal? (valid-movements-direction (make-posn 0 0)
-                                           #(#(1))
+                                           '((1))
                                            top-hexagon-posn)
                 '())
   (check-equal? (valid-movements-direction (make-posn 1 4)
-                                           #(#(1 1 1 1 1)
-                                             #(1 1 1 1 1))
+                                           '((1 1 1 1 1)
+                                             (1 1 1 1 1))
                                            bottom-right-hexagon-posn)
                 '())
   (check-equal? (valid-movements-direction (make-posn 1 4)
-                                           #(#(1 2 3 4 1)
-                                             #(1 0 1 0 1))
+                                           '((1 2 3 4 1)
+                                             (1 0 1 0 1))
                                            top-right-hexagon-posn)
                 '())
   (check-equal? (valid-movements-direction (make-posn 1 0)
-                                           #(#(1 3 3 4 0)
-                                             #(1 0 0 2 0))
+                                           '((1 3 3 4 0)
+                                             (1 0 0 2 0))
                                            bottom-left-hexagon-posn)
                 (list (make-posn 0 1) (make-posn 0 2)))
   (check-equal? (valid-movements-direction (make-posn 1 0)
-                                           #(#(1 3 3 4 0)
-                                             #(1 0 0 2 0))
+                                           '((1 3 3 4 0)
+                                             (1 0 0 2 0))
                                            bottom-hexagon-posn)
                 '())
   (check-equal? (valid-movements-direction (make-posn 0 0)
-                                           #(#(1 3 3 4 0)
-                                             #(1 0 0 2 0))
+                                           '((1 3 3 4 0)
+                                             (1 0 0 2 0))
                                            bottom-hexagon-posn)
                 (list (make-posn 0 2)))
   (check-equal? (valid-movements-direction (make-posn 0 1)
-                                           #(#(1 3 3 4 0)
-                                             #(1 0 0 2 0))
+                                           '((1 3 3 4 0)
+                                             (1 0 0 2 0))
                                            top-left-hexagon-posn)
                 (list (make-posn 0 0))))

@@ -11,37 +11,35 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
-(define-struct state [board penguins players removed-players order])
+(define-struct state [board penguins players order])
 (define penguins? (hash/c penguin? (listof posn?)))
 ;; A GameState is a:
-;; (make-state board? penguins? (listof player?) (listof player?) (non-empty-listof penguin?))
+;; (make-state board? penguins? (listof player?) (non-empty-listof penguin?))
 ;; And represents a fish game state, containing:
 ;; - the current board state
 ;; - the current positions of penguins on the board
-;; - the current players and their penguin color
-;; - players removed from the game
+;; - the current players and their penguins
 ;; - the order of the players' turns, denoted by their color
-;; INVARIANT: the length of players and removed-players is the same the whole duration of the game
 ;; INVARIANT: state-order is an ordered list, with the first being the current
 ;;            players turn, second being the turn after the first, and so on...
 
-(define-struct player [age color score])
-;; A Player is a (make-player natural? penguin-color? natural?)
-;; and represents a player in a fish game with their age in years, penguin color, and score
+(define-struct player [age color])
+;; A Player is a (make-player natural? penguin-color?)
+;; and represents a player in a fish game with their age in years and penguin color
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; create-game : (list natural? ...) board? -> state?
+;; create-game : [2,4] ... -> state?
 ;;
-(define (create-game player-ages board)
-  (define num-players (length player-ages))
-  (define colors (take (shuffle PENGUIN-COLORS) num-players))
-  (define players (map make-player (sort player-ages <) colors (make-list num-players 0)))
-  (make-state board #hash() players '() (map player-color players)))
+#;
+(define (create-game players ...)
+  ...)
 
 ;; place-penguin : posn? state? -> state?
 ;; Places the current player's penguin on the board at the given position.
+;; NOTE: Does not check number of penguins a player has placed. We think this should be
+;;       handled by the game rules
 (define (place-penguin posn state)
   (when (not (valid-tile? posn (state-board state)))
     (raise-argument-error 'place-penguin
@@ -51,13 +49,6 @@
     (raise-argument-error 'place-penguin
                           (~a "There is already a penguin at " posn)
                           0))
-  (when (>= (length (hash-ref (state-penguins state)
-                              (first (state-order state))
-                              '()))
-            (penguins-per-player state))
-    (raise-argument-error 'place-penguin
-                          (~a "The current player has already placed all of their penguins")
-                          1))
   (make-state (state-board state)
               (add-penguin-posn (state-penguins state) (first (state-order state)) posn)
               (state-players state)
@@ -91,11 +82,9 @@
 (define (shift-turn-order order)
   (append (rest order) (list (first order))))
 
-;; penguins-per-player : state? -> natural?
-;; Total numbers of penguins a player can have in a game 
-(define (penguins-per-player state)
-  (- 6 (+ (length (state-players state))
-          (length (state-removed-players state)))))
+;; penguins-per-player : (listof player?) -> natural?
+(define (penguins-per-player players)
+  (- 6 (length players)))
 
 ;; add-penguin-posn : penguins? penguin? posn?  -> penguins?
 ;; Adds the given position to the given penguin's positions

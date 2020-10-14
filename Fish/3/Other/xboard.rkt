@@ -3,7 +3,6 @@
 (require json
          lang/posn
          racket/list
-         racket/vector
          "../../Common/board.rkt")
 
 (provide xboard)

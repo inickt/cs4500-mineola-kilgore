@@ -67,7 +67,7 @@
                   (λ () (with-input-from-string (build-example 0 0 board-str-2) xboard)))
                 "3")
   (check-equal? (with-output-to-string
-                  (λ () (with-input-from-string (build-example 1 1 board-str-2) xboard)))
+                  (λ () (with-input-from-string (build-example 1 0 board-str-2) xboard)))
                 "4")
   (check-equal? (with-output-to-string
                   (λ () (with-input-from-string (build-example 0 2 board-str-2) xboard)))

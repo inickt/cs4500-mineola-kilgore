@@ -7,11 +7,13 @@
          racket/list
          racket/math
          racket/vector
-         "tile.rkt")
+         "./tile.rkt")
 
 (provide (contract-out [board? (-> any/c boolean?)])
          (contract-out [make-board-with-holes (-> posint? posint? (listof posn?) natural? board?)])
          (contract-out [make-even-board (-> posint? posint? tile? board?)])
+         (contract-out [make-board-from-2d-list
+                        (-> (non-empty-listof (non-empty-listof tile?)) board?)])
          (contract-out [remove-tile! (-> posn? board? board?)])
          (contract-out [valid-movements (-> posn? board? (listof posn?))])
          (contract-out [valid-tile? (-> posn? board? boolean?)])
@@ -91,6 +93,16 @@
 ;; Create a game board of the given width and height filled with the given tile
 (define (make-even-board width height tile)
   (build-vector width (λ (x) (make-vector height tile))))
+
+;; make-board-from-2d-list : (non-empty-listof (non-empty-listof tile?)) -> board?
+;; Create a bord from a [column, row] indexed 2d list of Tiles
+(define (make-board-from-2d-list lolot)
+  (define height (length (first lolot)))
+  (when (not (andmap (λ (lst) (= (length lst) height)) lolot))
+    (raise-argument-error 'make-board-from-2d-list
+                          (~a "All columns are not equal height: " lolot)
+                          0))
+  (list->vector (map list->vector lolot)))
 
 ;; remove-tile! : posn? board? -> board?
 ;; SIDE EFFECTS: board
@@ -285,6 +297,12 @@
                 #(#(4 4)
                   #(4 4)
                   #(4 4)))
+  ;; make-board-from-2d-list
+  (check-equal? (make-board-from-2d-list '((1 0 1) (3 4 5)))
+                #(#(1 0 1) #(3 4 5)))
+  (check-equal? (make-board-from-2d-list '((1 1) (1 1) (1 1) (1 1)))
+                (make-even-board 4 2 1))
+  (check-exn exn:fail? (λ () (make-board-from-2d-list '(() (1)))))
   ;; remove-tile!
   (check-equal? (remove-tile! (make-posn 0 0) (make-even-board 2 3 1))
                 #(#(0 1 1)

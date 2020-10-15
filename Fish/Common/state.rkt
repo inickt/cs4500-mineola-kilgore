@@ -6,6 +6,7 @@
          racket/format
          racket/list
          racket/math
+         "tile.rkt"
          "board.rkt"
          "penguin.rkt")
 
@@ -89,18 +90,18 @@
 ;; TODO draw players
 
 ;; draw-state : state? natural? -> image?
-;; Draws a game state at the given width
-(define (draw-state state width)
-  (define tile-size 50)
+;; Draws a game state at the given tile size
+;; TODO: use width instead of tile size
+(define (draw-state state tile-size)
   (define board-image (draw-board (state-board state) tile-size))
-  (foldr (λ (pair image)
-           (define pixel-posn (board-posn-to-pixel-posn (second pair) tile-size))
-           (place-image (draw-penguin (first pair) 40)
-                        (posn-x pixel-posn)
-                        (posn-y pixel-posn)
-                        image))
-         board-image
-         (hash->list (state-penguins state))))
+  (define penguin-height (* 3/4 (tile-height tile-size)))
+  (define convert-posn (λ (posn) (board-posn-to-pixel-posn posn tile-size)))
+  (for/fold ([image board-image])
+            ([(penguin posns) (in-hash (state-penguins state))])
+    (define penguin-image (draw-penguin penguin penguin-height))
+    (place-images (make-list (length posns) penguin-image)
+                  (map convert-posn posns)
+                  image)))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL

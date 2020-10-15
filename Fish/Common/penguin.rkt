@@ -4,10 +4,13 @@
          racket/bool
          racket/contract)
 
-(provide penguin?
-         penguin=?
-         draw-penguin
-         PENGUIN-COLORS)
+(provide (contract-out [penguin? (-> any/c boolean?)])
+         (contract-out [penguin=? (-> penguin? penguin? boolean?)])
+         (contract-out [draw-penguin (-> penguin? positive? image?)])
+         (contract-out [PENGUIN-COLORS (listof penguin?)]))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; DATA DEFINITIONS
 
 ;; A Penguin is one of:
 ;; - 'red
@@ -23,12 +26,17 @@
 (define PENGUIN-COLORS (list RED WHITE BROWN BLACK))
 (define penguin? (symbols RED WHITE BROWN BLACK))
 (define penguin=? symbol=?)
+;; +-------------------------------------------------------------------------------------------------+
+;; PROVIDED
 
 ;; draw-penguin : penguin? positive? -> image?
 ;; Creates an image a penguin with the given height
 (define (draw-penguin penguin height)
   (define image (penguin-image penguin))
   (scale (/ height (image-height image)) image))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL
 
 (define PENGUIN-SECONDARY-COLOR 'white)
 (define PENGUIN-ACCENT-COLOR 'yellow)
@@ -75,7 +83,7 @@
 (define (penguin-color-map penguin)
   (cond [(penguin=? penguin WHITE) 'gainsboro]
         [(penguin=? penguin BROWN) 'peru]
-        [(penguin=? penguin RED) 'firebrick]
+        [(penguin=? penguin RED) 'crimson]
         [(penguin=? penguin BLACK) BLACK]))
 
 ;; +-------------------------------------------------------------------------------------------------+

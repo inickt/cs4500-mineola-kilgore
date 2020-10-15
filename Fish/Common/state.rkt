@@ -110,7 +110,7 @@
 ;; penguins-to-holes : state? -> board?
 ;; removes the positions of the penguins from the board, replacing them with holes
 (define (penguins-to-holes state)
-  (define penguin-list (foldr append '() (hash-values (state-penguins state))))
+  (define penguin-list (apply append (hash-values (state-penguins state))))
   (foldr remove-tile (state-board state) penguin-list))
 
 ;; +-------------------------------------------------------------------------------------------------+

@@ -21,7 +21,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPER FUNCTIONS
 
-;; transpose-matrix : (non-empty-listof (non-empty-listof any?)) -> (listof (listof any?))
+;; transpose-matrix : (non-empty-listof (non-empty-listof any/c)) -> (listof (listof any/c))
 ;; Transposes a matrix represented as a 2d list
 (define (transpose-matrix mat)
   (apply map list mat))

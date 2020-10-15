@@ -1,10 +1,13 @@
 ### Data Representation
-A `FishGame` will be represented in data as a struct containing:
-
-- A `State`, which has been built as a struct of Board, Players, Penguins, and an Order.
-- A `RulesComponent`, which 
+A FishGame will be represented in data by a struct of State and Phase. 
 
 
 
 
 ### External Interface
+The Game will provide two API interfaces externally for users to interact with:
+- The Game interface, which provides functions to interact with a Fish Game.
+- The Rulebook interface, which provides functions to ask about the legality of any move.
+
+The Game interface will provide the following functions:
+- 

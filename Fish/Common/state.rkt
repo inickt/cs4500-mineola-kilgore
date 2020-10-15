@@ -33,10 +33,6 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-(define listof-2/3/4-natural? (or/c (list/c natural? natural?)
-                                    (list/c natural? natural? natural?)
-                                    (list/c natural? natural? natural? natural?)))
-
 ;; create-game : [2-4] board? -> state?
 ;; Create a game state with a given number of players and the given board
 ;; Players are created and randomly assigned colors, and the turn order TODO
@@ -45,6 +41,8 @@
 
 ;; place-penguin : posn? state? -> state?
 ;; Places the current player's penguin on the board at the given position.
+;; NOTE: Does not check number of penguins a player has placed. We think this should be
+;;       handled by the game rules
 (define (place-penguin posn state)
   (when (not (valid-tile? posn (state-board state)))
     (raise-argument-error 'place-penguin
@@ -54,13 +52,6 @@
     (raise-argument-error 'place-penguin
                           (~a "There is already a penguin at " posn)
                           0))
-  (when (>= (length (hash-ref (state-penguins state)
-                              (first (state-order state))
-                              '()))
-            (penguins-per-player state))
-    (raise-argument-error 'place-penguin
-                          (~a "The current player has already placed all of their penguins")
-                          1))
   (make-state (state-board state)
               (add-penguin-posn (state-penguins state) (first (state-order state)) posn)
               (state-players state)))

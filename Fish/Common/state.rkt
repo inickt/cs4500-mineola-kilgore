@@ -6,6 +6,8 @@
          racket/format
          racket/list
          racket/math
+         racket/random
+         racket/set
          "board.rkt"
          "penguin.rkt"
          "tile.rkt")
@@ -39,7 +41,7 @@
 ;; Players are randomly assigned colors, and the turn order is set by the order of the player list.
 ;; TODO: tests
 (define (create-game num-players board)
-  (make-state board #hash() (take (shuffle PENGUIN-COLORS) num-players)))
+  (make-state board #hash() (random-sample PENGUIN-COLORS num-players)))
 
 ;; place-penguin : penguin? posn? state? -> state?
 ;; Places a penguin on the board at the given position.
@@ -157,6 +159,24 @@
   #;
   (check-equal? (move-penguin )
                 ...)
+
+  ;; create-game
+  (check-equal? (state-board (create-game 2 (make-even-board 3 3 2)))
+                (make-even-board 3 3 2))
+  (check-equal? (state-board (create-game 4 (make-even-board 3 3 2)))
+                (make-even-board 3 3 2))
+  (check-equal? (state-penguins (create-game 3 (make-even-board 3 3 2)))
+                #hash())
+  (check-equal? (length (state-players (create-game 2 (make-even-board 3 3 2))))
+                2)
+  (check-equal? (length (state-players (create-game 3 (make-even-board 3 3 2))))
+                3)
+  (check-equal? (length (state-players (create-game 4 (make-even-board 3 3 2))))
+                4)
+  (check-true (subset? (list->set (state-players (create-game 4 (make-even-board 3 3 2))))
+                      PENGUIN-COLORS))
+
+  
   ;; can-move?
   (check-equal?
    (can-move? 'red (make-state-all-red 1 1 (list (make-posn 0 0))))

@@ -2,12 +2,13 @@
 
 (require 2htdp/image
          racket/bool
-         racket/contract)
+         racket/contract
+         racket/set)
 
 (provide (contract-out [penguin? (-> any/c boolean?)])
          (contract-out [penguin=? (-> penguin? penguin? boolean?)])
          (contract-out [draw-penguin (-> penguin? positive? image?)])
-         (contract-out [PENGUIN-COLORS (listof penguin?)]))
+         (contract-out [PENGUIN-COLORS (set/c penguin?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -23,7 +24,7 @@
 (define WHITE 'white)
 (define BROWN 'brown)
 (define BLACK 'black)
-(define PENGUIN-COLORS (list RED WHITE BROWN BLACK))
+(define PENGUIN-COLORS (set RED WHITE BROWN BLACK))
 (define penguin? (symbols RED WHITE BROWN BLACK))
 (define penguin=? symbol=?)
 ;; +-------------------------------------------------------------------------------------------------+

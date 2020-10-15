@@ -8,6 +8,9 @@
 compiled/
 *.zo
 
+# Code coverage
+coverage/
+
 # Dependency tracking files
 *.dep
 

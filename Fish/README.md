@@ -62,3 +62,13 @@ raco test Common
 ```
 would run all tests included in the Common directory.
 
+We strive to maintain 100% code coverage in our tests. This can be verified by installing the `cover` package using
+```
+racko pkg install cover
+```
+It can be used similar to `raco test`, i.e.
+```
+raco cover .
+```
+would generage a `coverage/` folder in the current directory with `index.html` containing the coverage results.
+

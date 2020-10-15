@@ -55,16 +55,28 @@
               (state-players state)))
 
 ;; move-pegnuin : penguin? posn? posn? state? -> state?
-;;
-#;
-(define (move-penguin penguin from to state)
-  ;; errors
-  ;; is valid from posn? / is a penguin there?
-  ;; is to posn in possible moves?
+;; Moves the penguin from from-posn to to-posn, if the move is valid
+(define (move-penguin penguin from-posn to-posn state)
+  (when (not (valid-tile? from-posn (state-board state)))
+    (raise-arguments-error 'move-penguin
+                           "The selected FROM position is not valid"
+                           "from-posn" from-posn))
+  (when (boolean? (hash-ref (state-penguins state) penguin #f))
+    (raise-arguments-error 'move-penguin
+                           "The selected FROM position does not have a penguin"
+                           "from-posn" from-posn))
+  (when (or (not (member to-posn (valid-movements from-posn (state-board state))))
+            (member to-posn (apply append (hash-values (state-penguins state)))))
+    (raise-arguments-error 'move-penguin
+                           "Moving from from-posn to to-posn is not a valid move"
+                           "from-posn" from-posn
+                           "to-posn" to-posn))
   
-  ;; update posn
-  ;; remove tile
-  ...)
+  (make-state (remove-tile from-posn (state-board state))
+              (add-penguin-posn
+               (remove-penguin-posn (state-penguins state) penguin from-posn)
+               penguin to-posn)
+              (state-players state)))
 
 ;; can-move? : penguin? state? -> boolean?
 ;; Can any of a player's penguins move?
@@ -107,6 +119,20 @@
                (λ (posns) (cons posn posns))
                '()))
 
+;; remove-penguin-posn : penguins? penguin? posn?  -> penguins?
+;; Removes the given position from the given penguin's positions
+(define (remove-penguin-posn penguin-posns penguin posn)
+  (when (or (not (member penguin (hash-keys penguin-posns)))
+            (not (member posn (hash-ref penguin-posns penguin))))
+    (raise-arguments-error 'remove-penguin-posn
+                           "penguin color does not have penguin at given posn"
+                           "penguin color" penguin
+                           "posn" posn))
+  (hash-update penguin-posns
+               penguin
+               (λ (posns) (remove posn posns))
+               '()))
+
 ;; penguins-to-holes : state? -> board?
 ;; removes the positions of the penguins from the board, replacing them with holes
 (define (penguins-to-holes state)
@@ -128,8 +154,17 @@
                 '(red)))
   
   ;; Provided Functions
-  ;; place-penguin
-
+  ;; place-penguin (penguin from to state) (error on invalid from, no penguin on from, invalid move)
+  (define move-penguin-test-state
+    (make-state '((1 1 1 1) (1 1 1 1) (1 1 1 1))
+                (hash-set
+                 (hash-set
+                  (hash-set #hash() 'red (list (make-posn 0 0) (make-posn 0 1) (make-posn 2 1)))
+                  'black (list (make-posn 1 0) (make-posn 1 2)))
+                 'white (list (make-posn 2 0) (make-posn 2 3)))
+                '(red white black)))
+  (check-equal? (move-penguin )
+                ...)
   ;; can-move?
   (check-equal?
    (can-move? 'red (make-state-all-red 1 1 (list (make-posn 0 0))))
@@ -183,21 +218,46 @@
                       'WHITE (list (make-posn 1 3) (make-posn 1 1) (make-posn 3 0))
                       'BROWN (list (make-posn 0 1) (make-posn 3 3))
                       'BLACK (list (make-posn 1 0) (make-posn 2 2))))
+  ;; remove-penguin-posn
+  (check-equal? (remove-penguin-posn
+                 (hash 'RED (list (make-posn 0 0))
+                       'WHITE (list (make-posn 1 1))
+                       'BROWN (list (make-posn 0 1)))
+                 'RED
+                 (make-posn 0 0))
+                (hash 'RED (list)
+                      'WHITE (list (make-posn 1 1))
+                      'BROWN (list (make-posn 0 1))))
+  (check-equal? (remove-penguin-posn
+                 (hash 'RED (list (make-posn 2 4) (make-posn 0 3))
+                       'WHITE (list (make-posn 1 1) (make-posn 3 0))
+                       'BROWN (list (make-posn 0 1) (make-posn 3 3))
+                       'BLACK (list (make-posn 1 0) (make-posn 2 2)))
+                 'WHITE
+                 (make-posn 1 1))
+                (hash 'RED (list (make-posn 2 4) (make-posn 0 3))
+                      'WHITE (list (make-posn 3 0))
+                      'BROWN (list (make-posn 0 1) (make-posn 3 3))
+                      'BLACK (list (make-posn 1 0) (make-posn 2 2))))
+  (check-exn exn:fail? (λ () (remove-penguin-posn
+                              (hash 'RED (list (make-posn 0 0))
+                                    'WHITE (list (make-posn 1 1))
+                                    'BROWN (list (make-posn 0 1)))
+                              'RED
+                              (make-posn 1 1))))
+  (check-exn exn:fail? (λ () (remove-penguin-posn
+                              (hash 'RED (list (make-posn 0 0))
+                                    'WHITE (list (make-posn 1 1))
+                                    'BROWN (list (make-posn 0 1)))
+                              'BLACK
+                              (make-posn 1 0))))
   ;; penguins-to-holes
   (check-equal? (penguins-to-holes
                  (make-state-all-red 3 3 (list (make-posn 0 0) (make-posn 1 2) (make-posn 2 2))))
                 '((0 1 1) (1 1 0) (1 1 0)))
   (check-equal? (penguins-to-holes
-                 (make-state-all-red 5 4 (list (make-posn 0 0)
-                                               (make-posn 0 1)
-                                               (make-posn 0 2)
-                                               (make-posn 1 0)
-                                               (make-posn 1 1)
-                                               (make-posn 1 2)
-                                               (make-posn 2 2)
-                                               (make-posn 3 0)
-                                               (make-posn 3 2)
-                                               (make-posn 3 3)
-                                               (make-posn 4 3))))
-                '((0 0 0 1) (0 0 0 1) (1 1 0 1) (0 1 0 0) (1 1 1 0)))
-  )
+                 (make-state-all-red 5 4 (list (make-posn 0 0) (make-posn 0 1) (make-posn 0 2)
+                                               (make-posn 1 0) (make-posn 1 1) (make-posn 1 2)
+                                               (make-posn 2 2) (make-posn 3 0) (make-posn 3 2)
+                                               (make-posn 3 3) (make-posn 4 3))))
+                '((0 0 0 1) (0 0 0 1) (1 1 0 1) (0 1 0 0) (1 1 1 0))))

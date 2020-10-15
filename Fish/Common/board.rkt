@@ -94,16 +94,16 @@
 ;; Removes the tile at the given doubled position from the board
 (define (remove-tile posn board)
   (when (hole? (get-tile posn board))
-    (raise-argument-error 'remove-tile! (~a posn " is already a hole and cannot be removed") 0))
+    (raise-arguments-error 'remove-tile! "posn is already a hole and cannot be removed" "posn" posn))
   (set-tile posn 0 board))
 
 ;; valid-movements : posn? board? -> (listof posn?)
 ;; Creates a list of valid movements on the board, starting from the top and moving clockwise
 (define (valid-movements posn board)
   (when (not (posn-within-bounds? posn (board-columns board) (board-rows board)))
-    (raise-argument-error 'valid-movements
-                          (~a posn " not within the bounds of the given board")
-                          0))
+    (raise-arguments-error 'valid-movements
+                           "posn not within the bounds of the given board"
+                           "posn" posn))
   (define (moves mover)
     (valid-movements-direction posn board mover))
   (append (moves top-hexagon-posn)

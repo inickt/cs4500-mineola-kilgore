@@ -231,18 +231,6 @@
                       'WHITE (list (make-posn 3 0))
                       'BROWN (list (make-posn 0 1) (make-posn 3 3))
                       'BLACK (list (make-posn 1 0) (make-posn 2 2))))
-  (check-exn exn:fail? (λ () (remove-penguin-posn
-                              (hash 'RED (list (make-posn 0 0))
-                                    'WHITE (list (make-posn 1 1))
-                                    'BROWN (list (make-posn 0 1)))
-                              'RED
-                              (make-posn 1 1))))
-  (check-exn exn:fail? (λ () (remove-penguin-posn
-                              (hash 'RED (list (make-posn 0 0))
-                                    'WHITE (list (make-posn 1 1))
-                                    'BROWN (list (make-posn 0 1)))
-                              'BLACK
-                              (make-posn 1 0))))
   ;; penguins-to-holes
   (check-equal? (penguins-to-holes
                  (make-state-all-red 3 3 (list (make-posn 0 0) (make-posn 1 2) (make-posn 2 2))))

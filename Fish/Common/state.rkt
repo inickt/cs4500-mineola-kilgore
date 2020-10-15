@@ -5,36 +5,43 @@
          racket/contract
          racket/format
          racket/list
+         racket/math
          "board.rkt"
          "penguin.rkt")
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
-(define-struct state [board penguins players order])
+;; TODO
+;; - get players/order
+
+(define-struct state [board penguins players])
 (define penguins? (hash/c penguin? (listof posn?)))
 ;; A GameState is a:
-;; (make-state board? penguins? (listof player?) (non-empty-listof penguin?))
+;; (make-state board? penguins? (non-empty-listof penguin?))
 ;; And represents a fish game state, containing:
 ;; - the current board state
 ;; - the current positions of penguins on the board
-;; - the current players and their penguins
-;; - the order of the players' turns, denoted by their color
-;; INVARIANT: state-order is an ordered list, with the first being the current
+;; - the current players and their penguin color the order of the players' turns, denoted by their color
+;; INVARIANT: state-players is an ordered list, with the first being the first
 ;;            players turn, second being the turn after the first, and so on...
 
-(define-struct player [age color])
-;; A Player is a (make-player natural? penguin-color?)
-;; and represents a player in a fish game with their age in years and penguin color
+(define-struct player [color])
+;; A Player is a (make-player penguin-color? natural?)
+;; and represents a player in a fish game with their age in years, penguin color, and score
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; create-game : [2,4] ... -> state?
-;;
-#;
-(define (create-game players ...)
-  ...)
+(define listof-2/3/4-natural? (or/c (list/c natural? natural?)
+                                    (list/c natural? natural? natural?)
+                                    (list/c natural? natural? natural? natural?)))
+
+;; create-game : [2-4] board? -> state?
+;; Create a game state with a given number of players and the given board
+;; Players are created and randomly assigned colors, and the turn order TODO
+(define (create-game num-players board)
+  (make-state board #hash() (take (shuffle PENGUIN-COLORS) num-players)))
 
 ;; place-penguin : posn? state? -> state?
 ;; Places the current player's penguin on the board at the given position.
@@ -50,41 +57,54 @@
                           (~a "There is already a penguin at " posn)
                           0))
   (make-state (state-board state)
-              (add-penguin-posn (state-penguins state) (first (state-order state)) posn)
-              (state-players state)
-              (shift-turn-order (state-order state))))
+              (add-penguin-posn (state-penguins state) (first (state-players state)) posn)
+              (state-players state)))
 
-;; move-pegnuin : penguin? posn? state? -> state?
+;; move-pegnuin : penguin? posn? posn? state? -> state?
 ;;
 #;
-(define (move-penguin penguin posn state)
+(define (move-penguin penguin from to state)
+  ;; errors
+  ;; is valid from posn? / is a penguin there?
+  ;; is to posn in possible moves?
+  
+  ;; update posn
+  ;; remove tile
   ...)
 
-;; can-move? : player? posn? state? -> state?
-;;
+;; can-move? : penguin? state? -> boolean?
+;; Can any of a player's penguins move?
 #;
-(define (can-move? player posn state)
-  (and (penguin=? (first (state-order state)) (player-color player))
-       ;;
-       ...))
+(define (can-move? player state)
+  ;; turn penguins into holes
+  ;; TODO: valid-movements remove need from not starting from a hole
+  ;; iterate over all player's penguins, checking each if they have valid movements
+  ;; build up valid moves, check if length is 0
+  ...)
+
+;; TODO draw players
 
 ;; draw-state : state? natural? -> image?
 ;; Draws a game state at the given width
-#;
 (define (draw-state state width)
-  ...)
+  (define tile-size 50)
+  (define board-image (draw-board (state-board state) tile-size))
+  (foldr (λ (pair image)
+           (define pixel-posn (board-posn-to-pixel-posn (second pair) tile-size))
+           (place-image (draw-penguin (first pair) 40)
+                        (posn-x pixel-posn)
+                        (posn-y pixel-posn)
+                        image))
+         board-image
+         (hash->list (state-penguins state))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; shift-turn-order : (non-empty-listof penguin?) -> (non-empty-listof penguin?)
-;; Moves 
-(define (shift-turn-order order)
-  (append (rest order) (list (first order))))
-
-;; penguins-per-player : (listof player?) -> natural?
-(define (penguins-per-player players)
-  (- 6 (length players)))
+;; penguins-per-player : state? -> natural?
+;; Total numbers of penguins a player can have in a game 
+(define (penguins-per-player state)
+  (- 6 (+ (length (state-players state)))))
 
 ;; add-penguin-posn : penguins? penguin? posn?  -> penguins?
 ;; Adds the given position to the given penguin's positions
@@ -94,22 +114,31 @@
                (λ (posns) (cons posn posns))
                '()))
 
+;; penguins-to-holes : state? -> board?
+;; removes the positions of the penguins from the board, replacing them with holes
+(define (penguins-to-holes state)
+  (define penguin-list (foldr append '() (hash-values (state-penguins state))))
+  (foldr remove-tile (state-board state) penguin-list))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
 
 (module+ test
   (require rackunit)
   ;; Testing Helpers
+  (define (make-state-all-red w h lo-penguins)
+    (make-state (make-even-board w h 1)
+                (foldr
+                 (λ (penguin hash) (hash-update hash 'red (λ (x) (cons penguin x)) '()))
+                 #hash()
+                 lo-penguins)
+                '(red)))
+  
   ;; Provided Functions
   ;; place-penguin
   
 
   ;; Internal Helper Functions
-  ;; shift-turn-order
-  (check-equal? (shift-turn-order '(black white)) '(white black))
-  (check-equal? (shift-turn-order '(black white red)) '(white red black))
-  (check-equal? (shift-turn-order '(black white red brown)) '(white red brown black))
-
   ;; penguins-per-player
 
   ;; add-penguin-posn
@@ -134,4 +163,22 @@
                       'WHITE (list (make-posn 1 3) (make-posn 1 1) (make-posn 3 0))
                       'BROWN (list (make-posn 0 1) (make-posn 3 3))
                       'BLACK (list (make-posn 1 0) (make-posn 2 2))))
-  )
+  ;; penguins-to-holes
+  (check-equal? (penguins-to-holes
+                 (make-state-all-red 3 3 (list (make-posn 0 0) (make-posn 1 2) (make-posn 2 2))))
+                '((0 1 1) (1 1 0) (1 1 0)))
+  (check-equal? (penguins-to-holes
+                 (make-state-all-red 5 4 (list (make-posn 0 0)
+                                               (make-posn 0 1)
+                                               (make-posn 0 2)
+                                               (make-posn 1 0)
+                                               (make-posn 1 1)
+                                               (make-posn 1 2)
+                                               (make-posn 2 2)
+                                               (make-posn 3 0)
+                                               (make-posn 3 2)
+                                               (make-posn 3 3)
+                                               (make-posn 4 3))))
+                '((0 0 0 1) (0 0 0 1) (1 1 0 1) (0 1 0 0) (1 1 1 0)))
+   )
+  

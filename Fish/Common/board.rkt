@@ -14,7 +14,8 @@
          (contract-out [remove-tile (-> posn? board? board?)])
          (contract-out [valid-movements (-> posn? board? (listof posn?))])
          (contract-out [valid-tile? (-> posn? board? boolean?)])
-         (contract-out [draw-board (-> board? positive? image?)]))
+         (contract-out [draw-board (-> board? positive? image?)])
+         board-posn-to-pixel-posn)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -103,11 +104,6 @@
     (raise-argument-error 'valid-movements
                           (~a posn " not within the bounds of the given board")
                           0))
-  (when (hole? (get-tile posn board))
-    (raise-argument-error 'valid-movements
-                          (~a posn " is a hole, no movements can be made from this tile")
-                          0))
-
   (define (moves mover)
     (valid-movements-direction posn board mover))
   (append (moves top-hexagon-posn)
@@ -124,7 +120,7 @@
        (not (hole? (get-tile posn board)))))
 
 ;; draw-board : board? positive? -> image?
-;; Draws the given game board
+;; Draws the given game board with tiles of a given size
 (define (draw-board board size)
   (foldr (λ (tiles sofar)
            (overlay/xy (draw-board-column tiles size)
@@ -132,6 +128,21 @@
                        sofar))
          empty-image
          board))
+
+;; board-posn-to-pixel-posn : posn? positive? -> posn
+;; Converts a board position to a pixel position at the center of the tile with a given tile size
+(define (board-posn-to-pixel-posn posn size)
+  (define t-width (tile-width size))
+  (define col-width (* 4/3 t-width))
+  (define t-height (tile-height size))
+  (define x-offset (if (odd? (posn-y posn))
+                       (/ col-width 2)
+                       0))
+  (make-posn (+ (* col-width (posn-x posn))
+                (/ t-width 2)
+                x-offset)
+             (+ (* t-height (/ (posn-y posn) 2))
+                (/ t-height 2))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -319,8 +330,7 @@
                 '())
   (check-exn exn:fail? (λ () (valid-movements (make-posn 4 4)
                                               (make-even-board 3 3 1))))
-  (check-exn exn:fail? (λ () (valid-movements (make-posn 0 0)
-                                              '((0 1) (1 1)))))
+
   ;; valid-tile?
   (check-false (valid-tile? (make-posn -1 0) (make-even-board 3 3 1)))
   (check-false (valid-tile? (make-posn 0 0) '((0 1) (1 1))))

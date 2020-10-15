@@ -22,7 +22,7 @@
 ;; And represents a fish game state, containing:
 ;; - the current board state
 ;; - the current positions of penguins on the board
-;; - the current players and their penguin color the order of the players' turns, denoted by their color
+;; - the players, denoted by their penguin color
 ;; INVARIANT: state-players is an ordered list, with the first being the first
 ;;            players turn, second being the turn after the first, and so on...
 
@@ -74,13 +74,13 @@
 
 ;; can-move? : penguin? state? -> boolean?
 ;; Can any of a player's penguins move?
-#;
 (define (can-move? player state)
   ;; turn penguins into holes
-  ;; TODO: valid-movements remove need from not starting from a hole
+  (define hole-board (penguins-to-holes state))
   ;; iterate over all player's penguins, checking each if they have valid movements
   ;; build up valid moves, check if length is 0
-  ...)
+  (ormap (λ (penguin) (< 0 (length (valid-movements penguin hole-board))))
+         (hash-ref (state-penguins state) player)))
 
 ;; TODO draw players
 
@@ -136,7 +136,34 @@
   
   ;; Provided Functions
   ;; place-penguin
-  
+
+  ;; can-move?
+  (check-equal?
+   (can-move? 'red (make-state-all-red 1 1 (list (make-posn 0 0))))
+   #f)
+  (check-equal?
+   (can-move? 'red (make-state-all-red 2 2 (list (make-posn 0 0))))
+   #t)
+  (check-equal?
+   (can-move? 'red (make-state-all-red 1 3 (list (make-posn 0 0)
+                                                 (make-posn 0 1)
+                                                 (make-posn 0 2))))
+   #f)
+  (define can-move-test-state (make-state '((1 1 1 1) (1 0 0 0))
+                                          (hash-set
+                                           (hash-set
+                                            (hash-set #hash() 'red (list (make-posn 0 0)))
+                                            'white (list (make-posn 0 1) (make-posn 0 2)))
+                                           'black (list (make-posn 1 0)))
+                                          '(red black white)))
+  (check-false (can-move? 'red can-move-test-state))
+  (check-true (can-move? 'white can-move-test-state))
+  (check-false (can-move? 'black can-move-test-state))
+  (define can-move-test-state-2
+    (make-state (remove-tile (make-posn 0 4) (state-board can-move-test-state))
+                (state-penguins can-move-test-state)
+                (state-players can-move-test-state)))
+  (check-false (can-move? 'white can-move-test-state-2))
 
   ;; Internal Helper Functions
   ;; penguins-per-player
@@ -180,5 +207,4 @@
                                                (make-posn 3 3)
                                                (make-posn 4 3))))
                 '((0 0 0 1) (0 0 0 1) (1 1 0 1) (0 1 0 0) (1 1 1 0)))
-   )
-  
+  )

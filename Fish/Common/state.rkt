@@ -22,32 +22,26 @@
 ;; And represents a fish game state, containing:
 ;; - the current board state
 ;; - the current positions of penguins on the board
-;; - the players, denoted by their penguin color
-;; INVARIANT: state-players is an ordered list, with the first being the first
-;;            players turn, second being the turn after the first, and so on...
-
-(define-struct player [color])
-;; A Player is a (make-player penguin-color? natural?)
-;; and represents a player in a fish game with their age in years, penguin color, and score
+;; - the player's penguin colors
+;; INVARIANT: state-players is an ordered list representing the turn order of the players. The length
+;;            of the list is the number of players. The list order does not change.
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-(define listof-2/3/4-natural? (or/c (list/c natural? natural?)
-                                    (list/c natural? natural? natural?)
-                                    (list/c natural? natural? natural? natural?)))
-
 ;; create-game : [2-4] board? -> state?
-;; Create a game state with a given number of players and the given board
-;; Players are created and randomly assigned colors, and the turn order TODO
+;; Create a game state with a given number of players and the given board.
+;; Players are randomly assigned colors, and the turn order is set by the order of the player list.
+;; TODO: tests
 (define (create-game num-players board)
   (make-state board #hash() (take (shuffle PENGUIN-COLORS) num-players)))
 
-;; place-penguin : posn? state? -> state?
-;; Places the current player's penguin on the board at the given position.
+;; place-penguin : penguin? posn? state? -> state?
+;; Places a penguin on the board at the given position.
 ;; NOTE: Does not check number of penguins a player has placed. We think this should be
 ;;       handled by the game rules
-(define (place-penguin posn state)
+;; TODO: tests
+(define (place-penguin penguin posn state)
   (when (not (valid-tile? posn (state-board state)))
     (raise-argument-error 'place-penguin
                           (~a posn " is either a hole or not on the board")
@@ -57,7 +51,7 @@
                           (~a "There is already a penguin at " posn)
                           0))
   (make-state (state-board state)
-              (add-penguin-posn (state-penguins state) (first (state-players state)) posn)
+              (add-penguin-posn (state-penguins state) penguin posn)
               (state-players state)))
 
 ;; move-pegnuin : penguin? posn? posn? state? -> state?
@@ -102,7 +96,8 @@
 ;; INTERNAL
 
 ;; penguins-per-player : state? -> natural?
-;; Total numbers of penguins a player can have in a game 
+;; Total numbers of penguins a player can have in a game
+;; TODO: tests
 (define (penguins-per-player state)
   (- 6 (+ (length (state-players state)))))
 

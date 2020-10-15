@@ -15,7 +15,7 @@
          (contract-out [valid-movements (-> posn? board? (listof posn?))])
          (contract-out [valid-tile? (-> posn? board? boolean?)])
          (contract-out [draw-board (-> board? positive? image?)])
-         board-posn-to-pixel-posn)
+         (contract-out [board-posn-to-pixel-posn (-> posn? positive? posn?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -129,8 +129,9 @@
          empty-image
          board))
 
-;; board-posn-to-pixel-posn : posn? positive? -> posn
+;; board-posn-to-pixel-posn : posn? positive? -> posn?
 ;; Converts a board position to a pixel position at the center of the tile with a given tile size
+;; TODO: tests, clean up magic numbers
 (define (board-posn-to-pixel-posn posn size)
   (define t-width (tile-width size))
   (define col-width (* 4/3 t-width))
@@ -330,7 +331,6 @@
                 '())
   (check-exn exn:fail? (λ () (valid-movements (make-posn 4 4)
                                               (make-even-board 3 3 1))))
-
   ;; valid-tile?
   (check-false (valid-tile? (make-posn -1 0) (make-even-board 3 3 1)))
   (check-false (valid-tile? (make-posn 0 0) '((0 1) (1 1))))

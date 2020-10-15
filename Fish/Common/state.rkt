@@ -22,7 +22,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
-(define-struct state [board penguins players])
+(define-struct state [board penguins players] #:transparent)
 (define penguins? (hash/c penguin? (listof posn?)))
 ;; A GameState is a:
 ;; (make-state board? penguins? (non-empty-listof penguin?))
@@ -149,16 +149,21 @@
   ;; Provided Functions
   ;; place-penguin (penguin from to state) (error on invalid from, no penguin on from, invalid move)
   (define move-penguin-test-state
-    (make-state '((1 1 1 1) (1 1 1 1) (1 1 1 1))
+    (make-state '((1 1 0 1) (1 1 1 0) (1 1 0 1))
                 (hash-set
                  (hash-set
-                  (hash-set #hash() 'red (list (make-posn 0 0) (make-posn 0 1) (make-posn 2 1)))
+                  (hash-set #hash() 'red (list (make-posn 0 1) (make-posn 2 1)))
                   'black (list (make-posn 1 0) (make-posn 1 2)))
                  'white (list (make-posn 2 0) (make-posn 2 3)))
                 '(red white black)))
-  #;
-  (check-equal? (move-penguin )
-                ...)
+  (check-equal? (move-penguin 'red (make-posn 0 1) (make-posn 0 0) move-penguin-test-state)
+                (make-state '((1 0 0 1) (1 1 1 0) (1 1 0 1))
+                            (hash-set
+                             (hash-set
+                              (hash-set #hash() 'red (list (make-posn 0 0) (make-posn 2 1)))
+                              'black (list (make-posn 1 0) (make-posn 1 2)))
+                             'white (list (make-posn 2 0) (make-posn 2 3)))
+                            '(red white black)))
 
   ;; create-game
   (check-equal? (state-board (create-game 2 (make-even-board 3 3 2)))
@@ -174,7 +179,7 @@
   (check-equal? (length (state-players (create-game 4 (make-even-board 3 3 2))))
                 4)
   (check-true (subset? (list->set (state-players (create-game 4 (make-even-board 3 3 2))))
-                      PENGUIN-COLORS))
+                       PENGUIN-COLORS))
 
   
   ;; can-move?

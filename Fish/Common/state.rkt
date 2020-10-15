@@ -66,7 +66,7 @@
     (raise-arguments-error 'move-penguin
                            "The given FROM position is not valid"
                            "from-posn" from-posn))
-  (when (boolean? (hash-ref (state-penguins state) penguin #f))
+  (when (not (member from-posn (apply append (hash-values (state-penguins state)))))
     (raise-arguments-error 'move-penguin
                            "The given FROM position does not have a penguin"
                            "from-posn" from-posn))

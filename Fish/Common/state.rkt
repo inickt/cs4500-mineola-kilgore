@@ -39,11 +39,11 @@
 (define (create-game num-players board)
   (make-state board #hash() (take (shuffle PENGUIN-COLORS) num-players)))
 
-;; place-penguin : posn? state? -> state?
-;; Places the current player's penguin on the board at the given position.
+;; place-penguin : penguin? posn? state? -> state?
+;; Places a penguin on the board at the given position.
 ;; NOTE: Does not check number of penguins a player has placed. We think this should be
 ;;       handled by the game rules
-(define (place-penguin posn state)
+(define (place-penguin penguin posn state)
   (when (not (valid-tile? posn (state-board state)))
     (raise-argument-error 'place-penguin
                           (~a posn " is either a hole or not on the board")
@@ -53,7 +53,7 @@
                           (~a "There is already a penguin at " posn)
                           0))
   (make-state (state-board state)
-              (add-penguin-posn (state-penguins state) (first (state-order state)) posn)
+              (add-penguin-posn (state-penguins state) penguin posn)
               (state-players state)))
 
 ;; move-pegnuin : penguin? posn? posn? state? -> state?
@@ -78,7 +78,7 @@
   ;; TODO: valid-movements remove need from not starting from a hole
   ;; iterate over all player's penguins, checking each if they have valid movements
   ;; build up valid moves, check if length is 0
-  ...))
+  ...)
 
 ;; TODO draw players
 
@@ -102,8 +102,7 @@
 ;; penguins-per-player : state? -> natural?
 ;; Total numbers of penguins a player can have in a game 
 (define (penguins-per-player state)
-  (- 6 (+ (length (state-players state))
-          (length (state-removed-players state)))))
+  (- 6 (+ (length (state-players state)))))
 
 ;; add-penguin-posn : penguins? penguin? posn?  -> penguins?
 ;; Adds the given position to the given penguin's positions

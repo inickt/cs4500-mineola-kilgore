@@ -65,12 +65,17 @@
 (define (move-penguin penguin from-posn to-posn state)
   (when (not (valid-tile? from-posn (state-board state)))
     (raise-arguments-error 'move-penguin
-                           "The selected FROM position is not valid"
+                           "The given FROM position is not valid"
                            "from-posn" from-posn))
   (when (boolean? (hash-ref (state-penguins state) penguin #f))
     (raise-arguments-error 'move-penguin
-                           "The selected FROM position does not have a penguin"
+                           "The given FROM position does not have a penguin"
                            "from-posn" from-posn))
+  (when (not (member from-posn (hash-ref (state-penguins state) penguin)))
+    (raise-arguments-error 'move-penguin
+                           "The penguin at the FROM position does not belong to the given player"
+                           "from-posn" from-posn
+                           "player" penguin))
   (when (or (not (member to-posn (valid-movements from-posn (state-board state))))
             (member to-posn (apply append (hash-values (state-penguins state)))))
     (raise-arguments-error 'move-penguin
@@ -146,7 +151,6 @@
                 '(red)))
   
   ;; Provided Functions
-
   ;; create-game
   (check-equal? (state-board (create-game 2 (make-even-board 3 3 2)))
                 (make-even-board 3 3 2))
@@ -162,17 +166,56 @@
                 4)
   (check-true (subset? (list->set (state-players (create-game 4 (make-even-board 3 3 2))))
                        PENGUIN-COLORS))
-  ;; place-penguin (penguin from to state) (error on invalid from, no penguin on from, invalid move)
+  ;; place-penguin
+  (define place-penguin-test-state
+    (make-state '((1 1 1) (1 0 1) (1 1 1))
+                (hash-set
+                 (hash-set #hash() 'red (list (make-posn 1 2)))
+                 'white (list (make-posn 2 2) (make-posn 0 2)))
+                '(red white)))
+  (check-equal? (place-penguin 'red (make-posn 0 0) place-penguin-test-state)
+                (make-state '((1 1 1) (1 0 1) (1 1 1))
+                            (hash-set
+                             (hash-set #hash() 'red (list (make-posn 0 0) (make-posn 1 2)))
+                             'white (list (make-posn 2 2) (make-posn 0 2)))
+                            '(red white)))
+
+  (check-exn exn:fail? (λ () ...)
+  ; exn off board
+  ; exn already penguin
+  ;; move-penguin
   (define move-penguin-test-state
-    (make-state '((1 1 1 1) (1 1 1 1) (1 1 1 1))
+    (make-state '((1 1 0 1) (1 1 1 0) (1 1 0 1))
                 (hash-set
                  (hash-set
-                  (hash-set #hash() RED (list (make-posn 0 0) (make-posn 0 1) (make-posn 2 1)))
-                  BLACK (list (make-posn 1 0) (make-posn 1 2)))
-                 WHITE (list (make-posn 2 0) (make-posn 2 3)))
+                  (hash-set #hash() 'red (list (make-posn 0 1) (make-posn 2 1)))
+                  'black (list (make-posn 1 0) (make-posn 1 1)))
+                 'white (list (make-posn 2 0) (make-posn 2 3)))
                 '(red white black)))
-  (check-equal? (move-penguin )
-                )
+  (check-equal? (move-penguin 'red (make-posn 0 1) (make-posn 0 0) move-penguin-test-state)
+                (make-state '((1 0 0 1) (1 1 1 0) (1 1 0 1))
+                            (hash-set
+                             (hash-set
+                              (hash-set #hash() 'red (list (make-posn 0 0) (make-posn 2 1)))
+                              'black (list (make-posn 1 0) (make-posn 1 1)))
+                             'white (list (make-posn 2 0) (make-posn 2 3)))
+                            '(red white black)))
+  (check-equal? (move-penguin 'black (make-posn 1 1) (make-posn 0 3) move-penguin-test-state)
+                (make-state '((1 1 0 1) (1 0 1 0) (1 1 0 1))
+                            (hash-set
+                             (hash-set
+                              (hash-set #hash() 'red (list (make-posn 0 1) (make-posn 2 1)))
+                              'black (list (make-posn 0 3) (make-posn 1 0)))
+                             'white (list (make-posn 2 0) (make-posn 2 3)))
+                            '(red white black)))
+  (check-exn exn:fail?
+             (λ () (move-penguin 'red (make-posn 0 2) (make-posn 0 0) move-penguin-test-state)))
+  (check-exn exn:fail?
+             (λ () (move-penguin 'red (make-posn 0 0) (make-posn 1 1) move-penguin-test-state)))
+  (check-exn exn:fail?
+             (λ () (move-penguin 'red (make-posn 1 1) (make-posn 0 3) move-penguin-test-state)))
+  (check-exn exn:fail?
+             (λ () (move-penguin 'red (make-posn 0 1) (make-posn 2 1) move-penguin-test-state)))
   ;; can-move?
   (check-false
    (can-move? RED (make-state-all-red 1 1 (list (make-posn 0 0)))))

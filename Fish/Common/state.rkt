@@ -160,7 +160,7 @@
   (check-true (can-move? 'white can-move-test-state))
   (check-false (can-move? 'black can-move-test-state))
   (define can-move-test-state-2
-    (make-state (remove-tile (make-posn 0 4) (state-board can-move-test-state))
+    (make-state (remove-tile (make-posn 0 3) (state-board can-move-test-state))
                 (state-penguins can-move-test-state)
                 (state-players can-move-test-state)))
   (check-false (can-move? 'white can-move-test-state-2))

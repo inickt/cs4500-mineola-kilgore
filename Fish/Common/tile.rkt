@@ -8,8 +8,8 @@
 (provide (contract-out [tile? (-> any/c boolean?)])
          (contract-out [hole? (-> tile? boolean?)])
          (contract-out [draw-tile (-> tile? positive? image?)])
-         tile-width
-         tile-height)
+         (contract-out [tile-width (-> positive? positive?)])
+         (contract-out [tile-height (-> positive? positive?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -75,9 +75,13 @@
            (draw-hexagon size 'outline TILE-OUTLINE-COLOR)
            (draw-hexagon size 'solid background-color)))
 
+;; tile-width : positive? -> positive?
+;; Calculates the width of a tile for a given size
 (define (tile-width size)
   (* 3 size))
 
+;; tile-height : positive? -> positive?
+;; Calculates the height of a tile for a given size
 (define (tile-height size)
   (* 2 size))
 

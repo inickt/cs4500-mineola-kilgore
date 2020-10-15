@@ -69,11 +69,9 @@
 ;; can-move? : penguin? state? -> boolean?
 ;; Can any of a player's penguins move?
 (define (can-move? player state)
-  ;; turn penguins into holes
   (define hole-board (penguins-to-holes state))
-  ;; iterate over all player's penguins, checking each if they have valid movements
-  ;; build up valid moves, check if length is 0
-  (ormap (λ (penguin) (< 0 (length (valid-movements penguin hole-board))))
+  ;; iterate over all player's penguins, checking each if they have any valid movements
+  (ormap (λ (penguin) (not (empty? (valid-movements penguin hole-board))))
          (hash-ref (state-penguins state) player)))
 
 ;; TODO draw players

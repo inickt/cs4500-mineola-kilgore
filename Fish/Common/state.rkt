@@ -39,7 +39,6 @@
 ;; create-game : (integer-in 2 4) board? -> state?
 ;; Create a game state with a given number of players and the given board.
 ;; Players are randomly assigned colors, and the turn order is set by the order of the player list.
-;; TODO: tests
 (define (create-game num-players board)
   (make-state board #hash() (random-sample PENGUIN-COLORS num-players)))
 
@@ -141,29 +140,12 @@
   (define (make-state-all-red w h lo-penguins)
     (make-state (make-even-board w h 1)
                 (foldr
-                 (λ (penguin hash) (hash-update hash 'red (λ (x) (cons penguin x)) '()))
+                 (λ (penguin hash) (hash-update hash RED (λ (x) (cons penguin x)) '()))
                  #hash()
                  lo-penguins)
                 '(red)))
   
   ;; Provided Functions
-  ;; place-penguin (penguin from to state) (error on invalid from, no penguin on from, invalid move)
-  (define move-penguin-test-state
-    (make-state '((1 1 0 1) (1 1 1 0) (1 1 0 1))
-                (hash-set
-                 (hash-set
-                  (hash-set #hash() 'red (list (make-posn 0 1) (make-posn 2 1)))
-                  'black (list (make-posn 1 0) (make-posn 1 2)))
-                 'white (list (make-posn 2 0) (make-posn 2 3)))
-                '(red white black)))
-  (check-equal? (move-penguin 'red (make-posn 0 1) (make-posn 0 0) move-penguin-test-state)
-                (make-state '((1 0 0 1) (1 1 1 0) (1 1 0 1))
-                            (hash-set
-                             (hash-set
-                              (hash-set #hash() 'red (list (make-posn 0 0) (make-posn 2 1)))
-                              'black (list (make-posn 1 0) (make-posn 1 2)))
-                             'white (list (make-posn 2 0) (make-posn 2 3)))
-                            '(red white black)))
 
   ;; create-game
   (check-equal? (state-board (create-game 2 (make-even-board 3 3 2)))
@@ -180,82 +162,86 @@
                 4)
   (check-true (subset? (list->set (state-players (create-game 4 (make-even-board 3 3 2))))
                        PENGUIN-COLORS))
-
-  
+  ;; place-penguin (penguin from to state) (error on invalid from, no penguin on from, invalid move)
+  (define move-penguin-test-state
+    (make-state '((1 1 1 1) (1 1 1 1) (1 1 1 1))
+                (hash-set
+                 (hash-set
+                  (hash-set #hash() RED (list (make-posn 0 0) (make-posn 0 1) (make-posn 2 1)))
+                  BLACK (list (make-posn 1 0) (make-posn 1 2)))
+                 WHITE (list (make-posn 2 0) (make-posn 2 3)))
+                '(red white black)))
+  (check-equal? (move-penguin )
+                )
   ;; can-move?
-  (check-equal?
-   (can-move? 'red (make-state-all-red 1 1 (list (make-posn 0 0))))
-   #f)
-  (check-equal?
-   (can-move? 'red (make-state-all-red 2 2 (list (make-posn 0 0))))
-   #t)
-  (check-equal?
-   (can-move? 'red (make-state-all-red 1 3 (list (make-posn 0 0)
-                                                 (make-posn 0 1)
-                                                 (make-posn 0 2))))
-   #f)
+  (check-false
+   (can-move? RED (make-state-all-red 1 1 (list (make-posn 0 0)))))
+  (check-true
+   (can-move? RED (make-state-all-red 2 2 (list (make-posn 0 0)))))
+  (check-false
+   (can-move? RED (make-state-all-red 1 3 (list (make-posn 0 0)
+                                                (make-posn 0 1)
+                                                (make-posn 0 2)))))
   (define can-move-test-state (make-state '((1 1 1 1) (1 0 0 0))
                                           (hash-set
                                            (hash-set
-                                            (hash-set #hash() 'red (list (make-posn 0 0)))
-                                            'white (list (make-posn 0 1) (make-posn 0 2)))
-                                           'black (list (make-posn 1 0)))
+                                            (hash-set #hash() RED (list (make-posn 0 0)))
+                                            WHITE (list (make-posn 0 1) (make-posn 0 2)))
+                                           BLACK (list (make-posn 1 0)))
                                           '(red black white)))
-  (check-false (can-move? 'red can-move-test-state))
-  (check-true (can-move? 'white can-move-test-state))
-  (check-false (can-move? 'black can-move-test-state))
+  (check-false (can-move? RED can-move-test-state))
+  (check-true (can-move? WHITE can-move-test-state))
+  (check-false (can-move? BLACK can-move-test-state))
   (define can-move-test-state-2
     (make-state (remove-tile (make-posn 0 3) (state-board can-move-test-state))
                 (state-penguins can-move-test-state)
                 (state-players can-move-test-state)))
-  (check-false (can-move? 'white can-move-test-state-2))
+  (check-false (can-move? WHITE can-move-test-state-2))
 
   ;; Internal Helper Functions
-  ;; penguins-per-player
-
   ;; add-penguin-posn
   (check-equal? (add-penguin-posn
-                 (hash 'RED (list (make-posn 0 0))
-                       'WHITE (list (make-posn 1 1))
-                       'BROWN (list (make-posn 0 1)))
-                 'BLACK
+                 (hash RED (list (make-posn 0 0))
+                       WHITE (list (make-posn 1 1))
+                       BROWN (list (make-posn 0 1)))
+                 BLACK
                  (make-posn 1 0))
-                (hash 'RED (list (make-posn 0 0))
-                      'WHITE (list (make-posn 1 1))
-                      'BROWN (list (make-posn 0 1))
-                      'BLACK (list (make-posn 1 0))))
+                (hash RED (list (make-posn 0 0))
+                      WHITE (list (make-posn 1 1))
+                      BROWN (list (make-posn 0 1))
+                      BLACK (list (make-posn 1 0))))
   (check-equal? (add-penguin-posn
-                 (hash 'RED (list (make-posn 2 4) (make-posn 0 3))
-                       'WHITE (list (make-posn 1 1) (make-posn 3 0))
-                       'BROWN (list (make-posn 0 1) (make-posn 3 3))
-                       'BLACK (list (make-posn 1 0) (make-posn 2 2)))
-                 'WHITE
+                 (hash RED (list (make-posn 2 4) (make-posn 0 3))
+                       WHITE (list (make-posn 1 1) (make-posn 3 0))
+                       BROWN (list (make-posn 0 1) (make-posn 3 3))
+                       BLACK (list (make-posn 1 0) (make-posn 2 2)))
+                 WHITE
                  (make-posn 1 3))
-                (hash 'RED (list (make-posn 2 4) (make-posn 0 3))
-                      'WHITE (list (make-posn 1 3) (make-posn 1 1) (make-posn 3 0))
-                      'BROWN (list (make-posn 0 1) (make-posn 3 3))
-                      'BLACK (list (make-posn 1 0) (make-posn 2 2))))
+                (hash RED (list (make-posn 2 4) (make-posn 0 3))
+                      WHITE (list (make-posn 1 3) (make-posn 1 1) (make-posn 3 0))
+                      BROWN (list (make-posn 0 1) (make-posn 3 3))
+                      BLACK (list (make-posn 1 0) (make-posn 2 2))))
   ;; remove-penguin-posn
   (check-equal? (remove-penguin-posn
-                 (hash 'RED (list (make-posn 0 0))
-                       'WHITE (list (make-posn 1 1))
-                       'BROWN (list (make-posn 0 1)))
-                 'RED
+                 (hash RED (list (make-posn 0 0))
+                       WHITE (list (make-posn 1 1))
+                       BROWN (list (make-posn 0 1)))
+                 RED
                  (make-posn 0 0))
-                (hash 'RED (list)
-                      'WHITE (list (make-posn 1 1))
-                      'BROWN (list (make-posn 0 1))))
+                (hash RED (list)
+                      WHITE (list (make-posn 1 1))
+                      BROWN (list (make-posn 0 1))))
   (check-equal? (remove-penguin-posn
-                 (hash 'RED (list (make-posn 2 4) (make-posn 0 3))
-                       'WHITE (list (make-posn 1 1) (make-posn 3 0))
-                       'BROWN (list (make-posn 0 1) (make-posn 3 3))
-                       'BLACK (list (make-posn 1 0) (make-posn 2 2)))
-                 'WHITE
+                 (hash RED (list (make-posn 2 4) (make-posn 0 3))
+                       WHITE (list (make-posn 1 1) (make-posn 3 0))
+                       BROWN (list (make-posn 0 1) (make-posn 3 3))
+                       BLACK (list (make-posn 1 0) (make-posn 2 2)))
+                 WHITE
                  (make-posn 1 1))
-                (hash 'RED (list (make-posn 2 4) (make-posn 0 3))
-                      'WHITE (list (make-posn 3 0))
-                      'BROWN (list (make-posn 0 1) (make-posn 3 3))
-                      'BLACK (list (make-posn 1 0) (make-posn 2 2))))
+                (hash RED (list (make-posn 2 4) (make-posn 0 3))
+                      WHITE (list (make-posn 3 0))
+                      BROWN (list (make-posn 0 1) (make-posn 3 3))
+                      BLACK (list (make-posn 1 0) (make-posn 2 2))))
   ;; penguins-to-holes
   (check-equal? (penguins-to-holes
                  (make-state-all-red 3 3 (list (make-posn 0 0) (make-posn 1 2) (make-posn 2 2))))

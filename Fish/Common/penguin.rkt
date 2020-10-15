@@ -8,6 +8,10 @@
 (provide (contract-out [penguin? (-> any/c boolean?)])
          (contract-out [penguin=? (-> penguin? penguin? boolean?)])
          (contract-out [draw-penguin (-> penguin? positive? image?)])
+         (contract-out [RED penguin?])
+         (contract-out [WHITE penguin?])
+         (contract-out [BROWN penguin?])
+         (contract-out [BLACK penguin?])
          (contract-out [PENGUIN-COLORS (set/c penguin?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+

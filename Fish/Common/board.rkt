@@ -6,7 +6,7 @@
          racket/format
          racket/list
          racket/math
-         "./tile.rkt")
+         "tile.rkt")
 
 (provide (contract-out [board? (-> any/c boolean?)])
          (contract-out [make-board-with-holes (-> posint? posint? (listof posn?) natural? board?)])

@@ -6,15 +6,19 @@
          racket/format
          racket/list
          racket/math
-         "tile.rkt"
          "board.rkt"
-         "penguin.rkt")
+         "penguin.rkt"
+         "tile.rkt")
+
+(provide (contract-out [create-game (-> (integer-in 2 4) board? state?)])
+         (contract-out [place-penguin (-> penguin? posn? state? state?)])
+         (contract-out [move-penguin (-> penguin? posn? posn? state? state?)])
+         (contract-out [can-move? (-> penguin? state? boolean?)])
+         (contract-out [draw-state (-> state? natural? image?)])
+         (contract-out [state-players (-> state? (listof penguin?))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
-
-;; TODO
-;; - get players/order
 
 (define-struct state [board penguins players])
 (define penguins? (hash/c penguin? (listof posn?)))
@@ -30,7 +34,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; create-game : [2-4] board? -> state?
+;; create-game : (integer-in 2 4) board? -> state?
 ;; Create a game state with a given number of players and the given board.
 ;; Players are randomly assigned colors, and the turn order is set by the order of the player list.
 ;; TODO: tests
@@ -55,7 +59,7 @@
               (add-penguin-posn (state-penguins state) penguin posn)
               (state-players state)))
 
-;; move-pegnuin : penguin? posn? posn? state? -> state?
+;; move-penguin : penguin? posn? posn? state? -> state?
 ;; Moves the penguin from from-posn to to-posn, if the move is valid
 (define (move-penguin penguin from-posn to-posn state)
   (when (not (valid-tile? from-posn (state-board state)))
@@ -87,11 +91,9 @@
   (ormap (λ (penguin) (not (empty? (valid-movements penguin hole-board))))
          (hash-ref (state-penguins state) player)))
 
-;; TODO draw players
-
 ;; draw-state : state? natural? -> image?
 ;; Draws a game state at the given tile size
-;; TODO: use width instead of tile size
+;; TODO: use width instead of tile size, draw players
 (define (draw-state state tile-size)
   (define board-image (draw-board (state-board state) tile-size))
   (define penguin-height (* 3/4 (tile-height tile-size)))
@@ -106,12 +108,6 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; penguins-per-player : state? -> natural?
-;; Total numbers of penguins a player can have in a game
-;; TODO: tests
-(define (penguins-per-player state)
-  (- 6 (+ (length (state-players state)))))
-
 ;; add-penguin-posn : penguins? penguin? posn?  -> penguins?
 ;; Adds the given position to the given penguin's positions
 (define (add-penguin-posn penguin-posns penguin posn)
@@ -123,12 +119,6 @@
 ;; remove-penguin-posn : penguins? penguin? posn?  -> penguins?
 ;; Removes the given position from the given penguin's positions
 (define (remove-penguin-posn penguin-posns penguin posn)
-  (when (or (not (member penguin (hash-keys penguin-posns)))
-            (not (member posn (hash-ref penguin-posns penguin))))
-    (raise-arguments-error 'remove-penguin-posn
-                           "penguin color does not have penguin at given posn"
-                           "penguin color" penguin
-                           "posn" posn))
   (hash-update penguin-posns
                penguin
                (λ (posns) (remove posn posns))
@@ -164,6 +154,7 @@
                   'black (list (make-posn 1 0) (make-posn 1 2)))
                  'white (list (make-posn 2 0) (make-posn 2 3)))
                 '(red white black)))
+  #;
   (check-equal? (move-penguin )
                 ...)
   ;; can-move?

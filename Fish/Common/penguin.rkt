@@ -97,5 +97,6 @@
 (module+ test
   (require rackunit)
   ;; draw-penguin
-  (check-equal? (image-height (draw-penguin WHITE 20)) 20)
-  (check-equal? (image-height (draw-penguin BLACK 40)) 40))
+  (for ([penguin PENGUIN-COLORS])
+    (check-equal? (image-height (draw-penguin penguin 20)) 20)
+    (check-equal? (image-height (draw-penguin penguin 40)) 40)))

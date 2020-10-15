@@ -1,9 +1,9 @@
 #lang racket/base
 
 (require 2htdp/image
+         lang/posn
          racket/contract
-         racket/math
-         lang/posn)
+         racket/math)
 
 (provide (contract-out [tile? (-> any/c boolean?)])
          (contract-out [hole? (-> tile? boolean?)])
@@ -119,12 +119,16 @@
   (check-equal? (image-height (draw-tile 0 10)) 20)
   (check-equal? (image-width (draw-tile 3 100)) 300)
   (check-equal? (image-height (draw-tile 3 100)) 200)
+  ;; tile-width
+  (check-equal? (tile-width 10) 30)
+  ;; tile-height
+  (check-equal? (tile-height 10) 20)
   ;; draw-fish-stack
   (check-equal? (image-height (draw-fish-stack 0 5)) 0)
   (check-equal? (image-height (draw-fish-stack 1 5)) 5)
   (check-equal? (image-height (draw-fish-stack 2 5)) 10)
   ;; draw-hexagon
-  (check-equal? (image-width (draw-hexagon 10 'solid 'black)) 30)
-  (check-equal? (image-height (draw-hexagon 10 'solid 'black)) 20)
-  (check-equal? (image-width (draw-hexagon 100 'solid 'black)) 300)
-  (check-equal? (image-height (draw-hexagon 100 'solid 'black)) 200))
+  (check-equal? (image-width (draw-hexagon 10 'solid 'black)) (tile-width 10))
+  (check-equal? (image-height (draw-hexagon 10 'solid 'black)) (tile-height 10))
+  (check-equal? (image-width (draw-hexagon 100 'solid 'black)) (tile-width 100))
+  (check-equal? (image-height (draw-hexagon 100 'solid 'black)) (tile-height 100)))

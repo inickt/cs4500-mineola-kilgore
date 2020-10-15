@@ -131,19 +131,16 @@
 
 ;; board-posn-to-pixel-posn : posn? positive? -> posn?
 ;; Converts a board position to a pixel position at the center of the tile with a given tile size
-;; TODO: tests, clean up magic numbers
 (define (board-posn-to-pixel-posn posn size)
-  (define t-width (tile-width size))
-  (define col-width (* 4/3 t-width))
-  (define t-height (tile-height size))
+  (define col-width (* 4/3 (tile-width size)))
   (define x-offset (if (odd? (posn-y posn))
                        (/ col-width 2)
                        0))
   (make-posn (+ (* col-width (posn-x posn))
-                (/ t-width 2)
+                (/ (tile-width size) 2)
                 x-offset)
-             (+ (* t-height (/ (posn-y posn) 2))
-                (/ t-height 2))))
+             (+ (* (tile-height size) (/ (posn-y posn) 2))
+                (/ (tile-height size) 2))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -340,7 +337,17 @@
                 130)
   (check-equal? (image-height (draw-board (make-even-board 3 3 1) 10))
                 40)
-  
+  ;; board-posn-to-pixel-posn
+  (check-equal? (board-posn-to-pixel-posn (make-posn 0 0) 100)
+                (make-posn 150 100))
+  (check-equal? (board-posn-to-pixel-posn (make-posn 1 0) 100)
+                (make-posn 550 100))
+  (check-equal? (board-posn-to-pixel-posn (make-posn 0 1) 100)
+                (make-posn 350 200))
+  (check-equal? (board-posn-to-pixel-posn (make-posn 2 1) 100)
+                (make-posn 1150 200))
+  (check-equal? (board-posn-to-pixel-posn (make-posn 2 4) 100)
+                (make-posn 950 500))
   ;; Internal Helper Functions
   ;; get-tile
   (check-equal? (get-tile (make-posn 0 0) '((0 0) (0 0))) 0)

@@ -7,7 +7,9 @@
 
 (provide (contract-out [tile? (-> any/c boolean?)])
          (contract-out [hole? (-> tile? boolean?)])
-         (contract-out [draw-tile (-> tile? positive? image?)]))
+         (contract-out [draw-tile (-> tile? positive? image?)])
+         tile-width
+         tile-height)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -62,7 +64,7 @@
 
 ;; draw-tile : tile? positive? -> image?
 ;; Draws a tile with the given number of fish, or a hole tile if empty
-;; The size of the resulting image has a height of 2*size and a width of 3*size
+;; The size of the resulting image has a height of (tile-height size) and a (tile-width size)
 (define (draw-tile tile size)
   ;; pixel height of each fish will be the same for each fish under TILE-FISH-SCALE-CUTOFF,
   ;; or scaled proportionally to fit more fish if above TILE-FISH-SCALE-CUTOFF.
@@ -72,6 +74,12 @@
   (overlay (draw-fish-stack tile fish-height)
            (draw-hexagon size 'outline TILE-OUTLINE-COLOR)
            (draw-hexagon size 'solid background-color)))
+
+(define (tile-width size)
+  (* 3 size))
+
+(define (tile-height size)
+  (* 2 size))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL

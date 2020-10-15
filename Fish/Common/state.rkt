@@ -46,13 +46,12 @@
 ;; Places a penguin on the board at the given position.
 ;; NOTE: Does not check number of penguins a player has placed. We think this should be
 ;;       handled by the game rules
-;; TODO: tests
 (define (place-penguin penguin posn state)
   (when (not (valid-tile? posn (state-board state)))
     (raise-argument-error 'place-penguin
                           (~a posn " is either a hole or not on the board")
                           0))
-  (when (member posn (hash-values (state-penguins state)))
+  (when (member posn (apply append (hash-values (state-penguins state))))
     (raise-argument-error 'place-penguin
                           (~a "There is already a penguin at " posn)
                           0))
@@ -179,10 +178,12 @@
                              (hash-set #hash() 'red (list (make-posn 0 0) (make-posn 1 2)))
                              'white (list (make-posn 2 2) (make-posn 0 2)))
                             '(red white)))
-
-  (check-exn exn:fail? (λ () ...)
-  ; exn off board
-  ; exn already penguin
+  (check-exn exn:fail?
+             (λ () (place-penguin 'red (make-posn -1 0) place-penguin-test-state)))
+  (check-exn exn:fail?
+             (λ () (place-penguin 'red (make-posn 2 2) place-penguin-test-state)))
+  (check-exn exn:fail?
+             (λ () (place-penguin 'red (make-posn 1 1) place-penguin-test-state)))
   ;; move-penguin
   (define move-penguin-test-state
     (make-state '((1 1 0 1) (1 1 1 0) (1 1 0 1))

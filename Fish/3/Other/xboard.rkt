@@ -16,7 +16,8 @@
 (define (xboard)
   (define json-obj (read-json))
   (write-json (count-reachable-tiles (parse-posn-from-input (hash-ref json-obj 'position))
-                                     (transpose-matrix (hash-ref json-obj 'board)))))
+                                     (transpose-matrix (hash-ref json-obj 'board))))
+  (newline))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPER FUNCTIONS
@@ -56,25 +57,25 @@
                    "]}"))
   (check-equal? (with-output-to-string
                   (λ () (with-input-from-string (build-example 0 0 board-str-1) xboard)))
-                "1")
+                "1\n")
   (check-equal? (with-output-to-string
                   (λ () (with-input-from-string (build-example 1 0 board-str-1) xboard)))
-                "2")
+                "2\n")
   (check-equal? (with-output-to-string
                   (λ () (with-input-from-string (build-example 1 2 board-str-1) xboard)))
-                "1")
+                "1\n")
   (check-equal? (with-output-to-string
                   (λ () (with-input-from-string (build-example 0 0 board-str-2) xboard)))
-                "3")
+                "3\n")
   (check-equal? (with-output-to-string
                   (λ () (with-input-from-string (build-example 1 0 board-str-2) xboard)))
-                "4")
+                "4\n")
   (check-equal? (with-output-to-string
                   (λ () (with-input-from-string (build-example 0 2 board-str-2) xboard)))
-                "1")
+                "1\n")
   (check-equal? (with-output-to-string
                   (λ () (with-input-from-string (build-example 1 2 board-str-2) xboard)))
-                "1")
+                "1\n")
 
   ;; Internal Helper Functions
   ;; transpose-matrix

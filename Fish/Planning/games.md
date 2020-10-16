@@ -8,7 +8,7 @@ A `Game` will be represented by the following data definition:
 ```racket
 (define-struct game [current players previous])
 ;; A Game is one of:
-;; - state?
+;; - State
 ;; - (make-game State [Listof Player] Game)
 ;; which represents either the initial state or a make-game in which the current state
 ;; is the result of a single legal move (as determined by the RuleChecker component)

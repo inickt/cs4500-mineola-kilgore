@@ -8,6 +8,7 @@
 (provide (contract-out [penguin? (-> any/c boolean?)])
          (contract-out [penguin=? (-> penguin? penguin? boolean?)])
          (contract-out [draw-penguin (-> penguin? positive? image?)])
+         (contract-out [penguin-color-map (-> penguin? image-color?)])
          (contract-out [RED penguin?])
          (contract-out [WHITE penguin?])
          (contract-out [BROWN penguin?])
@@ -39,6 +40,14 @@
 (define (draw-penguin penguin height)
   (define image (penguin-image penguin))
   (scale (/ height (image-height image)) image))
+
+;; penguin-color-map : penguin? -> image-color?
+;; Maps a penguin to a more aesthetically pleasing color
+(define (penguin-color-map penguin)
+  (cond [(penguin=? penguin WHITE) 'gainsboro]
+        [(penguin=? penguin BROWN) 'peru]
+        [(penguin=? penguin RED) 'crimson]
+        [(penguin=? penguin BLACK) BLACK]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -82,14 +91,6 @@
 (define (draw-with-outline im x1 y1 ang1 str1 x2 y2 ang2 str2 color)
   (add-curve (add-solid-curve im x1 y1 ang1 str1 x2 y2 ang2 str2 color)
              x1 y1 ang1 str1 x2 y2 ang2 str2 'black))
-
-;; penguin-color-map : penguin? -> color?
-;; Maps a penguin to a more aesthetically pleasing color
-(define (penguin-color-map penguin)
-  (cond [(penguin=? penguin WHITE) 'gainsboro]
-        [(penguin=? penguin BROWN) 'peru]
-        [(penguin=? penguin RED) 'crimson]
-        [(penguin=? penguin BLACK) BLACK]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS

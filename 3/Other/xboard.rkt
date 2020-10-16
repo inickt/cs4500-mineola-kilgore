@@ -3,7 +3,7 @@
 (require json
          lang/posn
          racket/list
-         "../../Common/board.rkt")
+         "../../Fish/Common/board.rkt")
 
 (provide xboard)
 

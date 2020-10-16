@@ -65,6 +65,6 @@ Gets the set of positions for which the specified player has `Penguins` on the `
 Output positions are \[Row, Column\].
 
 **get-board : Game -> \[List of \[List of Natural\]\]**  
-Gets the current `Board`, providing the Fish counts at each position and where holes are.
+Gets the current `Board`, providing the Fish counts at each position and where holes are. The number at each position represents the number of fish at that position, where 0 indicates a hole.
 The output list is a List of Rows, meaning it is indexed by \[Row, Column\].
 Note: Does not encode the locations of any players' `Penguin`s.

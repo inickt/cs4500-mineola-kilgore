@@ -43,21 +43,26 @@ This interface will be provided to the Referee component only. Players wishing t
 **perform-move : Player Posn Posn Game -> Game**  
 Firstly, consults the Rulebook Component to determine whether the desired move is valid. If the move is illegal, removes the Player from the Game.
 Next, performs the move, returning the Game resulting from the move being applied to the previous Game.
+Input positions are \[Row, Column\].
 
 **can-perform-move? : Player Posn Posn Game -> Boolean**  
 Returns whether or not the given move is legal. When calling `perform-move`, `can-perform-move` may be called first to ensure the move is legal.
+Input positions are \[Row, Column\].
 
 **get-turn-order : Game -> \[List of Player\]**  
 Gets an ordered list of players, where the first player is the player who's turn it currently is, and each subsequent player is the player who will act immediately after the player before them, pending the availability of valid moves for that player.
 
 **can-move : Posn Game -> Boolean**  
 Determines whether the `Penguin` at the given position has any available legal moves.
+Input position is \[Row, Column\].
 
 **valid-moves : Posn Game -> \[Set of Posn\]**  
 Determines the set of valid moves from the `Penguin` at the given position.
+Input positions are \[Row, Column\].
 
 **get-penguins-for-player : Player Game -> \[Set of Posn\]**  
 Gets the set of positions for which the specified player has `Penguins` on the `Board`.
+Output positions are \[Row, Column\].
 
 **get-board : Game -> \[List of \[List of Natural\]\]**  
 Gets the current `Board`, providing the Fish counts at each position and where holes are.

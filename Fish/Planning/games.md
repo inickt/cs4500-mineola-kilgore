@@ -37,7 +37,7 @@ The Player ordering is determined by the order of the `players` field of a `Game
 
 Players will only be able to modify a `Game` through the Referee. They will have no ability to modify the `Game` directly, to prevent cheating. However, both players and the Referee will be able to consult the Rulebook Interface to determine the resultant `Game` from any move performed on any hypothetical `Game` state. If the resultant game state has removed the player and not performed the move, they will know that it violates the rules of Fish.
 
-### The Rulebook Interface
+## The Rulebook Interface
 This interface will be provided to the Referee component only. Players wishing to modify a Game of Fish must do so through the Referee component's external interface.
 
 **perform-move : Player Posn Posn Game -> Game**  

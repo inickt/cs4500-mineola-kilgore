@@ -7,14 +7,18 @@ The Fish Game system will run individual games of Fish, determining a winner (or
 
 ## Directory Structure
 ```
-Fish
-├── Common
+Fish/
+├── Common/
 │   ├── board.rkt
-│   ├── tile.rkt
-├── Planning
+│   ├── penguin.rkt
+│   ├── state.rkt
+│   └── tile.rkt
+├── Planning/
 │   ├── game-state.md
+│   ├── games.md
 │   ├── milestones.pdf
 │   ├── self-1.md
+│   ├── self-2.md
 │   └── system.pdf
 └── README.md
 ```
@@ -30,6 +34,19 @@ Provides a predicate for a Board, and functions to:
  3. Draw a board.
  4. Remove a tile from a board, creating a hole.
  5. Determine the legal moves from a given tile.
+ 
+##### state.rkt
+Contains the data and function definitions representing a state of a Fish game.
+Provides functionality to:
+ 1. Create a game with a specified number of players.
+ 2. Place an avatar at a specific location on a Board.
+ 3. Move an avatar from one location to another on a Board.
+ 4. Determine a list of valid moves for a specific Penguin.
+ 5. Render the State.
+
+##### penguin.rkt
+Contains the data and function definitions describing a player's penguin color in a game of fish.
+Provides an enumeration of Penguins, a function to draw a Penguin avatar, and a function to map a Penguin to the visual color used to represent penguins of that color.
 
 ##### tile.rkt
 Contains the data and function definitions describing a tile.
@@ -38,8 +55,11 @@ Provides predicates for Tile and Hole, and a function to draw a tile.
 ### Planning
 Contains all files dictating the common ontology for the Fish game system.
 
-##### systems.pdf
-A memo release for planning the systems that the complete Fish game and tournament systems would require.
+##### game-state.md
+A memo release describing the components we believe are needed to complete the Fish game system's data definitions. Additionally, this file describes the external interface we would like to provide, through which players may interact with a game of Fish.
+
+##### games.md
+A memo release describing the data reperesentation and interface specifications we would like to use to represent an entire game of Fish. The data representation and interface are designed to be used by either a referee or player for legality checking moves and potentially planning ahead.
 
 ##### milestones.pdf
 A memo release stating the intended milestones for the Fish game and tournament systems, including demoable intermediate steps.
@@ -47,8 +67,11 @@ A memo release stating the intended milestones for the Fish game and tournament 
 ##### self-1.md
 A self reflective document describing our thoughts on systems.pdf and milestones.pdf in hindsight.
 
-##### game-state.md
-A memo release describing the components we believe are needed to complete the Fish game system's data definitions. Additionally, this file describes the external interface we would like to provide, through which players may interact with a game of Fish.
+##### self-2.md
+A self reflective document describing our thoughts on tile.rkt and board.rkt in hindsight.
+
+##### systems.pdf
+A memo release for planning the systems that the complete Fish game and tournament systems would require.
 
 ## Testing
 

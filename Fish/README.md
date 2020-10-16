@@ -20,7 +20,8 @@ Fish/
 │   ├── self-1.md
 │   ├── self-2.md
 │   └── system.pdf
-└── README.md
+├── README.md
+└── xtest
 ```
 
 ### Common
@@ -74,8 +75,13 @@ A self reflective document describing our thoughts on tile.rkt and board.rkt in 
 A memo release for planning the systems that the complete Fish game and tournament systems would require.
 
 ## Testing
+To run all tests in `Fish/`, execute
+```
+./xtest .
+```
+while inside of the `Fish/` directory.
 
-Testing is handled by `raco`, Racket's command line tools. All tests can be run by executing
+`xtest` is a wrapper around `raco test`. `raco` is Racket's command line tools. Just like `xtest`, all tests can be run by executing
 ```
 raco test .
 ```

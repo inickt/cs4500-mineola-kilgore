@@ -3,31 +3,27 @@
 Under each of the following elements below, indicate below where your
 TAs can find:
 
-- the data description of states, including an interpretation:
+- the data description of states, including an interpretation:  
+https://github.ccs.neu.edu/CS4500-F20/mineola/blob/7f3f678fd9e12049f6df4281aa8779b06220b493/Fish/Common/state.rkt#L25-L34
 
-- a signature/purpose statement of functionality that creates states 
+- a signature/purpose statement of functionality that creates states:  
+https://github.ccs.neu.edu/CS4500-F20/mineola/blob/7f3f678fd9e12049f6df4281aa8779b06220b493/Fish/Common/state.rkt#L39-L41
 
-- unit tests for functionality of taking a turn 
+- unit tests for functionality of taking a turn:  
+https://github.ccs.neu.edu/CS4500-F20/mineola/blob/7f3f678fd9e12049f6df4281aa8779b06220b493/Fish/Common/state.rkt#L211-L243
 
-- unit tests for functionality of placing an avatar 
+- unit tests for functionality of placing an avatar:  
+https://github.ccs.neu.edu/CS4500-F20/mineola/blob/7f3f678fd9e12049f6df4281aa8779b06220b493/Fish/Common/state.rkt#L190-L210
 
-- unit tests for functionality of final-state test
+- unit tests for functionality of final-state test:  
+https://github.ccs.neu.edu/CS4500-F20/mineola/blob/7f3f678fd9e12049f6df4281aa8779b06220b493/Fish/Common/state.rkt#L244-L267  
 
-The ideal feedback is a GitHub perma-link to the range of lines in specific
-file or a collection of files for each of the above bullet points.
-
-  WARNING: all such links must point to your commit "7f3f678fd9e12049f6df4281aa8779b06220b493".
-  Any bad links will result in a zero score for this self-evaluation.
-  Here is an example link:
-    <https://github.ccs.neu.edu/CS4500-F20/mineola/tree/7f3f678fd9e12049f6df4281aa8779b06220b493/Fish>
-
-A lesser alternative is to specify paths to files and, if files are
-longer than a laptop screen, positions within files are appropriate
-responses.
-
-In either case you may wish to, beneath each snippet of code you
-indicate, add a line or two of commentary that explains how you think
-the specified code snippets answers the request.
+We misread the assignment task, *"determine whether **any** player can move an avatar"* as *"determine whether **a** player can move an avatar"*. As a result, we don't have a test for this functionality exactly. Our `can-move?` function could be used to get this same information by using an `ormap` over all players:
+```racket
+;; Given a state?, state
+(ormap (λ (player) (can-move? player state)) (state-players state))
+```
+We will fix/implement this shortly.
 
 ## Partnership Eval 
 
@@ -35,18 +31,4 @@ Select ONE of the following choices by deleting the other two options.
 
 A) My partner and I contributed equally to this assignment. 
 
-B) My partner and I contributed not *exactly* equally, but *roughly*
-   equally to this assignment.
-
-C) My partner and I did not contribute roughly equally to this
-   assignment; one of us contributed significantly more.
-
-If you chose C, please give some further explanation below describing
-the state of your partnership and whether and how you have been or are
-addressing this disparity. Describe the overall trajectory of your
-partnership from the beginning until now. Be honest with your answer
-here, and with each other. Even if it's uncomfortable reading this
-together right now.
-
-If you chose one of the other two options, you should feel free to
-also add some explanation if you wish. 
+We have worked really well together!

@@ -17,21 +17,27 @@
          (contract-out [move-penguin (-> penguin? posn? posn? state? state?)])
          (contract-out [can-move? (-> penguin? state? boolean?)])
          (contract-out [draw-state (-> state? natural? image?)])
-         (contract-out [state-players (-> state? (listof penguin?))]))
+         (contract-out [state-players (-> state? (non-empty-listof player?))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
-(define-struct state [board penguins players] #:transparent)
-(define penguins? (hash/c penguin? (listof posn?)))
+(define-struct state [board players] #:transparent)
 ;; A GameState is a:
-;; (make-state board? penguins? (non-empty-listof penguin?))
+;; (make-state board? (non-empty-listof player?))
 ;; And represents a fish game state, containing:
 ;; - the current board state
-;; - the current positions of penguins on the board
-;; - the player's penguin colors
+;; - the players in the game
 ;; INVARIANT: state-players is an ordered list representing the turn order of the players. The length
 ;;            of the list is the number of players. The list order does not change.
+
+(define-struct player [color score places] #:transparent)
+;; A Player is a:
+;; (make-player penguin? natural? (listof posn?))
+;; And represents a player in a fish game, containing:
+;; - the player's color
+;; - the player's score in the game
+;; - the player's penguin positions
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
@@ -40,7 +46,7 @@
 ;; Create a game state with a given number of players and the given board.
 ;; Players are randomly assigned colors, and the turn order is set by the order of the player list.
 (define (create-game num-players board)
-  (make-state board #hash() (random-sample PENGUIN-COLORS num-players)))
+  (make-state board (random-sample PENGUIN-COLORS num-players)))
 
 ;; place-penguin : penguin? posn? state? -> state?
 ;; Places a penguin on the board at the given position.

@@ -160,20 +160,20 @@
   (foldr (λ (player image)
            (define penguin-image (draw-penguin (player-color player) penguin-height))
            (place-images (make-list (length (player-places player)) penguin-image)
-                  (map convert-posn (player-places player))
-                  image))
+                         (map convert-posn (player-places player))
+                         image))
          board-image
          players))
 
-;; draw-players : (listof penguin?) -> image?
+;; draw-players : (listof player?) -> image?
 ;; Draws a list of the given player colors in their turn order
 (define (draw-players players size)
   (foldl (λ (player text-image)
            (above/align "left"
                         text-image
-                        (text (string-titlecase (symbol->string player))
+                        (text (string-titlecase (symbol->string (player-color player)))
                               size
-                              (penguin-color-map player))))
+                              (penguin-color-map (player-color player)))))
          (text "Players" (* 1.2 size) 'black)
          players))
 
@@ -206,11 +206,12 @@
                PENGUIN-COLORS))
   ;; place-penguin
   (check-equal? (place-penguin RED (make-posn 0 0) test-state)
-                (make-state '((1 1 1) (1 0 1) (1 1 1))
-                            (list (make-player RED 0 (list (make-posn 0 0)
-                                                           (make-posn 1 2)
-                                                           (make-posn 0 2)))
-                                  (make-player WHITE 0 (list (make-posn 2 2) (make-posn 0 2))))))
+                (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
+                            (list (make-player RED 1 (list (make-posn 0 0)
+                                                           (make-posn 0 1)
+                                                           (make-posn 2 1)))
+                                  (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
+                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
   (check-exn exn:fail?
              (λ () (place-penguin BROWN (make-posn -1 0) test-state)))
   (check-exn exn:fail?
@@ -226,10 +227,10 @@
                                   (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
                                   (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
   (check-equal? (move-penguin BLACK (make-posn 1 1) (make-posn 0 3) test-state)
-                (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
-                            (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
-                                  (make-player BLACK 3 (list (make-posn 0 3) (make-posn 1 0)))
-                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
+                (make-state '((1 2 0 1) (1 0 1 0) (5 5 0 2))
+                (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
+                      (make-player BLACK  3 (list (make-posn 1 0) (make-posn 0 3)))
+                      (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
   (check-exn exn:fail?
              (λ () (move-penguin RED (make-posn 0 2) (make-posn 0 0) test-state)))
   (check-exn exn:fail?

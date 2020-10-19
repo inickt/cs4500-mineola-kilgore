@@ -9,6 +9,7 @@
          (contract-out [penguin=? (-> penguin? penguin? boolean?)])
          (contract-out [draw-penguin (-> penguin? positive? image?)])
          (contract-out [penguin-color-map (-> penguin? image-color?)])
+         (contract-out [describe-penguin (-> penguin? string?)])
          (contract-out [RED penguin?])
          (contract-out [WHITE penguin?])
          (contract-out [BROWN penguin?])
@@ -48,6 +49,11 @@
         [(penguin=? penguin BROWN) 'peru]
         [(penguin=? penguin RED) 'crimson]
         [(penguin=? penguin BLACK) BLACK]))
+
+;; describe-penguin : penguin? -> string?
+;; String representation of the penguin
+(define (describe-penguin penguin)
+  (string-titlecase (symbol->string penguin)))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -100,4 +106,6 @@
   ;; draw-penguin
   (for ([penguin PENGUIN-COLORS])
     (check-equal? (image-height (draw-penguin penguin 20)) 20)
-    (check-equal? (image-height (draw-penguin penguin 40)) 40)))
+    (check-equal? (image-height (draw-penguin penguin 40)) 40))
+  ;; describe-penguin
+  (check-equal? (describe-penguin RED) "Red"))

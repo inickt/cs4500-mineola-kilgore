@@ -172,7 +172,7 @@
   (foldl (λ (player text-image)
            (above/align "left"
                         text-image
-                        (text (string-titlecase (symbol->string (player-color player)))
+                        (text (describe-penguin (player-color player))
                               size
                               (penguin-color-map (player-color player)))))
          (text "Players" (* 1.2 size) 'black)

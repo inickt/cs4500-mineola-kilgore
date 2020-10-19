@@ -11,6 +11,7 @@
 (provide (contract-out [board? (-> any/c boolean?)])
          (contract-out [make-board-with-holes (-> posint? posint? (listof posn?) natural? board?)])
          (contract-out [make-even-board (-> posint? posint? tile? board?)])
+         (contract-out [get-tile (-> posn? board? tile?)])
          (contract-out [remove-tile (-> posn? board? board?)])
          (contract-out [valid-movements (-> posn? board? (listof posn?))])
          (contract-out [valid-tile? (-> posn? board? boolean?)])
@@ -90,6 +91,12 @@
 (define (make-even-board width height tile)
   (build-list width (λ (x) (make-list height tile))))
 
+;; get-tile : posn? board? -> tile?
+;; Returns the tile at the given (valid) position on the board
+(define (get-tile posn board)
+  (list-ref (list-ref board (posn-x posn))
+            (posn-y posn)))
+
 ;; remove-tile : posn? board? -> board?
 ;; Removes the tile at the given doubled position from the board
 (define (remove-tile posn board)
@@ -144,12 +151,6 @@
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
-
-;; get-tile : posn? board? -> tile?
-;; Returns the tile at the given (valid) position on the board
-(define (get-tile posn board)
-  (list-ref (list-ref board (posn-x posn))
-            (posn-y posn)))
 
 ;; board-columns : board? -> posint?
 ;; Number of columns in the board

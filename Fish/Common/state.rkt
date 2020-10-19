@@ -46,28 +46,30 @@
 ;; Create a game state with a given number of players and the given board.
 ;; Players are randomly assigned colors, and the turn order is set by the order of the player list.
 (define (create-game num-players board)
-  (make-state board (random-sample PENGUIN-COLORS num-players)))
+  (make-state board (map (λ (color) (make-player color 0 '()))
+                         (random-sample PENGUIN-COLORS num-players))))
 
 ;; place-penguin : penguin? posn? state? -> state?
 ;; Places a penguin on the board at the given position.
 ;; NOTE: Does not check number of penguins a player has placed. We think this should be
 ;;       handled by the game rules
 (define (place-penguin penguin posn state)
-  (when (not (member penguin (state-players state)))
+  (when (not (member penguin (map player-color (state-players state))))
     (raise-arguments-error 'place-penguin
-                          "The given penguin color is not in the game"
-                          "penguin color" penguin))
+                           "The given penguin color is not in the game"
+                           "penguin color" penguin))
   (when (not (valid-tile? posn (state-board state)))
     (raise-arguments-error 'place-penguin
-                          "The given posn is either a hole or not on the board"
-                          "posn" posn))
-  (when (member posn (apply append (hash-values (state-penguins state))))
+                           "The given posn is either a hole or not on the board"
+                           "posn" posn))
+  (when (member posn (append-map player-places (state-players state)))
     (raise-arguments-error 'place-penguin
-                          "There is already a penguin at the given position"
-                          "posn" posn))
+                           "There is already a penguin at the given position"
+                           "posn" posn))
   (make-state (state-board state)
-              (add-penguin-posn (state-penguins state) penguin posn)
-              (state-players state)))
+              (map (λ) (player) (if (penguin=? (player-color) penguin)
+                                    (add-player-posn player posn)
+                                    player))))
 
 ;; move-penguin : penguin? posn? posn? state? -> state?
 ;; Moves the penguin from from-posn to to-posn, if the move is valid
@@ -76,35 +78,35 @@
     (raise-arguments-error 'move-penguin
                            "The given FROM position is not valid"
                            "from-posn" from-posn))
-  (when (not (member from-posn (apply append (hash-values (state-penguins state)))))
+  (define player (findf (λ (player) (penguin=? (player-color) penguin)) (state-players state)))
+  (when (false? player)
     (raise-arguments-error 'move-penguin
-                           "The given FROM position does not have a penguin"
+                           "The given penguin does not exist in the game"
+                           "penguin" penguin))
+  (when (not (member? from-posn (player-places player)))
+    (raise-arguments-error 'move-penguin
+                           "The given player does not have a penguin at the given FROM position"
+                           "penguin" penguin
                            "from-posn" from-posn))
-  (when (not (member from-posn (hash-ref (state-penguins state) penguin)))
-    (raise-arguments-error 'move-penguin
-                           "The penguin at the FROM position does not belong to the given player"
-                           "from-posn" from-posn
-                           "player" penguin))
   (when (or (not (member to-posn (valid-movements from-posn (state-board state))))
-            (member to-posn (apply append (hash-values (state-penguins state)))))
+            (member to-posn (append-map player-places (state-players state))))
     (raise-arguments-error 'move-penguin
                            "Moving from from-posn to to-posn is not a valid move"
                            "from-posn" from-posn
                            "to-posn" to-posn))
-  
+  (define points (get-tile (state-board state) from-posn))
   (make-state (remove-tile from-posn (state-board state))
-              (add-penguin-posn
-               (remove-penguin-posn (state-penguins state) penguin from-posn)
-               penguin to-posn)
-              (state-players state)))
+              (map (λ) (player) (if (penguin=? (player-color) penguin)
+                                    (update-player-posn player from-posn to-posn points)
+                                    player))))
 
-;; can-move? : penguin? state? -> boolean?
-;; Can any of a player's penguins move?
-(define (can-move? player state)
+;; can-any-move? : state? -> boolean?
+;; Can any players in the game move?
+(define (can-any-move? state)
   (define hole-board (penguins-to-holes state))
   ;; iterate over all player's penguins, checking each if they have any valid movements
-  (ormap (λ (penguin) (not (empty? (valid-movements penguin hole-board))))
-         (hash-ref (state-penguins state) player)))
+  (ormap (λ (posn) (not (empty? (valid-movements posn hole-board))))
+         (append-map player-places (state-players state))))
 
 ;; draw-state : state? natural? -> image?
 ;; Draws a game state at the given tile size
@@ -116,21 +118,27 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; add-penguin-posn : penguins? penguin? posn?  -> penguins?
-;; Adds the given position to the given penguin's positions
-(define (add-penguin-posn penguin-posns penguin posn)
-  (hash-update penguin-posns
-               penguin
-               (λ (posns) (cons posn posns))
-               '()))
+;; update-player-posn : player? posn? posn? natural? -> player?
+;; Adds points to the players score and replaces the given posn with a new posn
+(define (update-player-posn player old-posn new-posn points)
+  (make-player (player-color player)
+               (+ (player-score player) points)
+               (map (λ (posn) (if (equal? posn old-posn)
+                                  new-posn
+                                  posn))
+                    (player-places player))))
 
-;; remove-penguin-posn : penguins? penguin? posn?  -> penguins?
-;; Removes the given position from the given penguin's positions
-(define (remove-penguin-posn penguin-posns penguin posn)
-  (hash-update penguin-posns
-               penguin
-               (λ (posns) (remove posn posns))
-               '()))
+(define (add-player-posn player posn)
+  (make-player (player-color player)
+               (player-score player)
+               (cons posn (player-places player))
+               (player-places player)))
+
+(define (remove-player-posn player posn)
+  (make-player (player-color player)
+               (player-score player)
+               (remove posn (player-places player))
+               (player-places player)))
 
 ;; penguins-to-holes : state? -> board?
 ;; removes the positions of the penguins from the board, replacing them with holes

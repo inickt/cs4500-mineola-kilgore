@@ -122,7 +122,8 @@
 ;; INTERNAL
 
 ;; update-player-posn : player? posn? posn? natural? -> player?
-;; Adds points to the players score and replaces the given posn with a new posn
+;; Adds points to the players score and replaces the given posn with a new posn.
+;; Does not check if the player has the given posn.
 (define (update-player-posn player old-posn new-posn points)
   (make-player (player-color player)
                (+ (player-score player) points)
@@ -132,14 +133,14 @@
                     (player-places player))))
 
 ;; add-player-posn : player? posn? -> player?
-;; Adds a posn to a player's penguins
+;; Adds a posn to a player's penguins. Does not check if the player already has the given posn.
 (define (add-player-posn player posn)
   (make-player (player-color player)
                (player-score player)
                (cons posn (player-places player))))
 
 ;; remove-player-posn : player? posn? -> player?
-;; Removes a posn to a player's penguins
+;; Removes a posn to a player's penguins. Does not check if the player has the given posn.
 (define (remove-player-posn player posn)
   (make-player (player-color player)
                (player-score player)
@@ -228,90 +229,70 @@
                                   (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
   (check-equal? (move-penguin BLACK (make-posn 1 1) (make-posn 0 3) test-state)
                 (make-state '((1 2 0 1) (1 0 1 0) (5 5 0 2))
-                (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
-                      (make-player BLACK  3 (list (make-posn 1 0) (make-posn 0 3)))
-                      (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
+                            (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
+                                  (make-player BLACK  3 (list (make-posn 1 0) (make-posn 0 3)))
+                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
+  ; from not valid
   (check-exn exn:fail?
              (λ () (move-penguin RED (make-posn 0 2) (make-posn 0 0) test-state)))
+  ; penguin isn't at from posn
   (check-exn exn:fail?
              (λ () (move-penguin RED (make-posn 0 0) (make-posn 1 1) test-state)))
+  ; player doesn't exist
   (check-exn exn:fail?
-             (λ () (move-penguin RED (make-posn 1 1) (make-posn 0 3) test-state)))
+             (λ () (move-penguin BROWN (make-posn 0 1) (make-posn 0 0) test-state)))
+  ; invalid move
   (check-exn exn:fail?
              (λ () (move-penguin RED (make-posn 0 1) (make-posn 2 1) test-state)))
-  ;; can-move?
-  #|
-  (check-false
-   (can-move? RED (make-state-all-red 1 1 (list (make-posn 0 0)))))
-  (check-true
-   (can-move? RED (make-state-all-red 2 2 (list (make-posn 0 0)))))
-  (check-false
-   (can-move? RED (make-state-all-red 1 3 (list (make-posn 0 0)
-                                                (make-posn 0 1)
-                                                (make-posn 0 2)))))
-  (check-false (can-move? RED test-state))
-  (check-true (can-move? WHITE test-state))
-  (check-false (can-move? BLACK test-state))
-  (define can-move-test-state-2
-    (make-state (remove-tile (make-posn 0 3) (state-board test-state))
+  ;; can-any-move?
+  (check-false (can-any-move? (create-game 2 (make-even-board 3 3 2))))
+  (check-true (can-any-move? test-state))
+  (define can-move-test-state
+    (make-state (remove-tile (make-posn 0 0)
+                             (remove-tile (make-posn 1 2)
+                                          (remove-tile (make-posn 0 3)
+                                                       (state-board test-state))))
                 (state-players test-state)))
-  (check-false (can-move? WHITE can-move-test-state-2))
-  |#
+  (check-false (can-any-move? can-move-test-state))
 
   ;; Internal Helper Functions
-  ;; add-penguin-posn
-  #|
-  (check-equal? (add-penguin-posn
-                 (hash RED (list (make-posn 0 0))
-                       WHITE (list (make-posn 1 1))
-                       BROWN (list (make-posn 0 1)))
-                 BLACK
-                 (make-posn 1 0))
-                (hash RED (list (make-posn 0 0))
-                      WHITE (list (make-posn 1 1))
-                      BROWN (list (make-posn 0 1))
-                      BLACK (list (make-posn 1 0))))
-  (check-equal? (add-penguin-posn
-                 (hash RED (list (make-posn 2 4) (make-posn 0 3))
-                       WHITE (list (make-posn 1 1) (make-posn 3 0))
-                       BROWN (list (make-posn 0 1) (make-posn 3 3))
-                       BLACK (list (make-posn 1 0) (make-posn 2 2)))
-                 WHITE
-                 (make-posn 1 3))
-                (hash RED (list (make-posn 2 4) (make-posn 0 3))
-                      WHITE (list (make-posn 1 3) (make-posn 1 1) (make-posn 3 0))
-                      BROWN (list (make-posn 0 1) (make-posn 3 3))
-                      BLACK (list (make-posn 1 0) (make-posn 2 2))))
-  ;; remove-penguin-posn
-  (check-equal? (remove-penguin-posn
-                 (hash RED (list (make-posn 0 0))
-                       WHITE (list (make-posn 1 1))
-                       BROWN (list (make-posn 0 1)))
-                 RED
-                 (make-posn 0 0))
-                (hash RED (list)
-                      WHITE (list (make-posn 1 1))
-                      BROWN (list (make-posn 0 1))))
-  (check-equal? (remove-penguin-posn
-                 (hash RED (list (make-posn 2 4) (make-posn 0 3))
-                       WHITE (list (make-posn 1 1) (make-posn 3 0))
-                       BROWN (list (make-posn 0 1) (make-posn 3 3))
-                       BLACK (list (make-posn 1 0) (make-posn 2 2)))
-                 WHITE
-                 (make-posn 1 1))
-                (hash RED (list (make-posn 2 4) (make-posn 0 3))
-                      WHITE (list (make-posn 3 0))
-                      BROWN (list (make-posn 0 1) (make-posn 3 3))
-                      BLACK (list (make-posn 1 0) (make-posn 2 2))))
-  |#
+  ;; update-player-posn
+  (check-equal? (update-player-posn (make-player RED 10 (list (make-posn 2 2)))
+                                    (make-posn 2 2)
+                                    (make-posn 1 1)
+                                    5)
+                (make-player RED 15 (list (make-posn 1 1))))
+  (check-equal? (update-player-posn (make-player RED 10 (list (make-posn 1 1)
+                                                              (make-posn 3 3)
+                                                              (make-posn 2 2)))
+                                    (make-posn 3 3)
+                                    (make-posn 1 2)
+                                    10)
+                (make-player RED 20 (list (make-posn 1 1)
+                                          (make-posn 1 2)
+                                          (make-posn 2 2))))
+  ;; add-player-posn
+  (check-equal? (add-player-posn (make-player RED 10 (list (make-posn 2 2)))
+                                 (make-posn 1 1))
+                (make-player RED 10 (list (make-posn 1 1) (make-posn 2 2))))
+  (check-equal? (add-player-posn (make-player RED 10 '())
+                                 (make-posn 2 2))
+                (make-player RED 10 (list (make-posn 2 2))))
+  ;; remove-player-posn
+  (check-equal? (remove-player-posn (make-player RED 10 (list (make-posn 2 2)))
+                                    (make-posn 2 2))
+                (make-player RED 10 '()))
+  (check-equal? (remove-player-posn (make-player RED 10 (list (make-posn 1 1) (make-posn 2 2)))
+                                    (make-posn 2 2))
+                (make-player RED 10 (list (make-posn 1 1))))
   ;; penguins-to-holes
   (check-equal? (penguins-to-holes test-state)
                 '((1 0 0 1) (0 0 1 0) (0 0 0 0)))
-  #;
   (check-equal? (penguins-to-holes
                  (make-state
                   '((1 1 1 1) (1 1 1 1) (1 1 1 1) (1 1 1 1) (1 1 1 1))
-                  (make-player WHITE 0 (list (make-posn 1 0) (make-posn 1 1) (make-posn 1 2)))
-                  (make-player BLACK 0 (list (make-posn 2 2) (make-posn 3 0) (make-posn 3 2)))
-                  (make-player BROWN 0 (list (make-posn 3 3) (make-posn 4 3)))))
+                  (list
+                   (make-player WHITE 0 (list (make-posn 1 0) (make-posn 1 1) (make-posn 1 2)))
+                   (make-player BLACK 0 (list (make-posn 2 2) (make-posn 3 0) (make-posn 3 2)))
+                   (make-player BROWN 0 (list (make-posn 3 3) (make-posn 4 3))))))
                 '((1 1 1 1) (0 0 0 1) (1 1 0 1) (0 1 0 0) (1 1 1 0))))

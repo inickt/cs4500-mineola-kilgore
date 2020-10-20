@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "../Fish/Common/state.rkt")
+(require "../../Fish/Common/state.rkt"
+         "../../Fish/Common/json.rkt")
 
 (provide xstate)
 

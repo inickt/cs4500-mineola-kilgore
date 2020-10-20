@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require "../Fish/Common/state.rkt")
+(require lang/posn
+         racket/list
+         "../../Fish/Common/state.rkt")
 
 (provide xstate)
 
@@ -30,4 +32,8 @@
                                state)])))
 
 (define (xstate)
-  (displayln "Hello world"))
+  ;; parse JSON to state?
+  (define state ...)
+  (define cur-posn ...)
+  
+  (define result-state (apply-algorithm cur-posn (silly-algorithm

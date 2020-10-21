@@ -22,7 +22,8 @@
          (contract-out [make-player (-> penguin? natural? (listof posn?) player?)])
          (contract-out [make-state (-> board? (non-empty-listof player?) state?)])
          (contract-out [is-place-valid? (-> penguin? posn? state? boolean?)])
-         (contract-out [is-move-valid? (-> penguin? posn? posn? state? boolean?)]))
+         (contract-out [is-move-valid? (-> penguin? posn? posn? state? boolean?)])
+         (contract-out [valid-moves (-> posn? state? (listof posn?))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -104,6 +105,19 @@
                                    (update-player-posn player from-posn to-posn points)
                                    player))
                    (state-players state))))
+
+;; valid-moves : posn? state? -> (listof posn?)
+;; Determines all positions resulting in a legal move from the given posn
+(define (valid-moves posn state)
+  (when (not (valid-tile? posn (state-board state)))
+    (raise-arguments-error 'valid-moves
+                           "The specified posn is not valid"
+                           "posn" posn))
+  (when (not (penguin-at? posn state))
+    (raise-arguments-error 'valid-moves
+                           "There is no penguin at the given posn"
+                           "posn" posn))
+  (valid-movements posn (penguins-to-holes state)))
 
 ;; can-any-move? : state? -> boolean?
 ;; Can any players in the game move?
@@ -221,7 +235,6 @@
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
-
 (module+ test
   (require rackunit)
 
@@ -306,7 +319,7 @@
   (check-false (is-move-valid? RED (make-posn 0 0) (make-posn 1 1) test-state))
   (check-false (is-move-valid? BROWN (make-posn 0 1) (make-posn 0 0) test-state))
   (check-false (is-move-valid? RED (make-posn 0 1) (make-posn 2 1) test-state))
-  
+ 
   ;; Internal Helper Functions
   ;; penguin-color-exists?
   (check-true (penguin-color-exists? RED test-state))

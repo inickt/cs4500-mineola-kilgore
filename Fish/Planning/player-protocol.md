@@ -13,14 +13,21 @@ terms from your language, and UML sequence diagrams (if desired).
 
 #### Protocol
 
-Hypotheticals:
-- Who are the players of the game (and their scores/colors)?
-- Who's turn is it? What is the turn order?
-- What moves can I make from a given game state?
-- 
+What functions do the players call?
+What order do the players call the functions in?
 
-Performs:
+**Functions a player may wish to use:**
+- Who are the players of the game (and their scores/colors/order of play)?
+- What players have been kicked from the game?
+- Have I been kicked from the game?
+- Who's turn is it? (synonym for Is it my turn?)
+- What is the turn order?
+- What moves can I make from a given game state?
+- What moves can I make from a given game state using a certain penguin?
+- Is the game over?
+- Is a given move valid? (Will I be kicked for performing a given move?)
 - Perform a move from the TO posn to the FROM posn
 
-Data:
-- the current Game needs to be stored
+Potentially include:
+- Can I place a penguin at the given posn?
+- Place a penguin at the given posn

@@ -38,7 +38,7 @@
 ;; Parses Fish players from well formed and valid JSON
 ;; JSON: Player*
 (define (parse-json-players json-players)
-  (map parse-json-players json-players))
+  (map parse-json-player json-players))
 
 ;; parse-json-player : (hash/c symbol? jsexpr?) -> player?
 ;; Parses a Fish player from well formed and valid JSON
@@ -61,8 +61,7 @@
 ;; parse-json-board : (non-empty-listof (non-empty-listofnatural?)) -> board?
 ;; Parses a Fish game board from a well formed and valid JSON board
 ;; JSON: Board
-(define (parse-json-board json-board)
-  (transpose-matrix json-board))
+(define parse-json-board (λ (board) (transpose-matrix board)))
 
 ;; parse-json-posns : (listof (list/c natural? natural?)) -> (listof posn?)
 ;; Parses Fish positions from well formed and valid JSON
@@ -79,8 +78,7 @@
 ;; parse-json-color : string? -> penguin?
 ;; Parses a Fish color from well formed and valid JSON
 ;; JSON: Color
-(define (parse-json-color json-color)
-  (string->symbol (string-upcase json-color)))
+(define parse-json-color string->symbol)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED SERIALIZING
@@ -109,8 +107,7 @@
 ;; serialize-board : board? -> (non-empty-listof (non-empty-listofnatural?)) 
 ;; Converts a board into a JSON expression
 ;; JSON: Board
-(define (serialize-board board)
-  (transpose-matrix board))
+(define serialize-board (λ (board) (transpose-matrix board)))
 
 ;; serialize-posns : (listof posn?) -> (listof (list/c natural? natural?))
 ;; Converts posns into a JSON expression
@@ -127,8 +124,7 @@
 ;; serialize-color : penguin? -> string?
 ;; Converts a penguin into a JSON expression
 ;; JSON: Color
-(define (serialize-color penguin)
-  (string-downcase (symbol->string penguin)))
+(define serialize-color symbol->string)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPER FUNCTIONS

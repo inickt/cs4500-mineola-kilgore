@@ -2,13 +2,15 @@
 
 (require lang/posn
          json
-         racket/list
          racket/contract
+         racket/list
          "board.rkt")
 
-(provide (contract-out [parse-json-board-posn (-> (hash/c symbol? jsexpr?) board-posn?)])
+(provide (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) -> state?)])
+         (contract-out [parse-json-board-posn (-> (hash/c symbol? jsexpr?) board-posn?)])
          (contract-out [board-posn-board (-> board-posn? board?)])
-         (contract-out [board-posn-posn (-> board-posn? posn?)]))
+         (contract-out [board-posn-posn (-> board-posn? posn?)])
+         (contract-out [serialize-state (-> state? (hash/c symbol? jsexpr?))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -24,7 +26,7 @@
 ;; PROVIDED PARSING
 
 ;; parse-json-state : (hash/c symbol? jsexpr?) -> state?
-;; TODO
+;; Parses a Fish game state from well formed and valid JSON
 ;; JSON: State
 (define (parse-json-state json-obj)
   (make-state
@@ -32,13 +34,13 @@
    (parse-json-players (hash-ref json-obj PLAYERS-KEY))))
 
 ;; parse-json-players : (non-empty-listof (hash/c symbol? jsexpr?)) -> (non-empty-listof player?)
-;; TODO
+;; Parses Fish players from well formed and valid JSON
 ;; JSON: Player*
 (define (parse-json-players json-players)
   (map parse-json-players json-players))
 
 ;; parse-json-player : (hash/c symbol? jsexpr?) -> player?
-;; TODO
+;; Parses a Fish player from well formed and valid JSON
 ;; JSON: Player
 (define (parse-json-player json-player)
   (make-player
@@ -57,13 +59,12 @@
 
 ;; parse-json-board : (non-empty-listof (non-empty-listofnatural?)) -> board?
 ;; Parses a Fish game board from a well formed and valid JSON board
-;; NOTE: This is the same thing as a transpose of a matrix
 ;; JSON: Board
 (define (parse-json-board json-board)
   (transpose json-board))
 
 ;; parse-json-posns : (listof (list/c natural? natural?)) -> (listof posn?)
-;; TODO
+;; Parses Fish positions from well formed and valid JSON
 ;; JSON: [Position]
 (define (parse-json-posns json-posns)
   (map parse-json-posn json-posns))
@@ -75,7 +76,7 @@
   (make-posn (second json-posn) (first json-posn)))
 
 ;; parse-json-color : string? -> penguin?
-;; TODO
+;; Parses a Fish color from well formed and valid JSON
 ;; JSON: Color
 (define (parse-json-color json-color)
   (string->symbol (string-upcase json-color)))
@@ -83,56 +84,50 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED SERIALIZING
 
-#|
-
-;; parse-json-state : state? -> (hash/c jsexpr?)
-;; TODO
+;; serialize-state : state? -> (hash/c (symbol? jsexpr?)
+;; Converts a state into a JSON expression
 ;; JSON: State
-(define (parse-json-state json-obj)
-  (make-state
-   (parse-json-board (hash-ref json-obj BOARD-KEY))
-   (parse-json-players (hash-ref json-obj PLAYERS-KEY))))
+(define (serialize-state state)
+  (hash BOARD-KEY (serialize-board (state-board state))
+        PLAYERS-KEY (serialize-players (state-players state))))
 
 ;; serialize-players : (non-empty-listof player?) -> (non-empty-listof (hash/c symbol? jsexpr?))
-;; TODO
+;; Converts players into a JSON expression
 ;; JSON: Player*
 (define (serialize-players players)
   (map serialize-player players))
 
 ;; serialize-player : player? -> (hash/c symbol? jsexpr?)
-;; TODO
+;; Converts a player into a JSON expression
 ;; JSON: Player
 (define (serialize-player player)
-  (make-player
-   (parse-json-color (hash-ref json-player COLOR-KEY))
-   (hash-ref json-player SCORE-KEY)
-   (parse-json-posns (hash-ref json-player PLACES-KEY))))
+  (hash COLOR-KEY (serialize-color (player-penguin player))
+        SCORE-KEY (player-score player)
+        PLACES-KEY (serialize-posns (player-places player))))
 
 ;; serialize-board : board? -> (non-empty-listof (non-empty-listofnatural?)) 
-;; TODO
+;; Converts a board into a JSON expression
 ;; JSON: Board
 (define (serialize-board board)
   (transpose board))
 
 ;; serialize-posns : (listof posn?) -> (listof (list/c natural? natural?))
-;; TODO
+;; Converts posns into a JSON expression
 ;; JSON: [Position]
-(define (parse-json-posns json-posns)
-  (map parse-json-posn json-posns))
+(define (serialize-posns posns)
+  (map serialize-posn posns))
 
 ;; serialize-posn : posn? -> (list/c natural? natural?)
-;; 
+;; Converts a posn into a JSON expression
 ;; JSON: Position
 (define (serialize-posn posn)
   (make-posn (second json-posn) (first json-posn)))
 
 ;; serialize-color : penguin? -> string?
-;; TODO
+;; Converts a penguin into a JSON expression
 ;; JSON: Color
 (define (serialize-color penguin)
   (string-downcase (symbol->string penguin)))
-
-|#
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPER FUNCTIONS
@@ -148,6 +143,12 @@
   (require rackunit)
   
   ;; Provided Functions
+  ;; parse-json-state TODO
+
+  ;; parse-json-players TODO
+
+  ;; parse-json-player TODO
+
   ;; parse-json-board-posn
   (check-equal? (parse-json-board-posn (hash POSITION-KEY '(6 0)
                                              BOARD-KEY '((1 2 3) (4 5 6) (7 8 9))))
@@ -156,6 +157,24 @@
   ;; parse-json-board
   (check-equal? (parse-json-board '((1))) '((1)))
   (check-equal? (parse-json-board '((1 2 3) (4 5 6) (7 8 9))) '((1 4 7) (2 5 8) (3 6 9)))
+  ;; parse-json-posns TODO
+  
   ;; parse-json-posn
   (check-equal? (parse-json-posn '(1 4)) (make-posn 4 1))
-  (check-equal? (parse-json-posn '(6 0)) (make-posn 0 6)))
+  (check-equal? (parse-json-posn '(6 0)) (make-posn 0 6))
+
+  ;; parse-json-color TODO
+
+  ;; parse-json-state TODO
+
+  ;; serialize-players TODO
+
+  ;; serialize-player TODO
+
+  ;; serialize-board TODO
+
+  ;; serialize-posns TODO
+
+  ;; serialize-color TODO
+
+  )

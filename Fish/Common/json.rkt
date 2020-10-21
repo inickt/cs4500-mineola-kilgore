@@ -23,7 +23,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED PARSING
 
-;; parse-json-state : (hash/c json?) -> state?
+;; parse-json-state : (hash/c symbol? jsexpr?) -> state?
 ;; TODO
 ;; JSON: State
 (define (parse-json-state json-obj)
@@ -31,7 +31,7 @@
    (parse-json-board (hash-ref json-obj BOARD-KEY))
    (parse-json-players (hash-ref json-obj PLAYERS-KEY))))
 
-;; parse-json-players : (listof (hash/c symbol? jsexpr?)) -> (non-empty-listof player?)
+;; parse-json-players : (non-empty-listof (hash/c symbol? jsexpr?)) -> (non-empty-listof player?)
 ;; TODO
 ;; JSON: Player*
 (define (parse-json-players json-players)
@@ -60,7 +60,7 @@
 ;; NOTE: This is the same thing as a transpose of a matrix
 ;; JSON: Board
 (define (parse-json-board json-board)
-  (apply map list json-board))
+  (transpose json-board))
 
 ;; parse-json-posns : (listof (list/c natural? natural?)) -> (listof posn?)
 ;; TODO
@@ -83,8 +83,64 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED SERIALIZING
 
+#|
 
+;; parse-json-state : state? -> (hash/c jsexpr?)
+;; TODO
+;; JSON: State
+(define (parse-json-state json-obj)
+  (make-state
+   (parse-json-board (hash-ref json-obj BOARD-KEY))
+   (parse-json-players (hash-ref json-obj PLAYERS-KEY))))
 
+;; serialize-players : (non-empty-listof player?) -> (non-empty-listof (hash/c symbol? jsexpr?))
+;; TODO
+;; JSON: Player*
+(define (serialize-players players)
+  (map serialize-player players))
+
+;; serialize-player : player? -> (hash/c symbol? jsexpr?)
+;; TODO
+;; JSON: Player
+(define (serialize-player player)
+  (make-player
+   (parse-json-color (hash-ref json-player COLOR-KEY))
+   (hash-ref json-player SCORE-KEY)
+   (parse-json-posns (hash-ref json-player PLACES-KEY))))
+
+;; serialize-board : board? -> (non-empty-listof (non-empty-listofnatural?)) 
+;; TODO
+;; JSON: Board
+(define (serialize-board board)
+  (transpose board))
+
+;; serialize-posns : (listof posn?) -> (listof (list/c natural? natural?))
+;; TODO
+;; JSON: [Position]
+(define (parse-json-posns json-posns)
+  (map parse-json-posn json-posns))
+
+;; serialize-posn : posn? -> (list/c natural? natural?)
+;; 
+;; JSON: Position
+(define (serialize-posn posn)
+  (make-posn (second json-posn) (first json-posn)))
+
+;; serialize-color : penguin? -> string?
+;; TODO
+;; JSON: Color
+(define (serialize-color penguin)
+  (string-downcase (symbol->string penguin)))
+
+|#
+
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL HELPER FUNCTIONS
+
+;; transpose-matrix : (non-empty-listof (non-empty-listof any/c)) -> (listof (listof any/c))
+;; Transposes a matrix represented as a 2d list
+(define (transpose-matrix mat)
+  (apply map list mat))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS

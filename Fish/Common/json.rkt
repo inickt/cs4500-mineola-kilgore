@@ -5,6 +5,7 @@
          racket/contract
          racket/list
          "board.rkt"
+         "penguin.rkt"
          "state.rkt")
 
 (provide (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) state?)])
@@ -140,12 +141,36 @@
   (require rackunit)
   
   ;; Provided Functions
-  ;; parse-json-state TODO
-
-  ;; parse-json-players TODO
-
-  ;; parse-json-player TODO
-
+  ;; parse-json-state 
+  (check-equal? (parse-json-state
+                 (hash BOARD-KEY '((1 2 3) (4 5 6) (7 8 9))
+                       PLAYERS-KEY (list (hash COLOR-KEY "red"
+                                               SCORE-KEY 10
+                                               PLACES-KEY '())
+                                         (hash COLOR-KEY "black"
+                                               SCORE-KEY 5
+                                               PLACES-KEY (list (list 0 0) (list 3 1))))))
+                (make-state '((1 4 7) (2 5 8) (3 6 9))
+                            (list (make-player RED 10 '())
+                                  (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3))))))
+  ;; parse-json-players
+  (check-equal? (parse-json-players (list (hash COLOR-KEY "red"
+                                                SCORE-KEY 10
+                                                PLACES-KEY '())
+                                          (hash COLOR-KEY "black"
+                                                SCORE-KEY 5
+                                                PLACES-KEY (list (list 0 0) (list 3 1)))))
+                (list (make-player RED 10 '())
+                      (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3)))))
+  ;; parse-json-player
+  (check-equal? (parse-json-player (hash COLOR-KEY "red"
+                                         SCORE-KEY 10
+                                         PLACES-KEY '()))
+                (make-player RED 10 '()))
+  (check-equal? (parse-json-player (hash COLOR-KEY "black"
+                                         SCORE-KEY 5
+                                         PLACES-KEY (list (list 0 0) (list 3 1))))
+                (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3))))
   ;; parse-json-board-posn
   (check-equal? (parse-json-board-posn (hash POSITION-KEY '(6 0)
                                              BOARD-KEY '((1 2 3) (4 5 6) (7 8 9))))
@@ -154,24 +179,66 @@
   ;; parse-json-board
   (check-equal? (parse-json-board '((1))) '((1)))
   (check-equal? (parse-json-board '((1 2 3) (4 5 6) (7 8 9))) '((1 4 7) (2 5 8) (3 6 9)))
-  ;; parse-json-posns TODO
-  
+  ;; parse-json-posns
+  (check-equal? (parse-json-posns '((1 4) (6 0))) (list (make-posn 4 1) (make-posn 0 6)))
   ;; parse-json-posn
   (check-equal? (parse-json-posn '(1 4)) (make-posn 4 1))
   (check-equal? (parse-json-posn '(6 0)) (make-posn 0 6))
+  ;; parse-json-color
+  (check-equal? (parse-json-color "red") RED)
+  (check-equal? (parse-json-color "white") WHITE)
+  ;; serialize-state
+  (check-equal? (serialize-state
+                 (make-state (make-even-board 4 3 1)
+                             (list (make-player RED 10 '())
+                                   (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3))))))
+                (hash BOARD-KEY '((1 1 1 1) (1 1 1 1) (1 1 1 1))
+                      PLAYERS-KEY (list (hash COLOR-KEY "red"
+                                              SCORE-KEY 10
+                                              PLACES-KEY '())
+                                        (hash COLOR-KEY "black"
+                                              SCORE-KEY 5
+                                              PLACES-KEY (list (list 0 0) (list 3 1))))))
+  ;; serialize-players
+  (check-equal? (serialize-players
+                 (list (make-player RED 10 '())
+                       (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3)))))
+                (list (hash COLOR-KEY "red"
+                            SCORE-KEY 10
+                            PLACES-KEY '())
+                      (hash COLOR-KEY "black"
+                            SCORE-KEY 5
+                            PLACES-KEY (list (list 0 0) (list 3 1)))))
+  ;; serialize-player
+  (check-equal? (serialize-player (make-player RED 10 '()))
+                (hash COLOR-KEY "red"
+                      SCORE-KEY 10
+                      PLACES-KEY '()))
+  (check-equal? (serialize-player (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3))))
+                (hash COLOR-KEY "black"
+                      SCORE-KEY 5
+                      PLACES-KEY (list (list 0 0) (list 3 1))))
+  ;; serialize-board
+  (check-equal? (serialize-board (make-even-board 2 2 1))
+                '((1 1) (1 1)))
+  (check-equal? (serialize-board (make-even-board 4 3 1))
+                '((1 1 1 1) (1 1 1 1) (1 1 1 1)))
+  ;; serialize-posns
+  (check-equal? (serialize-posns '()) '())
+  (check-equal? (serialize-posns (list (make-posn 1 1) (make-posn 0 4)))
+                (list (list 1 1) (list 4 0)))
+  ;; serialize-posn
+  (check-equal? (serialize-posn (make-posn 0 0))
+                (list 0 0))
+  (check-equal? (serialize-posn (make-posn 1 5))
+                (list 5 1))
+  ;; serialize-color
+  (check-equal? (serialize-color RED) "red")
+  (check-equal? (serialize-color BLACK) "black")
 
-  ;; parse-json-color TODO
-
-  ;; parse-json-state TODO
-
-  ;; serialize-players TODO
-
-  ;; serialize-player TODO
-
-  ;; serialize-board TODO
-
-  ;; serialize-posns TODO
-
-  ;; serialize-color TODO
-
-  )
+  ;; ROUND TRIP TEST
+  (define test-state (make-state '((1 4 7) (2 5 8) (3 6 0) (1 1 0))
+                                 (list (make-player RED 10 '())
+                                       (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 2))))))
+  (check-equal? (parse-json-state (serialize-state test-state))
+                test-state))

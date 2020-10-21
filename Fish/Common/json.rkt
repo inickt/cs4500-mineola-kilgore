@@ -4,9 +4,10 @@
          json
          racket/contract
          racket/list
-         "board.rkt")
+         "board.rkt"
+         "state.rkt")
 
-(provide (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) -> state?)])
+(provide (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) state?)])
          (contract-out [parse-json-board-posn (-> (hash/c symbol? jsexpr?) board-posn?)])
          (contract-out [board-posn-board (-> board-posn? board?)])
          (contract-out [board-posn-posn (-> board-posn? posn?)])
@@ -61,7 +62,7 @@
 ;; Parses a Fish game board from a well formed and valid JSON board
 ;; JSON: Board
 (define (parse-json-board json-board)
-  (transpose json-board))
+  (transpose-matrix json-board))
 
 ;; parse-json-posns : (listof (list/c natural? natural?)) -> (listof posn?)
 ;; Parses Fish positions from well formed and valid JSON
@@ -101,7 +102,7 @@
 ;; Converts a player into a JSON expression
 ;; JSON: Player
 (define (serialize-player player)
-  (hash COLOR-KEY (serialize-color (player-penguin player))
+  (hash COLOR-KEY (serialize-color (player-color player))
         SCORE-KEY (player-score player)
         PLACES-KEY (serialize-posns (player-places player))))
 
@@ -109,7 +110,7 @@
 ;; Converts a board into a JSON expression
 ;; JSON: Board
 (define (serialize-board board)
-  (transpose board))
+  (transpose-matrix board))
 
 ;; serialize-posns : (listof posn?) -> (listof (list/c natural? natural?))
 ;; Converts posns into a JSON expression
@@ -121,7 +122,7 @@
 ;; Converts a posn into a JSON expression
 ;; JSON: Position
 (define (serialize-posn posn)
-  (make-posn (second json-posn) (first json-posn)))
+  (list (posn-y posn) (posn-x posn)))
 
 ;; serialize-color : penguin? -> string?
 ;; Converts a penguin into a JSON expression

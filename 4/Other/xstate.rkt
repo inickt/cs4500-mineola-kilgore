@@ -1,7 +1,9 @@
 #lang racket/base
 
 (require lang/posn
+         json
          racket/list
+         "../../Fish/Common/json.rkt"
          "../../Fish/Common/penguin.rkt"
          "../../Fish/Common/state.rkt")
 
@@ -27,6 +29,9 @@
   ;; TODO write JSON result
   (define result-state (apply-algorithm penguin cur-posn algo-moves state))
   (displayln result-state)
+  (newline)
+  (write-json (serialize-state result-state))
+  
   (draw-state result-state 50))
 
 ;; +-------------------------------------------------------------------------------------------------+

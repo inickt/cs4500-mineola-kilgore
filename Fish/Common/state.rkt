@@ -18,7 +18,12 @@
          (contract-out [move-penguin (-> penguin? posn? posn? state? state?)])
          (contract-out [can-any-move? (-> state? boolean?)])
          (contract-out [draw-state (-> state? natural? image?)])
-         (contract-out [state-players (-> state? (non-empty-listof player?))]))
+         (contract-out [state-players (-> state? (non-empty-listof player?))])
+         (contract-out [make-player (-> penguin? natural? (listof posn?) player?)])
+         (contract-out [make-state (-> board? (non-empty-listof player?) state?)])
+         (contract-out [is-place-valid? (-> penguin? posn? state? boolean?)])
+         (contract-out [is-move-valid? (-> penguin? posn? posn? state? boolean?)])
+         (contract-out [valid-moves (-> posn? state? (listof posn?))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -55,7 +60,7 @@
 ;; NOTE: Does not check number of penguins a player has placed. We think this should be
 ;;       handled by the game rules
 (define (place-penguin penguin posn state)
-  (when (not (member penguin (map player-color (state-players state))))
+  (when (not (penguin-color-exists? penguin state))
     (raise-arguments-error 'place-penguin
                            "The given penguin color is not in the game"
                            "penguin color" penguin))
@@ -63,7 +68,7 @@
     (raise-arguments-error 'place-penguin
                            "The given posn is either a hole or not on the board"
                            "posn" posn))
-  (when (member posn (append-map player-places (state-players state)))
+  (when (penguin-at? posn state)
     (raise-arguments-error 'place-penguin
                            "There is already a penguin at the given position"
                            "posn" posn))
@@ -80,18 +85,16 @@
     (raise-arguments-error 'move-penguin
                            "The given FROM position is not valid"
                            "from-posn" from-posn))
-  (define player (findf (λ (player) (penguin=? (player-color player) penguin)) (state-players state)))
-  (when (false? player)
+  (when (not (penguin-color-exists? penguin state))
     (raise-arguments-error 'move-penguin
                            "The given penguin does not exist in the game"
                            "penguin" penguin))
-  (when (not (member from-posn (player-places player)))
+  (when (not (player-has-penguin-at? penguin from-posn state))
     (raise-arguments-error 'move-penguin
                            "The given player does not have a penguin at the given FROM position"
                            "penguin" penguin
                            "from-posn" from-posn))
-  (when (or (not (member to-posn (valid-movements from-posn (state-board state))))
-            (member to-posn (append-map player-places (state-players state))))
+  (when (not (move-is-valid? from-posn to-posn state))
     (raise-arguments-error 'move-penguin
                            "Moving from from-posn to to-posn is not a valid move"
                            "from-posn" from-posn
@@ -102,6 +105,19 @@
                                    (update-player-posn player from-posn to-posn points)
                                    player))
                    (state-players state))))
+
+;; valid-moves : posn? state? -> (listof posn?)
+;; Determines all positions resulting in a legal move from the given posn
+(define (valid-moves posn state)
+  (when (not (valid-tile? posn (state-board state)))
+    (raise-arguments-error 'valid-moves
+                           "The specified posn is not valid"
+                           "posn" posn))
+  (when (not (penguin-at? posn state))
+    (raise-arguments-error 'valid-moves
+                           "There is no penguin at the given posn"
+                           "posn" posn))
+  (valid-movements posn (penguins-to-holes state)))
 
 ;; can-any-move? : state? -> boolean?
 ;; Can any players in the game move?
@@ -118,8 +134,47 @@
   (beside (draw-board-penguins (state-board state) (state-players state) tile-size)
           (draw-players (state-players state) tile-size)))
 
+;; is-place-valid? : penguin? posn? state? -> boolean?
+;; Is it valid to place a penguin with the given color at the given posn?
+(define (is-place-valid? penguin posn state)
+  (and (valid-tile? posn (state-board state))
+       (penguin-color-exists? penguin state)
+       (not (penguin-at? posn state))))
+
+;; is-move-valid? : penguin? posn? posn? state? -> boolean?
+;; Is it valid to move a penguin of the given color from from-posn to to-posn?
+(define (is-move-valid? penguin from-posn to-posn state)
+  (and (valid-tile? from-posn (state-board state))
+       (player-has-penguin-at? penguin from-posn state)
+       (is-place-valid? penguin to-posn state)
+       (move-is-valid? from-posn to-posn state)))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
+
+;; penguin-color-exists? : penguin? state? -> boolean?
+;; Is the pengin color in the game?
+(define (penguin-color-exists? penguin state)
+  (list? (member penguin (map player-color (state-players state)))))
+
+;; penguin-at? : posn? state? -> boolean?
+;; Is there a penguin at the given posn?
+(define (penguin-at? posn state)
+  (list? (member posn (append-map player-places (state-players state)))))
+
+;; player-has-penguin-at? : penguin? posn? state? -> boolean?
+;; Does the player have a penguin at the posn?
+(define (player-has-penguin-at? penguin posn state)
+  (and (penguin-color-exists? penguin state)
+       (list? (member posn
+                      (player-places (findf (λ (player) (penguin=? penguin (player-color player)))
+                                            (state-players state)))))))
+
+;; move-is-valid? : posn? posn? state? -> boolean?
+;; Is the move valid?
+(define (move-is-valid? from-posn to-posn state)
+  (or (list? (member to-posn (valid-movements from-posn (state-board state))))
+      (not (list? (member to-posn (append-map player-places (state-players state)))))))
 
 ;; update-player-posn : player? posn? posn? natural? -> player?
 ;; Adds points to the players score and replaces the given posn with a new posn.
@@ -180,7 +235,6 @@
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
-
 (module+ test
   (require rackunit)
 
@@ -254,8 +308,32 @@
                                                        (state-board test-state))))
                 (state-players test-state)))
   (check-false (can-any-move? can-move-test-state))
-
+  ;; is-place-valid?
+  (check-true (is-place-valid? RED (make-posn 0 0) test-state))
+  (check-false (is-place-valid? BROWN (make-posn 0 0) test-state))
+  (check-false (is-place-valid? WHITE (make-posn -1 0) test-state))
+  (check-false (is-place-valid? WHITE (make-posn 2 0) test-state))
+  ;; is-move-valid?
+  (check-true (is-move-valid? RED (make-posn 0 1) (make-posn 0 0) test-state))
+  (check-false (is-move-valid? RED (make-posn 0 2) (make-posn 0 0) test-state))
+  (check-false (is-move-valid? RED (make-posn 0 0) (make-posn 1 1) test-state))
+  (check-false (is-move-valid? BROWN (make-posn 0 1) (make-posn 0 0) test-state))
+  (check-false (is-move-valid? RED (make-posn 0 1) (make-posn 2 1) test-state))
+ 
   ;; Internal Helper Functions
+  ;; penguin-color-exists?
+  (check-true (penguin-color-exists? RED test-state))
+  (check-false (penguin-color-exists? BROWN test-state))
+  ;; penguin-at?
+  (check-true (penguin-at? (make-posn 2 3) test-state))
+  (check-false (penguin-at? (make-posn 1 3) test-state))
+  ;; player-has-penguin-at?
+  (check-true (player-has-penguin-at? WHITE (make-posn 2 3) test-state))
+  (check-false (player-has-penguin-at? BLACK (make-posn 2 3) test-state))
+  (check-false (player-has-penguin-at? WHITE (make-posn 1 3) test-state))
+  ;; move-is-valid?
+  (check-true (move-is-valid? (make-posn 0 1) (make-posn 0 0) test-state))
+  (check-false (move-is-valid? (make-posn 0 1) (make-posn 2 1) test-state))
   ;; update-player-posn
   (check-equal? (update-player-posn (make-player RED 10 (list (make-posn 2 2)))
                                     (make-posn 2 2)

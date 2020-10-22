@@ -13,14 +13,14 @@ terms from your language, and UML sequence diagrams (if desired).
 
 #### Notes
 
-Talk about illegal data inputs to Player functions
-Talk about how on intitialization the state picks a subset of colors, and as ages become known each player gets assigned a color
-Cannot call finalize with a Game that is not a leaf node
-Protocol violation warning
-Link to `Move` definition from programming task
+Talk about illegal data inputs to Player functions  
+Talk about how on intitialization the state picks a subset of colors, and as ages become known each player gets assigned a color  
+Cannot call finalize with a Game that is not a leaf node  
+Protocol violation warning  
+Link to `Move` definition from programming task  
 
 #### Protocol
 
-What functions do the players provide?
-What order will the referee call the functions in?
+What functions do the players provide?  
+What order will the referee call the functions in?  
 

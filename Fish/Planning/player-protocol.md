@@ -18,6 +18,7 @@ Talk about how on intitialization the state picks a subset of colors, and as age
 Cannot call finalize with a Game that is not a leaf node  
 Protocol violation warning  
 Link to `Move` definition from programming task  
+Talk about `listen` method  
 
 #### Protocol
 

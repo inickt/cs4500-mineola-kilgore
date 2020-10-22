@@ -5,17 +5,17 @@ The protocol that the Referee will use to interact with a Player is as follows:
 
 #### Functions  
 There are 6 functions that the Referee may call on a Player.
-- initialize
+- `initialize`
   - Informs the player that a game with the given board and number of players will begin, and that the player's penguin avatars will have the given color. The player returns it's age in years.
-- get-placement
+- `get-placement`
   - Informs the player of the current `State`. The Player returns it's next desired placement for a penguin.
-- get-movement
+- `get-movement`
   - Informs the player of the current `Game`. The Player returns it's next `Move`.
-- finalize
+- `finalize`
   - Informs the player of the final `Game`, which is guaranteed to be terminal (no more moves can be made).
-- listen
+- `listen`
   - Informs the player of the new `Game` any time any Player performs an action that produces a new `Game`.
-- terminate
+- `terminate`
   - Informs the player that it has been kicked from the game, with a provided reason which the player may desire to log.
 
 #### Order of Function Calls  

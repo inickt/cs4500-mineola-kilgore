@@ -124,6 +124,12 @@
                            "posn" posn))
   (valid-movements posn (penguins-to-holes state)))
 
+;; can-color-move? : penguin? state? -> boolean?
+;; Can the player with the given color move?
+(define (can-color-move? color state)
+  (ormap (λ (posn) (cons? (valid-moves posn state)))
+         (player-places (get-player color state))))
+
 ;; can-any-move? : state? -> boolean?
 ;; Can any players in the game move?
 (define (can-any-move? state)
@@ -154,6 +160,15 @@
        (is-place-valid? penguin to-posn state)
        (move-is-valid? from-posn to-posn state)))
 
+;; get-player : penguin? state? -> player?
+;; Gets the player with the given penguin color
+(define (get-player color state)
+  (define pl (findf (λ (player) (penguin=? color (player-color player))) (state-players state)))
+  (when (false? pl) (raise-arguments-error 'get-player
+                                           "The given player color is not in the state"
+                                           "color" color))
+  pl)
+  
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
@@ -305,6 +320,10 @@
   ; invalid move
   (check-exn exn:fail?
              (λ () (move-penguin RED (make-posn 0 1) (make-posn 2 1) test-state)))
+  ;; can-color-move?
+  (check-true (can-color-move? RED test-state))
+  (check-true (can-color-move? BLACK test-state))
+  (check-false (can-color-move? WHITE test-state))
   ;; can-any-move?
   (check-false (can-any-move? (create-game 2 (make-even-board 3 3 2))))
   (check-true (can-any-move? test-state))
@@ -326,6 +345,14 @@
   (check-false (is-move-valid? RED (make-posn 0 0) (make-posn 1 1) test-state))
   (check-false (is-move-valid? BROWN (make-posn 0 1) (make-posn 0 0) test-state))
   (check-false (is-move-valid? RED (make-posn 0 1) (make-posn 2 1) test-state))
+  ;; get-player
+  (check-equal? (get-player RED test-state)
+                (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1))))
+  (check-equal? (get-player BLACK test-state)
+                (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1))))
+  (check-equal? (get-player WHITE test-state)
+                (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))
+  (check-exn exn:fail? (λ () (get-player BROWN test-state)))
  
   ;; Internal Helper Functions
   ;; penguin-color-exists?

@@ -34,7 +34,7 @@
 ;; DATA DEFINITIONS
 
 (define-struct state [board players] #:transparent)
-;; A GameState is a:
+;; A State is a:
 ;; (make-state board? (non-empty-listof player?))
 ;; And represents a fish game state, containing:
 ;; - the current board state

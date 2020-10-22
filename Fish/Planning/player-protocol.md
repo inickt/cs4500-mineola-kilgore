@@ -11,6 +11,8 @@ statements). The second document (player-protocol.md) may use the usual mix of E
 terms from your language, and UML sequence diagrams (if desired).
 ```
 
+
+
 #### Notes
 
 Talk about illegal data inputs to Player functions  

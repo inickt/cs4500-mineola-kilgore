@@ -9,7 +9,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
-(define-struct move [from to])
+(define-struct move [from to] #:transparent)
 ;; A Move is a (make-move posn? posn?)
 ;; and represents a penguin move on a fish board
 
@@ -127,8 +127,9 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
 (module+ test
-  (require rackunit
-           lang/posn
+  (require lang/posn
+           racket/set
+           rackunit
            "board.rkt")
 
   (define test-game
@@ -185,11 +186,36 @@
                 (make-game cg-state-ex5
                            BROWN
                            '()))
-  
   ;; +--- is-valid-move? ---+
-  
+  (check-true (is-valid-move? test-game (make-move (make-posn 1 2) (make-posn 1 3))))
+  (check-false (is-valid-move? test-game (make-move (make-posn 0 4) (make-posn 0 3))))
   ;; +--- apply-move ---+
-  ;; +--- all-possible-moves ---+x
+  
+  ;; +--- all-possible-moves ---+
+  (check-equal? (list->set (hash-keys (all-possible-moves test-game)))
+                (set (make-move (make-posn 1 2) (make-posn 0 0))
+                     (make-move (make-posn 1 2) (make-posn 0 1))
+                     (make-move (make-posn 1 2) (make-posn 1 0))
+                     (make-move (make-posn 1 2) (make-posn 1 3))
+                     (make-move (make-posn 1 2) (make-posn 2 4))
+                     (make-move (make-posn 2 3) (make-posn 2 4))
+                     (make-move (make-posn 2 3) (make-posn 2 2))))
+  (check-equal? (all-possible-moves
+                 (make-game (make-state '((1 1 1 0 1))
+                                        (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                              (make-player RED 0 (list (make-posn 0 0)))))
+                            BLACK '()))
+                (hash (make-move (make-posn 0 2)
+                                 (make-posn 0 1))
+                      (make-end-game (make-state '((0 0 0 0 1))
+                                                 (list (make-player BLACK 2 '())
+                                                       (make-player RED 1 '()))) '())
+                      (make-move (make-posn 0 2) (make-posn 0 4))
+                      (make-game (make-state '((1 1 0 0 1))
+                                             (list (make-player BLACK 1 (list (make-posn 0 4)))
+                                                   (make-player RED 0 (list (make-posn 0 0)))))
+                                             RED '())))
+  
   ;; +--- kick-player ---+
   ;; kick a player while another player who can play remains
   (check-equal?
@@ -219,6 +245,27 @@
    (make-end-game (make-state '((1 1 0 0 0)) (list (make-player RED 0 '()) (make-player BLACK 1 '())))
                   (list RED)))
   ;; +--- apply-to-all-children ---+
+  ;; In one state, WHITE will move into the position BLACK is attempting to move into using the λ
+  ;; The resulting list should state that the move is legal for BLACK in all but one case
+  (check-equal? (sort (apply-to-all-children
+                       test-game
+                       (λ (gamenode) (if (end-game? gamenode)
+                                         (error "No terminal games should exist")
+                                         (is-valid-move? gamenode (make-move (make-posn 1 4)
+                                                                             (make-posn 1 3))))))
+                      (λ (b1 b2) b1))
+                (list #t #t #t #t #t #t #f))
+  ;; In this Game, BLACK has two moves available. One of them will end the game, and in the other
+  ;; BLACK can move again
+  (check-equal? (sort
+                 (apply-to-all-children
+                  (make-game (make-state '((1 1 1 0 1))
+                                         (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                               (make-player RED 0 (list (make-posn 0 0)))))
+                             BLACK '())
+                  end-game?)
+                 (λ (b1 b2) b1))
+                (list #t #f))
   
   ;; Internal Helper Functions
   ;; +---- next-turn ---+
@@ -244,7 +291,4 @@
                                       (make-player BROWN 0 '())
                                       (make-player BLACK 0 '()))
                                 BLACK)
-                RED)
-  )
-
-
+                RED))

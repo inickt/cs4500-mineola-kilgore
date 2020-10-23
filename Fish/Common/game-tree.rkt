@@ -74,7 +74,7 @@
               [to-posn (valid-moves from-posn current-state)]
               ;; Bind the move and skip it if invalid
               [potential-move (in-value (make-move from-posn to-posn))]
-              #:when (is-valid-move? potential-move))
+              #:when (is-valid-move? game potential-move))
     (values potential-move (apply-move game potential-move))))
 
 ;; kick-player : game? -> game-node?
@@ -88,7 +88,10 @@
       (make-game new-state (next-turn new-state (last (state-players new-state))) kicked-list)
       (make-end-game (finalize-state new-state kicked-list))))
 
-;; TODO: Query facilities
+;; apply-to-all-children : game? [game-node? -> any/c] -> [list-of any/c]
+;; Applies the provided function to all child GameNodes of the given game
+(define (apply-to-all-children game fn)
+  (map fn (hash-values (all-possible-moves game))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL

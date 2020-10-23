@@ -38,8 +38,8 @@
 (define (create-game state)
   (if (can-any-move? state)
       ;; Sets current to the first player in the list who has a valid move
-      (make-game state (next-turn state (last (state-players state))) '())
-      (make-end-game state '())))
+      (make-game state (next-turn state (player-color (last (state-players state)))) '())
+      (make-end-game (finalize-state state) '())))
 
 ;; is-valid-move? : game? move? -> boolean?
 ;; Is the given move (by the current player in the provided game) valid?
@@ -102,7 +102,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; next turn : state? penguin? -> penguin?
+;; next-turn : state? penguin? -> penguin?
 ;; Determines the color of the next player in the game, skipping players who cannot move
 (define (next-turn state current)
   (local [;; next-turn-h : state? penguin? penguin? -> penguin?
@@ -127,7 +127,8 @@
 ;; TESTS
 (module+ test
   (require rackunit
-           lang/posn)
+           lang/posn
+           "board.rkt")
 
   (define test-game
     (make-game
@@ -147,6 +148,42 @@
 
   ;; Provided Functions
   ;; +--- create-game ---+
+  ;; valid state, first player can move
+  (define cg-state-ex1 (make-state (make-even-board 3 3 1)
+                                   (list (make-player RED 0 (list (make-posn 0 0)))
+                                         (make-player BLACK 0 (list (make-posn 2 2))))))
+  (check-equal? (create-game cg-state-ex1) (make-game cg-state-ex1 RED '()))
+  
+  ;; none can move
+  (define cg-state-ex2 (make-state (make-even-board 1 2 1)
+                                   (list (make-player BROWN 0 (list (make-posn 0 0)))
+                                         (make-player BLACK 0 (list (make-posn 0 1))))))
+  (define cg-state-ex3 (make-state (make-even-board 2 2 1)
+                                   (list (make-player RED 0 (list (make-posn 0 0)))
+                                         (make-player BLACK 0 (list (make-posn 0 1)))
+                                         (make-player BROWN 0 (list (make-posn 1 0)))
+                                         (make-player WHITE 0 (list (make-posn 1 1))))))
+  (check-equal? (create-game cg-state-ex2)
+                (make-end-game (finalize-state cg-state-ex2) '()))
+  (check-equal? (create-game cg-state-ex3)
+                (make-end-game (finalize-state cg-state-ex3) '()))
+  ;; valid state, some players can't move
+  (define cg-state-ex4 (make-state (make-even-board 2 2 1)
+                                   (list (make-player RED 0 (list (make-posn 0 0)))
+                                         (make-player BLACK 0 (list (make-posn 1 0)))
+                                         (make-player BROWN 0 (list (make-posn 0 1))))))
+  (define cg-state-ex5 (make-state (make-even-board 2 2 1)
+                                   (list (make-player RED 0 (list (make-posn 0 0)))
+                                         (make-player BLACK 0 (list (make-posn 0 1)))
+                                         (make-player BROWN 0 (list (make-posn 1 0))))))
+  (check-equal? (create-game cg-state-ex4)
+                (make-game cg-state-ex4
+                           BLACK
+                           '()))
+  (check-equal? (create-game cg-state-ex5)
+                (make-game cg-state-ex5
+                           BROWN
+                           '()))
   ;; +--- is-valid-move? ---+
   ;; +--- apply-move ---+
   ;; +--- all-possible-moves ---+x
@@ -180,4 +217,4 @@
                 RED)
   )
 
-;; TODO test create-game with blocked-in penguin at first of player list
+

@@ -107,7 +107,7 @@
                  kicked-list)
       (make-end-game (finalize-state new-state) kicked-list)))
 
-;; apply-to-all-children : game? [game-tree? -> any/c] -> [list-of any/c]
+;; apply-to-all-children : game? (-> game-tree? any/c) -> (list-of any/c)
 ;; Applies the provided function to all child GameTrees of the given game
 (define (apply-to-all-children game fn)
   (map fn (hash-values (all-possible-moves game))))

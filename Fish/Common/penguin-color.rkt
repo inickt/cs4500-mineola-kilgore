@@ -5,16 +5,16 @@
          racket/contract
          racket/set)
 
-(provide (contract-out [penguin? (-> any/c boolean?)])
-         (contract-out [penguin=? (-> penguin? penguin? boolean?)])
-         (contract-out [draw-penguin (-> penguin? positive? image?)])
-         (contract-out [penguin-color-map (-> penguin? image-color?)])
-         (contract-out [describe-penguin (-> penguin? string?)])
-         (contract-out [RED penguin?])
-         (contract-out [WHITE penguin?])
-         (contract-out [BROWN penguin?])
-         (contract-out [BLACK penguin?])
-         (contract-out [PENGUIN-COLORS (set/c penguin?)]))
+(provide (contract-out [penguin-color? (-> any/c boolean?)])
+         (contract-out [penguin-color=? (-> penguin-color? penguin-color? boolean?)])
+         (contract-out [draw-penguin (-> penguin-color? positive? image?)])
+         (contract-out [penguin-color-map (-> penguin-color? image-color?)])
+         (contract-out [describe-penguin (-> penguin-color? string?)])
+         (contract-out [RED penguin-color?])
+         (contract-out [WHITE penguin-color?])
+         (contract-out [BROWN penguin-color?])
+         (contract-out [BLACK penguin-color?])
+         (contract-out [PENGUIN-COLORS (set/c penguin-color?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -31,29 +31,29 @@
 (define BROWN 'brown)
 (define BLACK 'black)
 (define PENGUIN-COLORS (set RED WHITE BROWN BLACK))
-(define penguin? (symbols RED WHITE BROWN BLACK))
-(define penguin=? symbol=?)
+(define penguin-color? (symbols RED WHITE BROWN BLACK))
+(define penguin-color=? symbol=?)
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; draw-penguin : penguin? positive? -> image?
+;; draw-penguin : penguin-color? positive? -> image?
 ;; Creates an image a penguin with the given height
-(define (draw-penguin penguin height)
-  (define image (penguin-image penguin))
+(define (draw-penguin color height)
+  (define image (penguin-image color))
   (scale (/ height (image-height image)) image))
 
-;; penguin-color-map : penguin? -> image-color?
+;; penguin-color-map : penguin-color? -> image-color?
 ;; Maps a penguin to a more aesthetically pleasing color
-(define (penguin-color-map penguin)
-  (cond [(penguin=? penguin WHITE) 'gainsboro]
-        [(penguin=? penguin BROWN) 'peru]
-        [(penguin=? penguin RED) 'crimson]
-        [(penguin=? penguin BLACK) BLACK]))
+(define (penguin-color-map color)
+  (cond [(penguin-color=? color WHITE) 'gainsboro]
+        [(penguin-color=? color BROWN) 'peru]
+        [(penguin-color=? color RED) 'crimson]
+        [(penguin-color=? color BLACK) BLACK]))
 
-;; describe-penguin : penguin? -> string?
+;; describe-penguin : penguin-color? -> string?
 ;; String representation of the penguin
-(define (describe-penguin penguin)
-  (string-titlecase (symbol->string penguin)))
+(define (describe-penguin color)
+  (string-titlecase (symbol->string color)))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -61,7 +61,7 @@
 (define PENGUIN-SECONDARY-COLOR 'white)
 (define PENGUIN-ACCENT-COLOR 'yellow)
 
-;; penguin-image : penguin? -> image?
+;; penguin-image : penguin-color? -> image?
 ;; Draws the penguin
 (define (penguin-image penguin)
   (define pen-color (penguin-color-map penguin))
@@ -104,8 +104,8 @@
 (module+ test
   (require rackunit)
   ;; draw-penguin
-  (for ([penguin PENGUIN-COLORS])
-    (check-equal? (image-height (draw-penguin penguin 20)) 20)
-    (check-equal? (image-height (draw-penguin penguin 40)) 40))
+  (for ([color PENGUIN-COLORS])
+    (check-equal? (image-height (draw-penguin color 20)) 20)
+    (check-equal? (image-height (draw-penguin color 40)) 40))
   ;; describe-penguin
   (check-equal? (describe-penguin RED) "Red"))

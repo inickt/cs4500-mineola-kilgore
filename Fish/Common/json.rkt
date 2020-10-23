@@ -5,7 +5,7 @@
          racket/contract
          racket/list
          "board.rkt"
-         "penguin.rkt"
+         "penguin-color.rkt"
          "state.rkt")
 
 (provide (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) state?)])
@@ -83,7 +83,7 @@
 (define (parse-json-posn json-posn)
   (make-posn (second json-posn) (first json-posn)))
 
-;; parse-json-color : string? -> penguin?
+;; parse-json-color : string? -> penguin-color?
 ;; Parses a Fish color from well formed and valid JSON
 ;; JSON: Color
 (define parse-json-color string->symbol)
@@ -129,8 +129,8 @@
 (define (serialize-posn posn)
   (list (posn-y posn) (posn-x posn)))
 
-;; serialize-color : penguin? -> string?
-;; Converts a penguin into a JSON expression
+;; serialize-color : penguin-color? -> string?
+;; Converts a penguin color into a JSON expression
 ;; JSON: Color
 (define serialize-color symbol->string)
 

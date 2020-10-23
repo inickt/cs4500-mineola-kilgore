@@ -19,7 +19,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
-;; A Penguin is one of:
+;; A PenguinColor is one of:
 ;; - 'red
 ;; - 'white
 ;; - 'brown

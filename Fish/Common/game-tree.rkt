@@ -15,24 +15,35 @@
 
 (define-struct game [state player-turn kicked] #:transparent)
 (define-struct end-game [state kicked] #:transparent)
-(define game-node? (or/c game? end-game?))
-;; A GameNode is one of:
-;; - (make-game state? penguin? (listof? penguin?))
-;; - (make-end-game state? (listof? penguin?)])
-;; INVARIANT: All GameNodes that are make-games have at least one valid move for the current player
+(define game-tree? (or/c game? end-game?))
+;; A GameTree is one of:
+;; - Game
+;; - EndGame
+;; and represents a node in a game tree with some or no remaining moves.
 
-;; and represents a node in a GameTree.
-;; GameNodes that are terminal (leaves of the tree) are represented as make-end-games.
-;; GameNodes that have any number of moves that can be performed are represented as make-games, and
-;; the current player, which can be accessed with game-player-turn, is guaranteed to have at least
-;; one valid move.
-;; If a player makes a move and the next player has no remaining moves, the next player is skipped
-;; and the player after that player is checked, un
+;; A Game is a (make-game state? penguin? (listof? penguin?))
+;; and represents a node in a game tree with a state, a current player, and a list of kicked players.
+;;
+;; The current player (game-player-turn) is guaranteed to have one or more valid moves remaining.
+;; If a player makes a move and the next player(s) are unable to move, players will be skipped until
+;; a player with moves remaining is selected as the current player.
+;; The application of any move to a Game that creates a state where no further moves are possible will
+;; create an EndGame.
+;; INVARIANT: All Games have at least one valid move for the current player.
+
+;; An EndGame is a (make-end-game state? (listof? penguin?)])
+;; and represents a terminal GameTree with a state and a list of kicked players.
+;;
+;; EndGames are created from states in which no valid move is remaining for any player, and the
+;; EndGame itself will be finalized such that all remaining penguins are removed from the board and
+;; the fish on the tiles they occupied will be added to their players' scores.
+;; INVARIANT: EndGames have no penguins placed on the board.
+
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; create-game : state? -> game-node?
+;; create-game : state? -> game-tree?
 ;; Creates a game with the provided state, where the current player is the first player in the state
 ;; and there are no kicked players
 (define (create-game state)
@@ -46,7 +57,7 @@
 (define (is-valid-move? game move)
   (is-move-valid? (game-player-turn game) (move-from move) (move-to move) (game-state game)))
 
-;; apply-move : game? move? -> game-node?
+;; apply-move : game? move? -> game-tree?
 ;; Creates the next game state for a given valid move by the current player in the provided game
 ;; IMPORTANT: is-valid-move? should be queried prior to calling apply-move without exception handling
 ;; NOTES:
@@ -68,7 +79,7 @@
       (make-game new-state (next-turn new-state current-player) kicked-players)
       (make-end-game (finalize-state new-state) kicked-players)))
 
-;; all-possible-moves : game? -> (hash/c move? game-node?)
+;; all-possible-moves : game? -> (hash/c move? game-tree?)
 ;; Builds a mapping of valid moves to their resulting game when applied to the given game
 (define (all-possible-moves game)
   (define current-state (game-state game))
@@ -83,7 +94,7 @@
               #:when (is-valid-move? game potential-move))
     (values potential-move (apply-move game potential-move))))
 
-;; kick-player : game? -> game-node?
+;; kick-player : game? -> game-tree?
 ;; Kicks the current player from the game
 (define (kick-player game)
   (define kick-color (game-player-turn game))
@@ -96,8 +107,8 @@
                  kicked-list)
       (make-end-game (finalize-state new-state) kicked-list)))
 
-;; apply-to-all-children : game? [game-node? -> any/c] -> [list-of any/c]
-;; Applies the provided function to all child GameNodes of the given game
+;; apply-to-all-children : game? [game-tree? -> any/c] -> [list-of any/c]
+;; Applies the provided function to all child GameTrees of the given game
 (define (apply-to-all-children game fn)
   (map fn (hash-values (all-possible-moves game))))
 
@@ -249,9 +260,9 @@
   ;; The resulting list should state that the move is legal for BLACK in all but one case
   (check-equal? (sort (apply-to-all-children
                        test-game
-                       (λ (gamenode) (if (end-game? gamenode)
+                       (λ (gametree) (if (end-game? gametree)
                                          (error "No terminal games should exist")
-                                         (is-valid-move? gamenode (make-move (make-posn 1 4)
+                                         (is-valid-move? gametree (make-move (make-posn 1 4)
                                                                              (make-posn 1 3))))))
                       (λ (b1 b2) b1))
                 (list #t #t #t #t #t #t #f))

@@ -44,8 +44,11 @@
 ;; PROVIDED
 
 ;; create-game : state? -> game-tree?
-;; Creates a game with the provided state, where the current player is the first player in the state
-;; and there are no kicked players
+;; Creates a game with the provided state
+;; NOTES:
+;; - If there are no possible moved in the state, an end-game is returned with the state finalized
+;; - The current player of the returned game is the first player in the list of players that can move
+;; - Games start with no kicked players
 (define (create-game state)
   (if (can-any-move? state)
       ;; Sets current to the first player in the list who has a valid move
@@ -61,7 +64,7 @@
 ;; Creates the next game state for a given valid move by the current player in the provided game
 ;; IMPORTANT: is-valid-move? should be queried prior to calling apply-move without exception handling
 ;; NOTES:
-;; - Constructs an end-game if the resultant Game has no valid moves
+;; - Constructs an end-game if the resultant state has no valid moves
 ;; - Skips the turns of players who cannot move
 (define (apply-move game move)
   (when (not (is-valid-move? game move))

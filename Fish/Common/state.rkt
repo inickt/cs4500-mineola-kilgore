@@ -31,7 +31,8 @@
          (contract-out [is-move-valid? (-> penguin? posn? posn? state? boolean?)])
          (contract-out [valid-moves (-> posn? state? (listof posn?))])
          (contract-out [get-player (-> penguin? state? player?)])
-         (contract-out [finalize-state (-> state? state?)]))
+         (contract-out [finalize-state (-> state? state?)])
+         (contract-out [remove-player-penguins (-> state? penguin? state?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -180,13 +181,15 @@
               (map (λ (player) (finalize-player player (state-board end-state)))
                    (state-players end-state))))
 
-;; remove-player : state? penguin? -> player?
-;; Removes the player with the given color
-(define (remove-player state color)
+;; remove-player-penguins : state? penguin? -> player?
+;; Removes all penguins of the given color
+(define (remove-player-penguins state color)
   (when (not (member color (map player-color (state-players state))))
     (raise-arguments-error 'remove-player "The given color is not in the game" "color" color))
   (make-state (state-board state)
-              (filter (λ (player) (not (penguin=? (player-color player) color)))
+              (map (λ (player) (if (penguin=? (player-color player) color)
+                                   (make-player (player-color player) (player-score player) '())
+                                   player))
                       (state-players state))))
 
 ;; +-------------------------------------------------------------------------------------------------+
@@ -384,20 +387,23 @@
                             (list (make-player RED 8 '())
                                   (make-player BLACK  4 '())
                                   (make-player WHITE 12 '()))))
-  ;; remove-player
-  (check-equal? (remove-player test-state RED)
+  ;; remove-player-penguins
+  (check-equal? (remove-player-penguins test-state RED)
                 (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
-                            (list (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
-                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
-  (check-equal? (remove-player test-state BLACK)
+                (list (make-player RED 1 '())
+                      (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
+                      (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
+  (check-equal? (remove-player-penguins test-state BLACK)
                 (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
-                            (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
-                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
-  (check-equal? (remove-player test-state WHITE)
+                (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
+                      (make-player BLACK  0 '())
+                      (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
+  (check-equal? (remove-player-penguins test-state WHITE)
                 (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
-                            (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
-                                  (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1))))))
-  (check-exn exn:fail? (λ () (remove-player test-state BROWN)))
+                (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
+                      (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
+                      (make-player WHITE 5 '()))))
+  (check-exn exn:fail? (λ () (remove-player-penguins test-state BROWN)))
   
   ;; Internal Helper Functions
   ;; penguin-color-exists?

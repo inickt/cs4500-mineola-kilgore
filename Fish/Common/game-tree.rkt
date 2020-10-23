@@ -42,6 +42,7 @@
 
 ;; apply-move : game? move? -> game-node?
 ;; Creates the next game state for a given valid move by the current player in the provided game
+;; IMPORTANT: is-valid-move? should be queried prior to calling apply-move without exception handling
 ;; NOTES:
 ;; - Constructs an end-game if the resultant Game has no valid moves
 ;; - Skips the turns of players who cannot move
@@ -76,6 +77,28 @@
               #:when (is-valid-move? potential-move))
     (values potential-move (apply-move game potential-move))))
 
+;; kick-player : game? -> game-node?
+;; Kicks the current player from the game
+(define (kick-player game)
+  (define kick-color (game-player-turn game))
+  (define new-state (remove-player-penguins (game-state game) kick-color))
+  (define kicked-list (cons kick-color (game-kicked game)))
+  
+  (if (can-any-move? new-state)
+      (make-game new-state (next-turn new-state (last (state-players new-state))) kicked-list)
+      (make-end-game (finalize-state new-state kicked-list))))
+
+;; TODO: Query facilities
+
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL
+
+;; get-next-color : (list-of player?) penguin? -> penguin?
+;; Get the color of the player in the list after the player with the current color
+(define (get-next-color order current)
+  (define current-index (index-of (map player-color order) current penguin=?))
+  (player-color (list-ref order (modulo (add1 current-index) (length order)))))
+
 ;; next turn : state? penguin? -> penguin?
 ;; Determines the color of the next player in the game, skipping players who cannot move
 (define (next-turn state current)
@@ -84,20 +107,11 @@
           (define (next-turn-h state current original)
             (when (penguin=? current original)
               (raise-arguments-error 'next-turn "State has no valid moves" "state" state))
-            (define next-color (get-next-color (state-players state) current))
-            (if (can-color-move? next-color state)
-                next-color
-                (next-turn state next-color)))]
+            (if (can-color-move? current state)
+                current
+                (next-turn state (get-next-color (state-players state) current))))]
     ;; Get the next color in the list, then recurively query until a color with valid moves is found
     (define next-color (get-next-color (state-players state) current))
     (next-turn-h state next-color current)))
-
-;; get-next-color : (list-of player?) penguin? -> penguin?
-;; Get the color of the player in the list after the player with the current color
-(define (get-next-color order current)
-  (define current-index (index-of (map player-color order) current penguin=?))
-  (player-color (list-ref order (modulo (add1 current-index) (length order)))))
-
-;; TODO kick player fn
 
 ;; TODO test create-game with blocked-in penguin at first of player list

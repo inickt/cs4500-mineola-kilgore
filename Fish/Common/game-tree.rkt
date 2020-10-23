@@ -21,7 +21,13 @@
 ;; - (make-end-game state? (listof? penguin?)])
 ;; INVARIANT: All GameNodes that are make-games have at least one valid move for the current player
 
-;; TODO Interpretation
+;; and represents a node in a GameTree.
+;; GameNodes that are terminal (leaves of the tree) are represented as make-end-games.
+;; GameNodes that have any number of moves that can be performed are represented as make-games, and
+;; the current player, which can be accessed with game-player-turn, is guaranteed to have at least
+;; one valid move.
+;; If a player makes a move and the next player has no remaining moves, the next player is skipped
+;; and the player after that player is checked, un
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
@@ -96,12 +102,6 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; get-next-color : (list-of player?) penguin? -> penguin?
-;; Get the color of the player in the list after the player with the current color
-(define (get-next-color order current)
-  (define current-index (index-of (map player-color order) current penguin=?))
-  (player-color (list-ref order (modulo (add1 current-index) (length order)))))
-
 ;; next turn : state? penguin? -> penguin?
 ;; Determines the color of the next player in the game, skipping players who cannot move
 (define (next-turn state current)
@@ -112,9 +112,72 @@
               (raise-arguments-error 'next-turn "State has no valid moves" "state" state))
             (if (can-color-move? current state)
                 current
-                (next-turn state (get-next-color (state-players state) current))))]
+                (next-turn-h state (get-next-color (state-players state) current) original)))]
     ;; Get the next color in the list, then recurively query until a color with valid moves is found
     (define next-color (get-next-color (state-players state) current))
     (next-turn-h state next-color current)))
+
+;; get-next-color : (list-of player?) penguin? -> penguin?
+;; Get the color of the player in the list after the player with the current color
+(define (get-next-color order current)
+  (define current-index (index-of (map player-color order) current penguin=?))
+  (player-color (list-ref order (modulo (add1 current-index) (length order)))))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; TESTS
+(module+ test
+  (require rackunit
+           lang/posn)
+
+  (define test-game
+    (make-game
+     (make-state '((1 3 0 1 3) (1 0 1 2 4) (2 0 2 3 5))
+                 (list (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
+                       (make-player RED 3 '())
+                       (make-player WHITE 6 (list (make-posn 0 4) (make-posn 1 2) (make-posn 2 3)))))
+     WHITE
+     (list RED)))
+  (define test-end-game
+    (make-end-game
+     (make-state '((1 0 0 1 3) (0 0 1 0 4) (2 0 0 3 0))
+                 (list (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
+                       (make-player RED 3 '())
+                       (make-player WHITE 6 (list (make-posn 0 4) (make-posn 1 2) (make-posn 2 3)))))
+     (list RED)))
+
+  ;; Provided Functions
+  ;; +--- create-game ---+
+  ;; +--- is-valid-move? ---+
+  ;; +--- apply-move ---+
+  ;; +--- all-possible-moves ---+x
+  ;; +--- kick-player ---+
+  ;; +--- apply-to-all-children ---+
+  
+  ;; Internal Helper Functions
+  ;; +---- next-turn ---+
+  ;; wrap around the end of the list
+  (check-equal? (next-turn (game-state test-game) (game-player-turn test-game)) BLACK)
+  ;; skip a kicked player
+  (check-equal? (next-turn (game-state test-game) BLACK) WHITE)
+  ;; skip a player with no moves
+  (check-equal? (next-turn (make-state '((1 1) (1 1))
+                                       (list (make-player WHITE 0 (list (make-posn 0 0)
+                                                                        (make-posn 1 1)))
+                                             (make-player RED 0 (list (make-posn 1 0)))))
+                           WHITE)
+                WHITE)
+  
+  ;; +--- get-next-color ---+
+  (check-equal? (get-next-color (list (make-player RED 0 '())
+                                      (make-player BROWN 0 '())
+                                      (make-player BLACK 0 '()))
+                                BROWN)
+                BLACK)
+  (check-equal? (get-next-color (list (make-player RED 0 '())
+                                      (make-player BROWN 0 '())
+                                      (make-player BLACK 0 '()))
+                                BLACK)
+                RED)
+  )
 
 ;; TODO test create-game with blocked-in penguin at first of player list

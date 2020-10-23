@@ -10,13 +10,17 @@ The Fish Game system will run individual games of Fish, determining a winner (or
 Fish/
 ├── Common/
 │   ├── board.rkt
-│   ├── penguin.rkt
+│   ├── game-tree.rkt
+│   ├── json.rkt
+│   ├── penguin-color.rkt
+│   ├── player-interface.rkt
 │   ├── state.rkt
 │   └── tile.rkt
 ├── Planning/
 │   ├── game-state.md
 │   ├── games.md
 │   ├── milestones.pdf
+│   ├── player-protocol.md
 │   ├── self-1.md
 │   ├── self-2.md
 │   └── system.pdf
@@ -35,7 +39,33 @@ Provides a predicate for a Board, and functions to:
  3. Draw a board.
  4. Remove a tile from a board, creating a hole.
  5. Determine the legal moves from a given tile.
+
+##### game-tree.rkt
+Contains the data and function definitions describing an entire game of Fish, represented as a tree.  
+Provides functionality to:
+ 1. Create a tree (lazy evaluated) from any Fish game node by querying to generate all children of the node.
+ 2. Query as to whether a move is legal to apply to a game node.
+ 3. Apply a move to a game node, creating the new node.
+ 4. Apply some function to all children of a game node.
+
+##### json.rkt
+TODO
+
+##### penguin-color.rkt
+Contains the data and function definitions describing a player's penguin color in a game of fish.
+Provides an enumeration of Penguins, a function to draw a Penguin avatar, and a function to map a Penguin to the visual color used to represent penguins of that color.
  
+##### player-interface.rkt
+Provides the API specification for a player component.  
+Any user wishing to build an entrant to a Fish game or tournament must build some software component that implements the player interface.
+The functions required of any player component are:
+ 1. Initializing and returning their age.
+ 2. Returning a desired penguin placement given a state.
+ 3. Returning a desired move given a Fish game.
+ 4. Finalizing, when given the final EndGame.
+ 5. Terminating if/when the referee kicks the player from a game.
+ 6. Listening to game tree updates (optional, the player may simply no-op return).
+
 ##### state.rkt
 Contains the data and function definitions representing a state of a Fish game.
 Provides functionality to:
@@ -44,10 +74,6 @@ Provides functionality to:
  3. Move an avatar from one location to another on a Board.
  4. Determine a list of valid moves for a specific Penguin.
  5. Render the State.
-
-##### penguin.rkt
-Contains the data and function definitions describing a player's penguin color in a game of fish.
-Provides an enumeration of Penguins, a function to draw a Penguin avatar, and a function to map a Penguin to the visual color used to represent penguins of that color.
 
 ##### tile.rkt
 Contains the data and function definitions describing a tile.
@@ -64,6 +90,10 @@ A memo release describing the data reperesentation and interface specifications 
 
 ##### milestones.pdf
 A memo release stating the intended milestones for the Fish game and tournament systems, including demoable intermediate steps.
+
+##### player-protocol.md
+A document describing the protocol by which the Referee component will call the function specified in `Fish/Common/player-interface.rkt`.  
+This document specifies how and when the Referee will call the functions, and any user building a component to the player interface specifications should consult this document.
 
 ##### self-1.md
 A self reflective document describing our thoughts on systems.pdf and milestones.pdf in hindsight.

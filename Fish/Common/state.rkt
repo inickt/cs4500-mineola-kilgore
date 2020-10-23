@@ -174,7 +174,7 @@
   pl)
 
 ;; finalize-state : state? -> state?
-;; Takes a state in which no penguin can move, and removes each penguin, incrementing the player's
+;; Removes all penguins, adding the values of the tiles the penguins were on to their players' scores
 ;; scores appropriately.
 (define (finalize-state end-state)
   (make-state (penguins-to-holes end-state)

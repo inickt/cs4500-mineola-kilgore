@@ -32,7 +32,11 @@
          (contract-out [valid-moves (-> posn? state? (listof posn?))])
          (contract-out [get-player (-> penguin? state? player?)])
          (contract-out [finalize-state (-> state? state?)])
-         (contract-out [remove-player-penguins (-> state? penguin? state?)]))
+         (contract-out [remove-player-penguins (-> state? penguin? state?)])
+         (contract-out [move? (-> move? boolean?)])
+         (contract-out [make-move (-> posn? posn? move?)])
+         (contract-out [move-to (-> move? posn?)])
+         (contract-out [move-from (-> move? posn?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -53,6 +57,10 @@
 ;; - the player's color
 ;; - the player's score in the game
 ;; - the player's penguin positions
+
+(define-struct move [from to] #:transparent)
+;; A Move is a (make-move posn? posn?)
+;; and represents a penguin move on a fish board
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED

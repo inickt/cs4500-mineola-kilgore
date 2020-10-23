@@ -6,17 +6,12 @@
          "state.rkt"
          "penguin.rkt")
 
-(provide (contract-out [move? (-> any/c boolean?)])
-         (contract-out [game? (-> any/c boolean?)])
+(provide (contract-out [game? (-> any/c boolean?)])
          (contract-out [end-game? (-> any/c boolean?)])
          (contract-out [game-tree? (-> any/c boolean?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
-
-(define-struct move [from to] #:transparent)
-;; A Move is a (make-move posn? posn?)
-;; and represents a penguin move on a fish board
 
 (define-struct game [state player-turn kicked] #:transparent)
 (define-struct end-game [state kicked] #:transparent)

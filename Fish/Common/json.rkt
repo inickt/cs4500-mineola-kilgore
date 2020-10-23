@@ -61,8 +61,15 @@
 
 ;; parse-json-board : (non-empty-listof (non-empty-listofnatural?)) -> board?
 ;; Parses a Fish game board from a well formed and valid JSON board
+;; NOTE: The lists can potentially be different lengths. This function will find the longest length
+;;       of these lists and fill the remainder of the board with holes.
+;;       https://piazza.com/class/kevisd7ggfb502?cid=246_f1
 ;; JSON: Board
-(define parse-json-board (λ (board) (transpose-matrix board)))
+(define (parse-json-board json-board)
+  (define longest (apply max (map length json-board)))
+  (define padded-json-board (map (λ (tiles) (append tiles (make-list (- longest (length tiles)) 0)))
+                                 json-board))
+  (transpose-matrix padded-json-board))
 
 ;; parse-json-posns : (listof (list/c natural? natural?)) -> (listof posn?)
 ;; Parses Fish positions from well formed and valid JSON
@@ -179,6 +186,8 @@
   ;; parse-json-board
   (check-equal? (parse-json-board '((1))) '((1)))
   (check-equal? (parse-json-board '((1 2 3) (4 5 6) (7 8 9))) '((1 4 7) (2 5 8) (3 6 9)))
+  ;; example of uneven board filled with holes
+  (check-equal? (parse-json-board '((1 2 3) (4) (7 8 9 1))) '((1 4 7) (2 0 8) (3 0 9) (0 0 1)))
   ;; parse-json-posns
   (check-equal? (parse-json-posns '((1 4) (6 0))) (list (make-posn 4 1) (make-posn 0 6)))
   ;; parse-json-posn

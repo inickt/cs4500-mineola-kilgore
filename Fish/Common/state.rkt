@@ -17,6 +17,7 @@
          (contract-out [place-penguin (-> penguin? posn? state? state?)])
          (contract-out [move-penguin (-> penguin? posn? posn? state? state?)])
          (contract-out [can-any-move? (-> state? boolean?)])
+         (contract-out [can-color-move? (-> penguin? state? boolean?)])
          (contract-out [draw-state (-> state? natural? image?)])
          (contract-out [state? (-> any/c boolean?)])
          (contract-out [make-state (-> board? (non-empty-listof player?) state?)])
@@ -29,6 +30,7 @@
          (contract-out [is-place-valid? (-> penguin? posn? state? boolean?)])
          (contract-out [is-move-valid? (-> penguin? posn? posn? state? boolean?)])
          (contract-out [valid-moves (-> posn? state? (listof posn?))])
+         (contract-out [get-player (-> penguin? state? player?)])
          (contract-out [finalize-state (-> state? state?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+

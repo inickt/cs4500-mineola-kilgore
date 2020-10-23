@@ -6,6 +6,11 @@
          "state.rkt"
          "penguin.rkt")
 
+(provide (contract-out [move? (-> any/c boolean?)])
+         (contract-out [game? (-> any/c boolean?)])
+         (contract-out [end-game? (-> any/c boolean?)])
+         (contract-out [game-tree? (-> any/c boolean?)]))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 

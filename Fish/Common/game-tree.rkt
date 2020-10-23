@@ -4,7 +4,7 @@
          racket/list
          racket/local
          "state.rkt"
-         "penguin.rkt")
+         "penguin-color.rkt")
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -21,7 +21,7 @@
 ;; - EndGame
 ;; and represents a node in a game tree with some or no remaining moves.
 
-;; A Game is a (make-game state? penguin? (listof? penguin?))
+;; A Game is a (make-game state? penguin-color? (listof? penguin-color?))
 ;; and represents a node in a game tree with a state, a current player, and a list of kicked players.
 ;;
 ;; The current player (game-player-turn) is guaranteed to have one or more valid moves remaining.
@@ -31,7 +31,7 @@
 ;; create an EndGame.
 ;; INVARIANT: All Games have at least one valid move for the current player.
 
-;; An EndGame is a (make-end-game state? (listof? penguin?)])
+;; An EndGame is a (make-end-game state? (listof? penguin-color?)])
 ;; and represents a terminal GameTree with a state and a list of kicked players.
 ;;
 ;; EndGames are created from states in which no valid move is remaining for any player, and the
@@ -115,24 +115,24 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; next-turn : state? penguin? -> penguin?
+;; next-turn : state? penguin-color? -> penguin-color?
 ;; Determines the color of the next player in the game, skipping players who cannot move
 (define (next-turn state starting)
-  (local [;; next-turn-h : state? penguin? -> penguin?
+  (local [;; next-turn-h : state? penguin-color? -> penguin-color?
           ;; Recursively query until player with color current has valid moves in state
           (define (next-turn-h state current)
             (define next-color (get-next-color (state-players state) current))
             (if (can-color-move? next-color state)
                 next-color
-                (if (penguin=? next-color starting)
+                (if (penguin-color=? next-color starting)
                     (raise-arguments-error 'next-turn "State has no valid moves" "state" state)
                     (next-turn-h state next-color))))]
     (next-turn-h state starting)))
 
-;; get-next-color : (list-of player?) penguin? -> penguin?
+;; get-next-color : (list-of player?) penguin-color? -> penguin-color?
 ;; Get the color of the player in the list after the player with the current color
 (define (get-next-color order current)
-  (define current-index (index-of (map player-color order) current penguin=?))
+  (define current-index (index-of (map player-color order) current penguin-color=?))
   (player-color (list-ref order (modulo (add1 current-index) (length order)))))
 
 ;; +-------------------------------------------------------------------------------------------------+

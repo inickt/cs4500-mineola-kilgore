@@ -5,7 +5,7 @@
          racket/math
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
-         "../Common/penguin.rkt"
+         "../Common/penguin-color.rkt"
          "../Common/state.rkt")
 
 (provide player-interface)
@@ -21,7 +21,7 @@
   (interface ()
     ;; Initializes a player with the initial board, number of players, and the color of this player's
     ;; penguins. Returns this players age (in years).
-    [initialize (->m board? natural? penguin? natural?)]
+    [initialize (->m board? natural? penguin-color? natural?)]
 
     ;; Determines where to place this players next penguin given the current state
     [get-placement (->m state? posn?)]

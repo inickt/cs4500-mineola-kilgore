@@ -206,7 +206,7 @@
   (list? (member posn (append-map player-places (state-players state)))))
 
 ;; player-has-penguin-at? : penguin-color? posn? state? -> boolean?
-;; Does the player have a penguin at the posn?
+;; Does the penguin color have a penguin at the posn?
 (define (player-has-penguin-at? color posn state)
   (and (penguin-color-exists? color state)
        (list? (member posn

@@ -1,7 +1,7 @@
-![ProtocolDiagram](./PlayerProtocolDiagram.png)
-
-## Player Protocol  
+# Player Protocol  
 The protocol that the Referee will use to interact with a Player is as follows:
+
+![ProtocolDiagram](./PlayerProtocolDiagram.png)
 
 #### Functions  
 There are 6 functions that the Referee may call on a Player.
@@ -42,12 +42,12 @@ Players may use algorithms which utilize all available time searching for optima
 #### Notes  
 †Play order: As per the [rules](https://www.ccs.neu.edu/home/matthias/4500-f20/fish.html) the Players take turns in ascending order of their age. If a Player is kicked, their turn is skipped each round.  
 
-`State` is defined [here](). TODO  
-`GameTree`, `Game`, and `EndGame` are defined [here]()
-`Move` is defined [here](). TODO  
-`Color` is defined [here](). TODO
+`State` is defined [here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/0638250021bf92a4a20a9fb254cb681de8ef4a34/Fish/Common/state.rkt#L47-L54).  
+`GameTree`, `Game`, and `EndGame` are defined [here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/0638250021bf92a4a20a9fb254cb681de8ef4a34/Fish/Common/game-tree.rkt#L16-L40).  
+`Move` is defined [here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/0638250021bf92a4a20a9fb254cb681de8ef4a34/Fish/Common/state.rkt#L64-L66).  
+`PenguinColor` is defined [here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/0638250021bf92a4a20a9fb254cb681de8ef4a34/Fish/Common/penguin-color.rkt#L22-L35).
 
 - The Referee will only send well formed, valid data to a Player as arguments to each function specified in the Player Interface.
-- During the initialization phase, a set of `Color`s will be determined for the game. Each Player will be assigned a `Color` when `initialize` is called on that Player.
+- During the initialization phase, a set of `PenguinColor`s will be determined for the game. Each Player will be assigned a `PenguinColor` when `initialize` is called on that Player.
 - If a Player provides a return value to `get-placement` or `get-move`, the Referee may kick this Player from the game. Their penguins will be removed from the `Game`, and their turn will be skipped each round.  
 - `finalize` will only be called with an `EndGame`.

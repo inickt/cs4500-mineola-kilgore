@@ -91,8 +91,10 @@
   (define kicked-list (cons kick-color (game-kicked game)))
   
   (if (can-any-move? new-state)
-      (make-game new-state (next-turn new-state (last (state-players new-state))) kicked-list)
-      (make-end-game (finalize-state new-state kicked-list))))
+      (make-game new-state
+                 (next-turn new-state (player-color (last (state-players new-state))))
+                 kicked-list)
+      (make-end-game (finalize-state new-state) kicked-list)))
 
 ;; apply-to-all-children : game? [game-node? -> any/c] -> [list-of any/c]
 ;; Applies the provided function to all child GameNodes of the given game
@@ -104,18 +106,17 @@
 
 ;; next-turn : state? penguin? -> penguin?
 ;; Determines the color of the next player in the game, skipping players who cannot move
-(define (next-turn state current)
-  (local [;; next-turn-h : state? penguin? penguin? -> penguin?
+(define (next-turn state starting)
+  (local [;; next-turn-h : state? penguin? -> penguin?
           ;; Recursively query until player with color current has valid moves in state
-          (define (next-turn-h state current original)
-            (when (penguin=? current original)
-              (raise-arguments-error 'next-turn "State has no valid moves" "state" state))
-            (if (can-color-move? current state)
-                current
-                (next-turn-h state (get-next-color (state-players state) current) original)))]
-    ;; Get the next color in the list, then recurively query until a color with valid moves is found
-    (define next-color (get-next-color (state-players state) current))
-    (next-turn-h state next-color current)))
+          (define (next-turn-h state current)
+            (define next-color (get-next-color (state-players state) current))
+            (if (can-color-move? next-color state)
+                next-color
+                (if (penguin=? next-color starting)
+                    (raise-arguments-error 'next-turn "State has no valid moves" "state" state)
+                    (next-turn-h state next-color))))]
+    (next-turn-h state starting)))
 
 ;; get-next-color : (list-of player?) penguin? -> penguin?
 ;; Get the color of the player in the list after the player with the current color
@@ -184,10 +185,39 @@
                 (make-game cg-state-ex5
                            BROWN
                            '()))
+  
   ;; +--- is-valid-move? ---+
+  
   ;; +--- apply-move ---+
   ;; +--- all-possible-moves ---+x
   ;; +--- kick-player ---+
+  ;; kick a player while another player who can play remains
+  (check-equal?
+   (kick-player test-game)
+   (make-game
+    (make-state '((1 3 0 1 3) (1 0 1 2 4) (2 0 2 3 5))
+                (list (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
+                      (make-player RED 3 '())
+                      (make-player WHITE 6 '())))
+    BLACK
+    (list WHITE RED)))
+  ;; kick all remaining players
+  (check-equal?
+   (kick-player (kick-player test-game))
+   (make-end-game
+    (make-state '((1 3 0 1 3) (1 0 1 2 4) (2 0 2 3 5))
+                (list (make-player BLACK 8 '())
+                      (make-player RED 3 '())
+                      (make-player WHITE 6 '())))
+    (list BLACK WHITE RED)))
+  ;; kick remaining player who can move
+  (check-equal?
+   (kick-player (make-game (make-state '((1 1 0 0 1))
+                                       (list (make-player RED 0 (list (make-posn 0 0)))
+                                             (make-player BLACK 0 (list (make-posn 0 4)))))
+                           RED '()))
+   (make-end-game (make-state '((1 1 0 0 0)) (list (make-player RED 0 '()) (make-player BLACK 1 '())))
+                  (list RED)))
   ;; +--- apply-to-all-children ---+
   
   ;; Internal Helper Functions
@@ -198,9 +228,9 @@
   (check-equal? (next-turn (game-state test-game) BLACK) WHITE)
   ;; skip a player with no moves
   (check-equal? (next-turn (make-state '((1 1) (1 1))
-                                       (list (make-player WHITE 0 (list (make-posn 0 0)
-                                                                        (make-posn 1 1)))
-                                             (make-player RED 0 (list (make-posn 1 0)))))
+                                       (list (make-player WHITE 0 (list (make-posn 0 1)
+                                                                        (make-posn 1 0)))
+                                             (make-player RED 0 (list (make-posn 0 0)))))
                            WHITE)
                 WHITE)
   

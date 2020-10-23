@@ -4,17 +4,17 @@
          json
          racket/list
          "../../Fish/Common/json.rkt"
-         "../../Fish/Common/penguin.rkt"
+         "../../Fish/Common/penguin-color.rkt"
          "../../Fish/Common/state.rkt")
 
 (provide xstate)
 
-;; apply-algorithm : penguin? posn? [listof posn?] state -> (or/c false? state?)
+;; apply-algorithm : penguin-color? posn? [listof posn?] state -> (or/c false? state?)
 ;; attempts to make the list of moves in order, or #false if all fail
 (define (apply-algorithm penguin cur-posn algo-moves state)
   (if (empty? algo-moves) #f (move-penguin penguin cur-posn (first algo-moves) state)))
 
-;; get-result-state : penguin? posn? state? -> state?
+;; get-result-state : penguin-color? posn? state? -> state?
 ;; Using the silly algorithm, gets the next state
 (define (get-result-state penguin posn state)
   ;; We promise we didn't alter our valid-moves function, we just happened to build

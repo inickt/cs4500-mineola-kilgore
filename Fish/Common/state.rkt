@@ -13,7 +13,7 @@
          "penguin-color.rkt"
          "tile.rkt")
 
-(provide (contract-out [create-game (-> (integer-in 2 4) board? state?)])
+(provide (contract-out [create-state (-> (integer-in 2 4) board? state?)])
          (contract-out [place-penguin (-> penguin-color? posn? state? state?)])
          (contract-out [move-penguin (-> penguin-color? posn? posn? state? state?)])
          (contract-out [can-any-move? (-> state? boolean?)])
@@ -57,10 +57,10 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; create-game : (integer-in 2 4) board? -> state?
-;; Create a game state with a given number of players and the given board.
+;; create-state : (integer-in 2 4) board? -> state?
+;; Create a state with a given number of players and the given board.
 ;; Players are randomly assigned colors, and the turn order is set by the order of the player list.
-(define (create-game num-players board)
+(define (create-state num-players board)
   (make-state board (map (λ (color) (make-player color 0 '()))
                          (random-sample PENGUIN-COLORS num-players))))
 
@@ -293,19 +293,19 @@
                       (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
   
   ;; Provided Functions
-  ;; create-game
-  (check-equal? (state-board (create-game 2 (make-even-board 3 3 2)))
+  ;; create-state
+  (check-equal? (state-board (create-state 2 (make-even-board 3 3 2)))
                 (make-even-board 3 3 2))
-  (check-equal? (state-board (create-game 4 (make-even-board 3 3 2)))
+  (check-equal? (state-board (create-state 4 (make-even-board 3 3 2)))
                 (make-even-board 3 3 2))
-  (check-equal? (length (state-players (create-game 2 (make-even-board 3 3 2))))
+  (check-equal? (length (state-players (create-state 2 (make-even-board 3 3 2))))
                 2)
-  (check-equal? (length (state-players (create-game 3 (make-even-board 3 3 2))))
+  (check-equal? (length (state-players (create-state 3 (make-even-board 3 3 2))))
                 3)
-  (check-equal? (length (state-players (create-game 4 (make-even-board 3 3 2))))
+  (check-equal? (length (state-players (create-state 4 (make-even-board 3 3 2))))
                 4)
   (check-true (subset?
-               (list->set (map player-color (state-players (create-game 4 (make-even-board 3 3 2)))))
+               (list->set (map player-color (state-players (create-state 4 (make-even-board 3 3 2)))))
                PENGUIN-COLORS))
   ;; place-penguin
   (check-equal? (place-penguin RED (make-posn 0 0) test-state)
@@ -351,7 +351,7 @@
   (check-true (can-color-move? BLACK test-state))
   (check-false (can-color-move? WHITE test-state))
   ;; can-any-move?
-  (check-false (can-any-move? (create-game 2 (make-even-board 3 3 2))))
+  (check-false (can-any-move? (create-state 2 (make-even-board 3 3 2))))
   (check-true (can-any-move? test-state))
   (define can-move-test-state
     (make-state (remove-tile (make-posn 0 0)

@@ -14,7 +14,7 @@
 (define (apply-algorithm penguin cur-posn algo-moves state)
   (if (empty? algo-moves) #f (move-penguin penguin cur-posn (first algo-moves) state)))
 
-;; get-result-state : penguin-color? posn? state? -> state?
+;; get-result-state : penguin-color? posn? state? -> (or/c false? state?)
 ;; Using the silly algorithm, gets the next state
 (define (get-result-state penguin posn state)
   ;; We promise we didn't alter our valid-moves function, we just happened to build

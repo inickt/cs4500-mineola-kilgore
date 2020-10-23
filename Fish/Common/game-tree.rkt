@@ -197,11 +197,47 @@
                 (make-game cg-state-ex5
                            BROWN
                            '()))
+
   ;; +--- is-valid-move? ---+
   (check-true (is-valid-move? test-game (make-move (make-posn 1 2) (make-posn 1 3))))
   (check-false (is-valid-move? test-game (make-move (make-posn 0 4) (make-posn 0 3))))
+
   ;; +--- apply-move ---+
-  
+  (check-exn exn:fail?
+             (λ () (apply-move test-game (make-move (make-posn 0 4) (make-posn 0 3)))))
+  ;; valid move, next player's turn
+  (check-equal? (apply-move (make-game (make-state '((1 1 1 1 1))
+                                                   (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                                         (make-player RED 0 (list (make-posn 0 0)))))
+                                       BLACK '())
+                            (make-move (make-posn 0 2) (make-posn 0 3)))
+                (make-game (make-state '((1 1 0 1 1))
+                                       (list (make-player BLACK 1 (list (make-posn 0 3)))
+                                             (make-player RED 0 (list (make-posn 0 0)))))
+                           RED
+                           '()))
+  ;; valid move, no other players have turn, comes back to current player
+  (check-equal? (apply-move (make-game (make-state '((1 1 1 1 1))
+                                                   (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                                         (make-player RED 0 (list (make-posn 0 0)))))
+                                       BLACK '())
+                            (make-move (make-posn 0 2) (make-posn 0 1)))
+                (make-game (make-state '((1 1 0 1 1))
+                                       (list (make-player BLACK 1 (list (make-posn 0 1)))
+                                             (make-player RED 0 (list (make-posn 0 0)))))
+                           BLACK
+                           '()))
+  ;; valid move, ends game
+  (check-equal? (apply-move (make-game (make-state '((1 1 1 0 1))
+                                                   (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                                         (make-player RED 0 (list (make-posn 0 0)))))
+                                       BLACK '())
+                            (make-move (make-posn 0 2) (make-posn 0 1)))
+                (make-end-game (make-state '((0 0 0 0 1))
+                                           (list (make-player BLACK 2 '())
+                                                 (make-player RED 1 '())))
+                               '()))
+
   ;; +--- all-possible-moves ---+
   (check-equal? (list->set (hash-keys (all-possible-moves test-game)))
                 (set (make-move (make-posn 1 2) (make-posn 0 0))
@@ -225,7 +261,7 @@
                       (make-game (make-state '((1 1 0 0 1))
                                              (list (make-player BLACK 1 (list (make-posn 0 4)))
                                                    (make-player RED 0 (list (make-posn 0 0)))))
-                                             RED '())))
+                                 RED '())))
   
   ;; +--- kick-player ---+
   ;; kick a player while another player who can play remains
@@ -291,6 +327,12 @@
                                              (make-player RED 0 (list (make-posn 0 0)))))
                            WHITE)
                 WHITE)
+  ;; no possible moves would cause an error
+  (check-exn exn:fail?
+             (λ () (next-turn (make-state '((1 1) (0 0))
+                                          (list (make-player WHITE 0 (list (make-posn 0 0)))
+                                                (make-player RED 0 (list (make-posn 0 1)))))
+                              WHITE)))
   
   ;; +--- get-next-color ---+
   (check-equal? (get-next-color (list (make-player RED 0 '())

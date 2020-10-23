@@ -49,7 +49,7 @@ Provides functionality to:
  4. Apply some function to all children of a game node.
 
 ##### json.rkt
-TODO
+A utility library that handles parsing our representations of fish game objects to/from JSON. Used for integration tests.
 
 ##### penguin-color.rkt
 Contains the data and function definitions describing a player's penguin color in a game of fish.

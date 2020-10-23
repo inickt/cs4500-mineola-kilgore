@@ -4,7 +4,6 @@
          lang/posn
          racket/bool
          racket/contract
-         racket/format
          racket/list
          racket/math
          racket/random
@@ -13,20 +12,28 @@
          "penguin-color.rkt"
          "tile.rkt")
 
-(provide (contract-out [create-state (-> (integer-in 2 4) board? state?)])
+(provide (contract-out [state? (-> any/c boolean?)])
+         (contract-out [make-state (-> board? (non-empty-listof player?) state?)])
+         (contract-out [state-board (-> state? board?)])
+         (contract-out [state-players (-> state? (non-empty-listof player?))])
+
+         (contract-out [player? (-> any/c boolean?)])
+         (contract-out [make-player (-> penguin-color? natural? (listof posn?) player?)])
+         (contract-out [player-color (-> player? penguin-color?)])
+         (contract-out [player-score (-> player? natural?)])
+         (contract-out [player-places (-> player? (listof posn?))])
+
+         (contract-out [move? (-> move? boolean?)])
+         (contract-out [make-move (-> posn? posn? move?)])
+         (contract-out [move-to (-> move? posn?)])
+         (contract-out [move-from (-> move? posn?)])
+
+         (contract-out [create-state (-> (integer-in 2 4) board? state?)])
          (contract-out [place-penguin (-> penguin-color? posn? state? state?)])
          (contract-out [move-penguin (-> penguin-color? posn? posn? state? state?)])
          (contract-out [can-any-move? (-> state? boolean?)])
          (contract-out [can-color-move? (-> penguin-color? state? boolean?)])
          (contract-out [draw-state (-> state? natural? image?)])
-         (contract-out [state? (-> any/c boolean?)])
-         (contract-out [make-state (-> board? (non-empty-listof player?) state?)])
-         (contract-out [state-board (-> state? board?)])
-         (contract-out [state-players (-> state? (non-empty-listof player?))])
-         (contract-out [make-player (-> penguin-color? natural? (listof posn?) player?)])
-         (contract-out [player-color (-> player? penguin-color?)])
-         (contract-out [player-score (-> player? natural?)])
-         (contract-out [player-places (-> player? (listof posn?))])
          (contract-out [is-place-valid? (-> penguin-color? posn? state? boolean?)])
          (contract-out [is-move-valid? (-> penguin-color? posn? posn? state? boolean?)])
          (contract-out [valid-moves (-> posn? state? (listof posn?))])
@@ -53,6 +60,10 @@
 ;; - the player's color
 ;; - the player's score in the game
 ;; - the player's penguin positions
+
+(define-struct move [from to] #:transparent)
+;; A Move is a (make-move posn? posn?)
+;; and represents a penguin move on a fish board
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED

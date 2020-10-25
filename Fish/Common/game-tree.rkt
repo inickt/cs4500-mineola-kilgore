@@ -88,14 +88,10 @@
   (define current-state (game-state game))
   (define current-player (get-player (game-player-turn game) current-state))
 
-  (for*/hash (;; Iterate over all posns the current player has penguins at
-              [from-posn (player-places current-player)]
-              ;; Iterate over all locations to which the current player can make a valid move
+  (for*/hash ([from-posn (player-places current-player)]
               [to-posn (valid-moves from-posn current-state)]
-              ;; Bind the move and skip it if invalid
-              [potential-move (in-value (make-move from-posn to-posn))]
-              #:when (is-valid-move? game potential-move))
-    (values potential-move (apply-move game potential-move))))
+              [move (in-value (make-move from-posn to-posn))])
+    (values move (apply-move game move))))
 
 ;; kick-player : game? -> game-tree?
 ;; Kicks the current player from the game

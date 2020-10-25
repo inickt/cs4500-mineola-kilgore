@@ -35,7 +35,8 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
 (module+ test
-  (require rackunit)
+  (require rackunit
+           "../../Fish/Other/util.rkt")
 
   ;; Testing helpers
   (define test-board '((1 1 1 1 1) (1 1 1 0 1) (1 1 0 0 1)))
@@ -77,15 +78,6 @@
                                                (list (make-posn 0 4) (make-posn 1 2) (make-posn 1 4)))
                                   (make-player RED 3 (list (make-posn 0 1) (make-posn 0 2))))))
 
-  ;; Integration tests
-  (define (check-integration in-file out-file)
-    (check-equal? (let-values ([(captured-output redirect-out) (make-pipe #f 'read-stdout 'stdout)])
-                    (parameterize ([current-input-port (open-input-file in-file)]
-                                   [current-output-port redirect-out])
-                      (xstate)
-                      (read-json captured-output)))
-                  (read-json (open-input-file out-file))))
-
-  (check-integration "../Tests/1-in.json" "../Tests/1-out.json")
-  (check-integration "../Tests/2-in.json" "../Tests/2-out.json")
-  (check-integration "../Tests/3-in.json" "../Tests/3-out.json"))
+  (check-integration xstate "../Tests/1-in.json" "../Tests/1-out.json")
+  (check-integration xstate "../Tests/2-in.json" "../Tests/2-out.json")
+  (check-integration xstate "../Tests/3-in.json" "../Tests/3-out.json"))

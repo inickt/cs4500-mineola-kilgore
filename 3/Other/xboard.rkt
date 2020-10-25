@@ -31,7 +31,8 @@
 ;; TESTS
 (module+ test
   (require racket/port
-           rackunit)
+           rackunit
+           "../../Fish/Other/util.rkt")
   
   ;; Provided Functions
   ;; xboard
@@ -74,4 +75,9 @@
   (check-equal? (count-reachable-tiles (make-posn 0 0) '((1 4) (2 0) (3 5)))
                 1)
   (check-equal? (count-reachable-tiles (make-posn 0 1) '((1 4 1) (2 0 1) (3 5 0)))
-                4))
+                4)
+
+  ;; Integration tests
+  (check-integration xboard "../Tests/1-in.json" "../Tests/1-out.json")
+  (check-integration xboard "../Tests/2-in.json" "../Tests/2-out.json")
+  (check-integration xboard "../Tests/3-in.json" "../Tests/3-out.json"))

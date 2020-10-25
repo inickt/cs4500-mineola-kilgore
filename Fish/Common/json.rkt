@@ -8,7 +8,11 @@
          "penguin-color.rkt"
          "state.rkt")
 
-(provide (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) state?)])
+(provide (contract-out [parse-move-response-query
+                        (-> (hash/c symbol? jsexpr?) move-response-query?)])
+         (contract-out [move-response-query-state (-> move-response-query? state?)])
+         (contract-out [move-response-query-move (-> move-response-query? move?)])
+         (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) state?)])
          (contract-out [parse-json-board-posn (-> (hash/c symbol? jsexpr?) board-posn?)])
          (contract-out [board-posn-board (-> board-posn? board?)])
          (contract-out [board-posn-posn (-> board-posn? posn?)])
@@ -17,6 +21,9 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
 
+(define FROM-KEY 'from)
+(define TO-KEY 'to)
+(define STATE-KEY 'state)
 (define BOARD-KEY 'board)
 (define COLOR-KEY 'color)
 (define PLACES-KEY 'places)
@@ -26,6 +33,16 @@
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED PARSING
+
+(define-struct move-response-query [state move] #:transparent)
+;; parse-move-response-query : (hash/c symbol? jsexpr?) -> move-response-query?
+;; Parse a Fish game state with a from and to position from well formed JSON
+;; JSON: Move-Response-Query
+(define (parse-move-response-query json-obj)
+  (make-move-response-query
+   (parse-json-state (hash-ref json-obj STATE-KEY))
+   (make-move (parse-json-posn (hash-ref json-obj FROM-KEY))
+              (parse-json-posn (hash-ref json-obj TO-KEY)))))
 
 ;; parse-json-state : (hash/c symbol? jsexpr?) -> state?
 ;; Parses a Fish game state from well formed and valid JSON
@@ -148,6 +165,25 @@
   (require rackunit)
   
   ;; Provided Functions
+  ;; parse-move-response-query
+  (check-equal?
+   (parse-move-response-query
+    (hash STATE-KEY (hash POSITION-KEY '(6 0)
+                          BOARD-KEY '((1 2 3) (4 5 6) (7 8 9))
+                          PLAYERS-KEY (list (hash COLOR-KEY "red"
+                                                  SCORE-KEY 10
+                                                  PLACES-KEY '())
+                                            (hash COLOR-KEY "black"
+                                                  SCORE-KEY 5
+                                                  PLACES-KEY (list (list 0 0) (list 3 1)))))
+          FROM-KEY '(0 1)
+          TO-KEY '(2 3)))
+   (make-move-response-query
+    (make-state '((1 4 7) (2 5 8) (3 6 9))
+                (list (make-player RED 10 '())
+                      (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3)))))
+    (make-move (make-posn 1 0) (make-posn 3 2))))
+
   ;; parse-json-state 
   (check-equal? (parse-json-state
                  (hash BOARD-KEY '((1 2 3) (4 5 6) (7 8 9))

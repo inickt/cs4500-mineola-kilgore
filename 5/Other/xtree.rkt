@@ -34,28 +34,23 @@
                bottom-hexagon-posn
                bottom-left-hexagon-posn
                top-left-hexagon-posn)))
+  #;
   (define moves (for*/first ([posn target-posns]
-                             [moves (in-values (filter (λ (move) (equal? (move-to move) move)
+                             [moves (in-values (filter (λ (move) (equal? (move-to posn) move)
                                                          possible-moves)))]
                              #:when (not (empty? moves)))
-                  (foldr tiebreaker (first moves) moves))
-
-  (foldr (λ (move maybe-best)
-           (if maybe-best
-               ...
-               move)
-           #f
-           moves)
-         )
+                  (foldr tiebreaker (first moves) moves)))
 
   (foldl (λ (posn maybe-best)
-           (foldr tiebreaker 
-
-           )
+           (or maybe-best
+               (foldr (λ (move maybe-move)
+                        (if maybe-move
+                            (tiebreaker move maybe-move)
+                            move))
+                      #f
+                      (filter (λ (move) (equal? (move-to move) posn)) possible-moves))))
          #f
-         target-posns)
-
-  )
+         target-posns))
 
 ;; tiebreaker : move? move? -> move?
 ;;

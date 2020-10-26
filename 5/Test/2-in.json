@@ -1,0 +1,11 @@
+{
+  "state": {
+    "players": [
+      {"color": "black", "score": 0, "places": [[0,0]]},
+      {"color": "white", "score": 0, "places": [[4, 1]]
+    ],
+    "board":[[1,1],[1,1],[1,1],[1,1],[1,1]]
+  },
+  "from": [0,0],
+  "to":[0,1]
+}

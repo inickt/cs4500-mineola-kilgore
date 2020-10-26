@@ -4,19 +4,19 @@
          json
          racket/contract
          racket/list
+         racket/math
          "board.rkt"
          "penguin-color.rkt"
          "state.rkt")
 
 (provide (contract-out [parse-move-response-query
-                        (-> (hash/c symbol? jsexpr?) move-response-query?)])
-         (contract-out [move-response-query-state (-> move-response-query? state?)])
-         (contract-out [move-response-query-move (-> move-response-query? move?)])
+                        (-> (hash/c symbol? jsexpr?) (list/c state? move?))])
          (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) state?)])
          (contract-out [parse-json-board-posn (-> (hash/c symbol? jsexpr?) board-posn?)])
          (contract-out [board-posn-board (-> board-posn? board?)])
          (contract-out [board-posn-posn (-> board-posn? posn?)])
-         (contract-out [serialize-state (-> state? (hash/c symbol? jsexpr?))]))
+         (contract-out [serialize-state (-> state? (hash/c symbol? jsexpr?))])
+         (contract-out [serialize-posns (-> (listof posn?) (listof (list/c natural? natural?)))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -34,15 +34,13 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED PARSING
 
-(define-struct move-response-query [state move] #:transparent)
-;; parse-move-response-query : (hash/c symbol? jsexpr?) -> move-response-query?
+;; parse-move-response-query : (hash/c symbol? jsexpr?) -> (list/c state? move?)
 ;; Parse a Fish game state with a from and to position from well formed JSON
 ;; JSON: Move-Response-Query
 (define (parse-move-response-query json-obj)
-  (make-move-response-query
-   (parse-json-state (hash-ref json-obj STATE-KEY))
-   (make-move (parse-json-posn (hash-ref json-obj FROM-KEY))
-              (parse-json-posn (hash-ref json-obj TO-KEY)))))
+  (list (parse-json-state (hash-ref json-obj STATE-KEY))
+        (make-move (parse-json-posn (hash-ref json-obj FROM-KEY))
+                   (parse-json-posn (hash-ref json-obj TO-KEY)))))
 
 ;; parse-json-state : (hash/c symbol? jsexpr?) -> state?
 ;; Parses a Fish game state from well formed and valid JSON
@@ -178,7 +176,7 @@
                                                   PLACES-KEY (list (list 0 0) (list 3 1)))))
           FROM-KEY '(0 1)
           TO-KEY '(2 3)))
-   (make-move-response-query
+   (list
     (make-state '((1 4 7) (2 5 8) (3 6 9))
                 (list (make-player RED 10 '())
                       (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3)))))

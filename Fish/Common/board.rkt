@@ -16,7 +16,13 @@
          (contract-out [valid-movements (-> posn? board? (listof posn?))])
          (contract-out [valid-tile? (-> posn? board? boolean?)])
          (contract-out [draw-board (-> board? positive? image?)])
-         (contract-out [board-posn-to-pixel-posn (-> posn? positive? posn?)]))
+         (contract-out [board-posn-to-pixel-posn (-> posn? positive? posn?)])
+         (contract-out [top-hexagon-posn (-> posn? posn?)])
+         (contract-out [bottom-hexagon-posn (-> posn? posn?)])
+         (contract-out [top-right-hexagon-posn (-> posn? posn?)])
+         (contract-out [bottom-right-hexagon-posn (-> posn? posn?)])
+         (contract-out [top-left-hexagon-posn (-> posn? posn?)])
+         (contract-out [bottom-left-hexagon-posn (-> posn? posn?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS

@@ -6,9 +6,15 @@
          "state.rkt"
          "penguin-color.rkt")
 
-(provide (contract-out [game? (-> any/c boolean?)])
-         (contract-out [end-game? (-> any/c boolean?)])
-         (contract-out [game-tree? (-> any/c boolean?)]))
+(provide ;(contract-out [game? (-> any/c boolean?)])
+         ;(contract-out [end-game? (-> any/c boolean?)])
+         ;(contract-out [game-tree? (-> any/c boolean?)])
+         (struct-out game)
+         (struct-out end-game)
+         is-valid-move?
+         create-game
+         apply-move
+         all-possible-moves)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS

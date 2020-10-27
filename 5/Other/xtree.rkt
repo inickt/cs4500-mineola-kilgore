@@ -38,7 +38,7 @@
                              [moves (in-values (filter (λ (move) (equal? (move-to move) move)
                                                          possible-moves)))]
                              #:when (not (empty? moves)))
-                  (foldr tiebreaker (first moves) moves))
+                  (foldr tiebreaker (first moves) moves)))
 
   (foldr (λ (move maybe-best)
            (if maybe-best

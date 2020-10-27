@@ -16,7 +16,7 @@
 ;; on the board from the specified tile to STDOUT
 (define (xboard)
   (define board-posn (parse-json-board-posn (read-json)))
-  (write-json (count-reachable-tiles (board-posn-posn board-posn) (board-posn-board board-posn)))
+  (write-json (count-reachable-tiles (second board-posn) (first board-posn)))
   (newline))
 
 ;; +-------------------------------------------------------------------------------------------------+

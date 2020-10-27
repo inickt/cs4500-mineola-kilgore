@@ -9,35 +9,47 @@
          "penguin-color.rkt"
          "state.rkt")
 
-(provide (contract-out [parse-move-response-query
+(provide (contract-out [parse-json-move-response-query
                         (-> (hash/c symbol? jsexpr?) (list/c state? move?))])
          (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) state?)])
-         (contract-out [parse-json-board-posn (-> (hash/c symbol? jsexpr?) board-posn?)])
-         (contract-out [board-posn-board (-> board-posn? board?)])
-         (contract-out [board-posn-posn (-> board-posn? posn?)])
+         (contract-out [parse-json-players
+                        (-> (non-empty-listof (hash/c symbol? jsexpr?)) (non-empty-listof player?))])
+         (contract-out [parse-json-player (-> (hash/c symbol? jsexpr?) player?)])
+         (contract-out [parse-json-board-posn (-> (hash/c symbol? jsexpr?) (list/c board? posn?))])
+         (contract-out [parse-json-board (-> (non-empty-listof (non-empty-listof natural?)) board?)])
+         (contract-out [parse-json-posns (-> (listof (list/c natural? natural?)) (listof posn?))])
+         (contract-out [parse-json-posn (-> (list/c natural? natural?) posn?)])
+         (contract-out [parse-json-color (-> string? penguin-color?)])
+
          (contract-out [serialize-state (-> state? (hash/c symbol? jsexpr?))])
-         (contract-out [serialize-posns (-> (listof posn?) (listof (list/c natural? natural?)))]))
+         (contract-out [serialize-players
+                        (-> (non-empty-listof player?) (non-empty-listof (hash/c symbol? jsexpr?)))])
+         (contract-out [serialize-player (-> player? (hash/c symbol? jsexpr?))])
+         (contract-out [serialize-board (-> board? (non-empty-listof (non-empty-listof natural?)))])
+         (contract-out [serialize-posns (-> (listof posn?) (listof (list/c natural? natural?)))])
+         (contract-out [serialize-posn (-> posn? (list/c natural? natural?))])
+         (contract-out [serialize-color (-> penguin-color? string?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
 
-(define FROM-KEY 'from)
-(define TO-KEY 'to)
-(define STATE-KEY 'state)
 (define BOARD-KEY 'board)
 (define COLOR-KEY 'color)
+(define FROM-KEY 'from)
 (define PLACES-KEY 'places)
 (define PLAYERS-KEY 'players)
 (define POSITION-KEY 'position)
 (define SCORE-KEY 'score)
+(define STATE-KEY 'state)
+(define TO-KEY 'to)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED PARSING
 
-;; parse-move-response-query : (hash/c symbol? jsexpr?) -> (list/c state? move?)
+;; parse-json-move-response-query : (hash/c symbol? jsexpr?) -> (list/c state? move?)
 ;; Parse a Fish game state with a from and to position from well formed JSON
 ;; JSON: Move-Response-Query
-(define (parse-move-response-query json-obj)
+(define (parse-json-move-response-query json-obj)
   (list (parse-json-state (hash-ref json-obj STATE-KEY))
         (make-move (parse-json-posn (hash-ref json-obj FROM-KEY))
                    (parse-json-posn (hash-ref json-obj TO-KEY)))))
@@ -65,16 +77,15 @@
    (hash-ref json-player SCORE-KEY)
    (parse-json-posns (hash-ref json-player PLACES-KEY))))
 
-(define-struct board-posn [board posn] #:transparent)
-;; parse-json-board-posn : (hash/c symbol? jsexpr?) -> board-posn?
+;; parse-json-board-posn : (hash/c symbol? jsexpr?) -> (list/c board? posn?)
 ;; Parses a Fish game board and position from a well formed JSON
 ;; JSON: Board-Posn
 (define (parse-json-board-posn json-obj)
-  (make-board-posn
+  (list
    (parse-json-board (hash-ref json-obj BOARD-KEY))
    (parse-json-posn (hash-ref json-obj POSITION-KEY))))
 
-;; parse-json-board : (non-empty-listof (non-empty-listofnatural?)) -> board?
+;; parse-json-board : (non-empty-listof (non-empty-listof natural?)) -> board?
 ;; Parses a Fish game board from a well formed and valid JSON board
 ;; NOTE: The lists can potentially be different lengths. This function will find the longest length
 ;;       of these lists and fill the remainder of the board with holes.
@@ -127,7 +138,7 @@
         SCORE-KEY (player-score player)
         PLACES-KEY (serialize-posns (player-places player))))
 
-;; serialize-board : board? -> (non-empty-listof (non-empty-listofnatural?)) 
+;; serialize-board : board? -> (non-empty-listof (non-empty-listof natural?)) 
 ;; Converts a board into a JSON expression
 ;; JSON: Board
 (define serialize-board (λ (board) (transpose-matrix board)))
@@ -163,9 +174,9 @@
   (require rackunit)
   
   ;; Provided Functions
-  ;; parse-move-response-query
+  ;; parse-json-move-response-query
   (check-equal?
-   (parse-move-response-query
+   (parse-json-move-response-query
     (hash STATE-KEY (hash POSITION-KEY '(6 0)
                           BOARD-KEY '((1 2 3) (4 5 6) (7 8 9))
                           PLAYERS-KEY (list (hash COLOR-KEY "red"
@@ -215,8 +226,8 @@
   ;; parse-json-board-posn
   (check-equal? (parse-json-board-posn (hash POSITION-KEY '(6 0)
                                              BOARD-KEY '((1 2 3) (4 5 6) (7 8 9))))
-                (make-board-posn '((1 4 7) (2 5 8) (3 6 9))
-                                 (make-posn 0 6)))
+                (list '((1 4 7) (2 5 8) (3 6 9))
+                      (make-posn 0 6)))
   ;; parse-json-board
   (check-equal? (parse-json-board '((1))) '((1)))
   (check-equal? (parse-json-board '((1 2 3) (4 5 6) (7 8 9))) '((1 4 7) (2 5 8) (3 6 9)))

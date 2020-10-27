@@ -8,7 +8,7 @@
 
 (provide ;(contract-out [game? (-> any/c boolean?)])
          ;(contract-out [end-game? (-> any/c boolean?)])
-         ;(contract-out [game-tree? (-> any/c boolean?)])
+         (contract-out [game-tree? (-> any/c boolean?)])
          (struct-out game)
          (struct-out end-game)
          is-valid-move?

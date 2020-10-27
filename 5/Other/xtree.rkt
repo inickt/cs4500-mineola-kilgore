@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require lang/posn
-         json
+(require json
+         lang/posn
          racket/list
          "../../Fish/Common/board.rkt"
          "../../Fish/Common/json.rkt"
@@ -11,7 +11,7 @@
 (provide xtree)
 
 (define (xtree)
-  (define move-response-query (parse-move-response-query (read-json)))
+  (define move-response-query (parse-json-move-response-query (read-json)))
   (define maybe-move (xtree-algorithm (create-game (first move-response-query))
                                       (second move-response-query)))
   (write-json (and maybe-move

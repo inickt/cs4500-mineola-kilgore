@@ -7,14 +7,16 @@
          "penguin-color.rkt")
 
 (provide ;(contract-out [game? (-> any/c boolean?)])
-         ;(contract-out [end-game? (-> any/c boolean?)])
-         (contract-out [game-tree? (-> any/c boolean?)])
-         (struct-out game)
-         (struct-out end-game)
-         is-valid-move?
-         create-game
-         apply-move
-         all-possible-moves)
+ ;(contract-out [end-game? (-> any/c boolean?)])
+ ;(contract-out [game-tree? (-> any/c boolean?)])
+ (struct-out game)
+ (struct-out end-game)
+ is-valid-move?
+ create-game
+ apply-move
+ all-possible-moves
+ (contract-out
+  [apply-to-all-children (-> game? (-> game-tree? any/c) (hash/c move? any/c))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -112,10 +114,11 @@
                  kicked-list)
       (make-end-game (finalize-state new-state) kicked-list)))
 
-;; apply-to-all-children : game? (-> game-tree? any/c) -> (list-of any/c)
+;; apply-to-all-children : game? (-> game-tree? any/c) -> (hash-of move? any/c)
 ;; Applies the provided function to all child GameTrees of the given game
 (define (apply-to-all-children game fn)
-  (map fn (hash-values (all-possible-moves game))))
+  (for/hash ([(move game) (in-hash (all-possible-moves game))])
+    (values move (fn game))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -299,25 +302,31 @@
   ;; +--- apply-to-all-children ---+
   ;; In one state, WHITE will move into the position BLACK is attempting to move into using the λ
   ;; The resulting list should state that the move is legal for BLACK in all but one case
-  (check-equal? (sort (apply-to-all-children
-                       test-game
-                       (λ (gametree) (if (end-game? gametree)
-                                         (error "No terminal games should exist")
-                                         (is-valid-move? gametree (make-move (make-posn 1 4)
-                                                                             (make-posn 1 3))))))
-                      (λ (b1 b2) b1))
-                (list #t #t #t #t #t #t #f))
+  #;(check-equal? (apply-to-all-children
+                 test-game
+                 (λ (gametree) (if (end-game? gametree)
+                                   (error "No terminal games should exist")
+                                   (is-valid-move? gametree (make-move (make-posn 1 4)
+                                                                       (make-posn 1 3))))))
+                (hash (make-move (make-posn 1 2) (make-posn 1 3)) #f
+                      (make-move (make-posn 1 2) (make-posn 0 0)) #t
+                      (make-move (make-posn 1 2) (make-posn 0 1)) #t
+                      (make-move (make-posn 1 2) (make-posn 1 0)) #t
+                      (make-move (make-posn 1 2) (make-posn 1 3)) #t
+                      (make-move (make-posn 1 2) (make-posn 2 4)) #t
+                      (make-move (make-posn 2 3) (make-posn 2 2)) #t
+                      (make-move (make-posn 2 3) (make-posn 2 4)) #t))
+  
   ;; In this Game, BLACK has two moves available. One of them will end the game, and in the other
   ;; BLACK can move again
-  (check-equal? (sort
-                 (apply-to-all-children
-                  (make-game (make-state '((1 1 1 0 1))
-                                         (list (make-player BLACK 0 (list (make-posn 0 2)))
-                                               (make-player RED 0 (list (make-posn 0 0)))))
-                             BLACK '())
-                  end-game?)
-                 (λ (b1 b2) b1))
-                (list #t #f))
+  (check-equal? (apply-to-all-children
+                 (make-game (make-state '((1 1 1 0 1))
+                                        (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                              (make-player RED 0 (list (make-posn 0 0)))))
+                            BLACK '())
+                 end-game?)
+                (hash (make-move (make-posn 0 2) (make-posn 0 1)) #t
+                      (make-move (make-posn 0 2) (make-posn 0 4)) #f))
   
   ;; Internal Helper Functions
   ;; +---- next-turn ---+

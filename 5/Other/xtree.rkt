@@ -11,12 +11,13 @@
 (provide xtree)
 
 (define (xtree)
-  (define move-response-query (parse-json-state (read-json)))
-  (define maybe-move (xtree-algorithm (make-game (first move-response-query))
+  (define move-response-query (parse-move-response-query (read-json)))
+  (define maybe-move (xtree-algorithm (create-game (first move-response-query))
                                       (second move-response-query)))
   (write-json (and maybe-move
                    (serialize-posns (list (move-from maybe-move)
-                                          (move-to maybe-move))))))
+                                          (move-to maybe-move)))))
+  (newline))
 
 ;; xtree-algorithm : game? move? -> (or/c false? move?)
 ;; Takes a game, applies a valid move, and finds the first potential move that the next player
@@ -34,13 +35,6 @@
                bottom-hexagon-posn
                bottom-left-hexagon-posn
                top-left-hexagon-posn)))
-  #;
-  (define moves (for*/first ([posn target-posns]
-                             [moves (in-values (filter (λ (move) (equal? (move-to posn) move)
-                                                         possible-moves)))]
-                             #:when (not (empty? moves)))
-                  (foldr tiebreaker (first moves) moves)))
-
   (foldl (λ (posn maybe-best)
            (or maybe-best
                (foldr (λ (move maybe-move)
@@ -53,16 +47,19 @@
          target-posns))
 
 ;; tiebreaker : move? move? -> move?
-;;
+;; Given two distinct moves, determines which should be prioritized
 (define (tiebreaker move1 move2)
   (cond [(< (posn-y (move-from move1)) (posn-y (move-from move2))) move1]
         [(> (posn-y (move-from move1)) (posn-y (move-from move2))) move2]
         [(< (posn-x (move-from move1)) (posn-x (move-from move2))) move1]
         [(> (posn-x (move-from move1)) (posn-x (move-from move2))) move2])) 
 
+;; +-------------------------------------------------------------------------------------------------+
+;; TESTS
 (module+ test
   (require lang/posn
            rackunit
+           "../../Fish/Other/util.rkt"
            "../../Fish/Common/penguin-color.rkt")
 
   ;; +--- xtree-algorithm ---+
@@ -88,7 +85,11 @@
 
   ;; multiple penguins TODO
 
-  )
+
+  ;; Integration tests
+  (check-integration xtree "../Tests/1-in.json" "../Tests/1-out.json")
+  (check-integration xtree "../Tests/2-in.json" "../Tests/2-out.json")
+  (check-integration xtree "../Tests/3-in.json" "../Tests/3-out.json"))
   
   
 

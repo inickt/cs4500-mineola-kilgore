@@ -9,6 +9,22 @@
 
 (provide xstate)
 
+;; +-------------------------------------------------------------------------------------------------+
+;; PROVIDED
+
+(define (xstate)
+  (define state (parse-json-state (read-json)))
+  (define player (first (state-players state)))
+  (define penguin (player-color player))
+  (define cur-posn (first (player-places player)))
+  
+  (define result-state (get-result-state penguin cur-posn state))
+  (if result-state (write-json (serialize-state result-state)) (write-json #false))
+  (newline))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL HELPER FUNCTIONS
+
 ;; apply-algorithm : penguin-color? posn? [listof posn?] state -> (or/c false? state?)
 ;; attempts to make the list of moves in order, or #false if all fail
 (define (apply-algorithm penguin cur-posn algo-moves state)
@@ -21,16 +37,6 @@
   ;; it to return a list of moves by looking N first then moving clockwise...
   (define algo-moves (valid-moves posn state))
   (apply-algorithm penguin posn algo-moves state))
-
-(define (xstate)
-  (define state (parse-json-state (read-json)))
-  (define player (first (state-players state)))
-  (define penguin (player-color player))
-  (define cur-posn (first (player-places player)))
-  
-  (define result-state (get-result-state penguin cur-posn state))
-  (if result-state (write-json (serialize-state result-state)) (write-json #false))
-  (newline))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS

@@ -3,33 +3,30 @@
 (require racket/contract
          racket/list
          racket/local
+         racket/promise
          "state.rkt"
          "penguin-color.rkt")
 
-(provide ;(contract-out [game? (-> any/c boolean?)])
- ;(contract-out [end-game? (-> any/c boolean?)])
- ;(contract-out [game-tree? (-> any/c boolean?)])
- (struct-out game)
- (struct-out end-game)
- is-valid-move?
- create-game
- apply-move
- all-possible-moves
- (contract-out
-  [apply-to-all-children (-> game? (-> game-tree? any/c) (hash/c move? any/c))]))
+(provide (contract-out [game-tree? (-> any/c boolean?)])
+         (struct-out game)
+         (struct-out end-game)
+         create-game
+         (contract-out
+          [apply-to-all-children (-> game? (-> game-tree? any/c) (hash/c move? any/c))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
-(define-struct game [state player-turn kicked] #:transparent)
-(define-struct end-game [state kicked] #:transparent)
+(define-struct game [state player-turn children] #:transparent)
+(define-struct end-game [state] #:transparent)
 (define game-tree? (or/c game? end-game?))
+;; TODO Clean up
 ;; A GameTree is one of:
-;; - Game
-;; - EndGame
-;; and represents a node in a game tree with some or no remaining moves.
+;; - (make-end-game state? (listof? penguin-color?)])
+;; - (make-game state? penguin-color? (promise? (hash/c move? game-tree?)))
+;; and represents a game tree with either no moves or some remaining moves.
 
-;; A Game is a (make-game state? penguin-color? (listof? penguin-color?))
+;; A Game is a (make-game state? penguin-color? (promise? (hash/c move? GameTree)))
 ;; and represents a node in a game tree with a state, a current player, and a list of kicked players.
 ;;
 ;; The current player (game-player-turn) is guaranteed to have one or more valid moves remaining.
@@ -51,77 +48,48 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; create-game : state? -> game-tree?
+;; create-game : state? (penguin-color?) -> game-tree?
 ;; Creates a game with the provided state
 ;; NOTES:
 ;; - If there are no possible moved in the state, an end-game is returned with the state finalized
 ;; - The current player of the returned game is the first player in the list of players that can move
 ;; - Games start with no kicked players
-(define (create-game state)
+;; - TODO
+(define (create-game state [previous-player (player-color (last (state-players state)))])
   (if (can-any-move? state)
-      ;; Sets current to the first player in the list who has a valid move
-      (make-game state (next-turn state (player-color (last (state-players state)))) '())
-      (make-end-game (finalize-state state) '())))
-
-;; is-valid-move? : game? move? -> boolean?
-;; Is the given move (by the current player in the provided game) valid?
-(define (is-valid-move? game move)
-  (is-move-valid? (game-player-turn game) (move-from move) (move-to move) (game-state game)))
-
-;; apply-move : game? move? -> game-tree?
-;; Creates the next game state for a given valid move by the current player in the provided game
-;; IMPORTANT: is-valid-move? should be queried prior to calling apply-move without exception handling
-;; NOTES:
-;; - Constructs an end-game if the resultant state has no valid moves
-;; - Skips the turns of players who cannot move
-(define (apply-move game move)
-  (when (not (is-valid-move? game move))
-    (raise-arguments-error 'apply-move
-                           "The move is not valid in the given game"
-                           "move" move))
-  
-  (define current-player (game-player-turn game))
-  (define kicked-players (game-kicked game))
-  (define new-state (move-penguin current-player
-                                  (move-from move)
-                                  (move-to move)
-                                  (game-state game)))
-  (if (can-any-move? new-state)
-      (make-game new-state (next-turn new-state current-player) kicked-players)
-      (make-end-game (finalize-state new-state) kicked-players)))
-
-;; all-possible-moves : game? -> (hash/c move? game-tree?)
-;; Builds a mapping of valid moves to their resulting game when applied to the given game
-(define (all-possible-moves game)
-  (define current-state (game-state game))
-  (define current-player (get-player (game-player-turn game) current-state))
-
-  (for*/hash ([from-posn (player-places current-player)]
-              [to-posn (valid-moves from-posn current-state)]
-              [move (in-value (make-move from-posn to-posn))])
-    (values move (apply-move game move))))
-
-;; kick-player : game? -> game-tree?
-;; Kicks the current player from the game
-(define (kick-player game)
-  (define kick-color (game-player-turn game))
-  (define new-state (remove-player-penguins (game-state game) kick-color))
-  (define kicked-list (cons kick-color (game-kicked game)))
-  
-  (if (can-any-move? new-state)
-      (make-game new-state
-                 (next-turn new-state (player-color (last (state-players new-state))))
-                 kicked-list)
-      (make-end-game (finalize-state new-state) kicked-list)))
+      (let ([current-player (next-turn state previous-player)])
+        (make-game state current-player (delay (all-possible-moves state current-player))))
+      (make-end-game (finalize-state state))))
 
 ;; apply-to-all-children : game? (-> game-tree? any/c) -> (hash-of move? any/c)
 ;; Applies the provided function to all child GameTrees of the given game
 (define (apply-to-all-children game fn)
-  (for/hash ([(move game) (in-hash (all-possible-moves game))])
+  (for/hash ([(move game) (in-hash (force (game-children game)))])
     (values move (fn game))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
+
+;; all-possible-moves : state? penguin-color? -> (hash/c move? game-tree?)
+;; Builds a mapping of valid moves to their resulting game trees from the given state and player
+(define (all-possible-moves state current-player)
+  (for*/hash ([from-posn (player-places current-player)]
+              [to-posn (valid-moves from-posn state)]
+              [move (in-value (make-move from-posn to-posn))])
+    (values move (apply-move state move))))
+
+;; apply-move : state? penguin-color? move? -> game-tree?
+;; Creates the next game state for a given valid move by the current player in the provided game
+;; IMPORTANT: is-move-valid? should be queried prior to calling apply-move without exception handling
+;; NOTES:
+;; - MOVE IS VALID TODO SAY BETTER
+;; - Constructs an end-game if the resultant state has no valid moves
+;; - Skips the turns of players who cannot move
+(define (apply-move state current-player move)
+  (define next-state (move-penguin current-player (move-from move) (move-to move) state))
+  (if (can-any-move? next-state)
+      (create-game next-state current-player)
+      (make-end-game (finalize-state next-state))))
 
 ;; next-turn : state? penguin-color? -> penguin-color?
 ;; Determines the color of the next player in the game, skipping players who cannot move
@@ -143,6 +111,17 @@
   (define current-index (index-of (map player-color order) current penguin-color=?))
   (player-color (list-ref order (modulo (add1 current-index) (length order)))))
 
+;; game-tree=? : game-tree? game-tree? -> bool?
+;; Are the given game trees equal?
+(define (game-tree=? gt1 gt2)
+  (or (and (end-game? gt1)
+           (end-game? gt2)
+           (equal? (end-game-state gt1) (end-game-state gt2)))
+      (and (game? gt1)
+           (game? gt2)
+           (equal? (game-state gt1) (game-state gt2))
+           (equal? (game-player-turn gt1) (game-player-turn gt2)))))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
 (module+ test
@@ -152,20 +131,20 @@
            "board.rkt")
 
   (define test-game
-    (make-game
-     (make-state '((1 3 0 1 3) (1 0 1 2 4) (2 0 2 3 5))
-                 (list (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
-                       (make-player RED 3 '())
-                       (make-player WHITE 6 (list (make-posn 0 4) (make-posn 1 2) (make-posn 2 3)))))
-     WHITE
-     (list RED)))
+    (create-game
+     (make-state
+      '((1 3 0 1 3) (1 0 1 2 4) (2 0 2 3 5))
+      (list (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
+            (make-player RED 3 '())
+            (make-player WHITE 6 (list (make-posn 0 4) (make-posn 1 2) (make-posn 2 3)))))
+     WHITE))
   (define test-end-game
     (make-end-game
-     (make-state '((1 0 0 1 3) (0 0 1 0 4) (2 0 0 3 0))
-                 (list (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
-                       (make-player RED 3 '())
-                       (make-player WHITE 6 (list (make-posn 0 4) (make-posn 1 2) (make-posn 2 3)))))
-     (list RED)))
+     (make-state
+      '((1 0 0 1 3) (0 0 1 0 4) (2 0 0 3 0))
+      (list (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
+            (make-player RED 3 '())
+            (make-player WHITE 6 (list (make-posn 0 4) (make-posn 1 2) (make-posn 2 3)))))))
 
   ;; Provided Functions
   ;; +--- create-game ---+
@@ -173,7 +152,7 @@
   (define cg-state-ex1 (make-state (make-even-board 3 3 1)
                                    (list (make-player RED 0 (list (make-posn 0 0)))
                                          (make-player BLACK 0 (list (make-posn 2 2))))))
-  (check-equal? (create-game cg-state-ex1) (make-game cg-state-ex1 RED '()))
+  (check-equal? (game-player-turn (create-game cg-state-ex1)) RED)
   
   ;; none can move
   (define cg-state-ex2 (make-state (make-even-board 1 2 1)
@@ -185,9 +164,9 @@
                                          (make-player BROWN 0 (list (make-posn 1 0)))
                                          (make-player WHITE 0 (list (make-posn 1 1))))))
   (check-equal? (create-game cg-state-ex2)
-                (make-end-game (finalize-state cg-state-ex2) '()))
+                (make-end-game (finalize-state cg-state-ex2)))
   (check-equal? (create-game cg-state-ex3)
-                (make-end-game (finalize-state cg-state-ex3) '()))
+                (make-end-game (finalize-state cg-state-ex3)))
   ;; valid state, some players can't move
   (define cg-state-ex4 (make-state (make-even-board 2 2 1)
                                    (list (make-player RED 0 (list (make-posn 0 0)))
@@ -197,54 +176,42 @@
                                    (list (make-player RED 0 (list (make-posn 0 0)))
                                          (make-player BLACK 0 (list (make-posn 0 1)))
                                          (make-player BROWN 0 (list (make-posn 1 0))))))
-  (check-equal? (create-game cg-state-ex4)
-                (make-game cg-state-ex4
-                           BLACK
-                           '()))
-  (check-equal? (create-game cg-state-ex5)
-                (make-game cg-state-ex5
-                           BROWN
-                           '()))
-
-  ;; +--- is-valid-move? ---+
-  (check-true (is-valid-move? test-game (make-move (make-posn 1 2) (make-posn 1 3))))
-  (check-false (is-valid-move? test-game (make-move (make-posn 0 4) (make-posn 0 3))))
-
+  (check-equal? (game-player-turn (create-game cg-state-ex4)) BLACK)
+  (check-equal? (game-player-turn (create-game cg-state-ex5)) BROWN)
+  
   ;; +--- apply-move ---+
-  (check-exn exn:fail?
-             (λ () (apply-move test-game (make-move (make-posn 0 4) (make-posn 0 3)))))
   ;; valid move, next player's turn
-  (check-equal? (apply-move (make-game (make-state '((1 1 1 1 1))
-                                                   (list (make-player BLACK 0 (list (make-posn 0 2)))
-                                                         (make-player RED 0 (list (make-posn 0 0)))))
-                                       BLACK '())
-                            (make-move (make-posn 0 2) (make-posn 0 3)))
-                (make-game (make-state '((1 1 0 1 1))
-                                       (list (make-player BLACK 1 (list (make-posn 0 3)))
-                                             (make-player RED 0 (list (make-posn 0 0)))))
-                           RED
-                           '()))
+  (check-equal?
+         (game-state (apply-move (make-state '((1 1 1 1 1))
+                                 (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                       (make-player RED 0 (list (make-posn 0 0)))))
+                     BLACK
+                     (make-move (make-posn 0 2) (make-posn 0 3))))
+         (game-state(create-game (make-state '((1 1 0 1 1))
+                                  (list (make-player BLACK 1 (list (make-posn 0 3)))
+                                        (make-player RED 0 (list (make-posn 0 0)))))
+                      RED)))
   ;; valid move, no other players have turn, comes back to current player
-  (check-equal? (apply-move (make-game (make-state '((1 1 1 1 1))
-                                                   (list (make-player BLACK 0 (list (make-posn 0 2)))
-                                                         (make-player RED 0 (list (make-posn 0 0)))))
-                                       BLACK '())
-                            (make-move (make-posn 0 2) (make-posn 0 1)))
-                (make-game (make-state '((1 1 0 1 1))
-                                       (list (make-player BLACK 1 (list (make-posn 0 1)))
-                                             (make-player RED 0 (list (make-posn 0 0)))))
-                           BLACK
-                           '()))
+  (check game-tree=?
+         (apply-move (make-state '((1 1 1 1 1))
+                                 (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                       (make-player RED 0 (list (make-posn 0 0)))))
+                     BLACK
+                     (make-move (make-posn 0 2) (make-posn 0 1)))
+         (create-game (make-state '((1 1 0 1 1))
+                                  (list (make-player BLACK 1 (list (make-posn 0 1)))
+                                        (make-player RED 0 (list (make-posn 0 0)))))
+                      BLACK))
   ;; valid move, ends game
-  (check-equal? (apply-move (make-game (make-state '((1 1 1 0 1))
-                                                   (list (make-player BLACK 0 (list (make-posn 0 2)))
-                                                         (make-player RED 0 (list (make-posn 0 0)))))
-                                       BLACK '())
-                            (make-move (make-posn 0 2) (make-posn 0 1)))
-                (make-end-game (make-state '((0 0 0 0 1))
-                                           (list (make-player BLACK 2 '())
-                                                 (make-player RED 1 '())))
-                               '()))
+  (check game-tree=?
+         (apply-move (make-state '((1 1 1 0 1))
+                                 (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                       (make-player RED 0 (list (make-posn 0 0)))))
+                     BLACK
+                     (make-move (make-posn 0 2) (make-posn 0 1)))
+         (make-end-game (make-state '((0 0 0 0 1))
+                                    (list (make-player BLACK 2 '())
+                                          (make-player RED 1 '())))))
 
   ;; +--- all-possible-moves ---+
   (check-equal? (list->set (hash-keys (all-possible-moves test-game)))
@@ -256,53 +223,26 @@
                      (make-move (make-posn 2 3) (make-posn 2 4))
                      (make-move (make-posn 2 3) (make-posn 2 2))))
   (check-equal? (all-possible-moves
-                 (make-game (make-state '((1 1 1 0 1))
-                                        (list (make-player BLACK 0 (list (make-posn 0 2)))
-                                              (make-player RED 0 (list (make-posn 0 0)))))
-                            BLACK '()))
+                 (create-game (make-state '((1 1 1 0 1))
+                                          (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                                (make-player RED 0 (list (make-posn 0 0)))))
+                              BLACK))
                 (hash (make-move (make-posn 0 2)
                                  (make-posn 0 1))
                       (make-end-game (make-state '((0 0 0 0 1))
                                                  (list (make-player BLACK 2 '())
-                                                       (make-player RED 1 '()))) '())
+                                                       (make-player RED 1 '()))))
                       (make-move (make-posn 0 2) (make-posn 0 4))
-                      (make-game (make-state '((1 1 0 0 1))
-                                             (list (make-player BLACK 1 (list (make-posn 0 4)))
-                                                   (make-player RED 0 (list (make-posn 0 0)))))
-                                 RED '())))
-  
-  ;; +--- kick-player ---+
-  ;; kick a player while another player who can play remains
-  (check-equal?
-   (kick-player test-game)
-   (make-game
-    (make-state '((1 3 0 1 3) (1 0 1 2 4) (2 0 2 3 5))
-                (list (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
-                      (make-player RED 3 '())
-                      (make-player WHITE 6 '())))
-    BLACK
-    (list WHITE RED)))
-  ;; kick all remaining players
-  (check-equal?
-   (kick-player (kick-player test-game))
-   (make-end-game
-    (make-state '((1 3 0 1 3) (1 0 1 2 4) (2 0 2 3 5))
-                (list (make-player BLACK 8 '())
-                      (make-player RED 3 '())
-                      (make-player WHITE 6 '())))
-    (list BLACK WHITE RED)))
-  ;; kick remaining player who can move
-  (check-equal?
-   (kick-player (make-game (make-state '((1 1 0 0 1))
-                                       (list (make-player RED 0 (list (make-posn 0 0)))
-                                             (make-player BLACK 0 (list (make-posn 0 4)))))
-                           RED '()))
-   (make-end-game (make-state '((1 1 0 0 0)) (list (make-player RED 0 '()) (make-player BLACK 1 '())))
-                  (list RED)))
+                      (create-game (make-state '((1 1 0 0 1))
+                                               (list (make-player BLACK 1 (list (make-posn 0 4)))
+                                                     (make-player RED 0 (list (make-posn 0 0)))))
+                                   RED)))
+
   ;; +--- apply-to-all-children ---+
   ;; In one state, WHITE will move into the position BLACK is attempting to move into using the λ
   ;; The resulting list should state that the move is legal for BLACK in all but one case
-  #;(check-equal? (apply-to-all-children
+  #;
+  (check-equal? (apply-to-all-children
                  test-game
                  (λ (gametree) (if (end-game? gametree)
                                    (error "No terminal games should exist")
@@ -320,10 +260,10 @@
   ;; In this Game, BLACK has two moves available. One of them will end the game, and in the other
   ;; BLACK can move again
   (check-equal? (apply-to-all-children
-                 (make-game (make-state '((1 1 1 0 1))
-                                        (list (make-player BLACK 0 (list (make-posn 0 2)))
-                                              (make-player RED 0 (list (make-posn 0 0)))))
-                            BLACK '())
+                 (create-game (make-state '((1 1 1 0 1))
+                                          (list (make-player BLACK 0 (list (make-posn 0 2)))
+                                                (make-player RED 0 (list (make-posn 0 0)))))
+                              BLACK)
                  end-game?)
                 (hash (make-move (make-posn 0 2) (make-posn 0 1)) #t
                       (make-move (make-posn 0 2) (make-posn 0 4)) #f))

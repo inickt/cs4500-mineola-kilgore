@@ -25,11 +25,6 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPER FUNCTIONS
 
-;; apply-algorithm : penguin-color? posn? [listof posn?] state -> (or/c false? state?)
-;; attempts to make the list of moves in order, or #false if all fail
-(define (apply-algorithm penguin cur-posn algo-moves state)
-  (if (empty? algo-moves) #f (move-penguin penguin cur-posn (first algo-moves) state)))
-
 ;; get-result-state : penguin-color? posn? state? -> (or/c false? state?)
 ;; Using the silly algorithm, gets the next state
 (define (get-result-state penguin posn state)
@@ -37,6 +32,11 @@
   ;; it to return a list of moves by looking N first then moving clockwise...
   (define algo-moves (valid-moves posn state))
   (apply-algorithm penguin posn algo-moves state))
+
+;; apply-algorithm : penguin-color? posn? [listof posn?] state -> (or/c false? state?)
+;; attempts to make the list of moves in order, or #false if all fail
+(define (apply-algorithm penguin cur-posn algo-moves state)
+  (if (empty? algo-moves) #f (move-penguin penguin cur-posn (first algo-moves) state)))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS

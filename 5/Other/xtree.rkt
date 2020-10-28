@@ -7,26 +7,37 @@
          "../../Fish/Common/board.rkt"
          "../../Fish/Common/json.rkt"
          "../../Fish/Common/game-tree.rkt"
-         "../../Fish/Common/state.rkt")
+         "../../Fish/Common/state.rkt"
+         "../../Fish/Player/strategy.rkt")
 
 (provide xtree)
 
+;; +-------------------------------------------------------------------------------------------------+
+;; PROVIDED
+
 (define (xtree)
   (define move-response-query (parse-json-move-response-query (read-json)))
-  (define maybe-move (xtree-algorithm (create-game (first move-response-query))
+  (define maybe-move (xtree-algorithm (first move-response-query)
                                       (second move-response-query)))
   (write-json (and maybe-move
                    (serialize-posns (list (move-from maybe-move)
                                           (move-to maybe-move)))))
   (newline))
 
-;; xtree-algorithm : game? move? -> (or/c false? move?)
-;; Takes a game, applies a valid move, and finds the first potential move that the next player
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL HELPER FUNCTIONS
+
+;; xtree-algorithm : state? move? -> (or/c false? move?)
+;; Takes a state, applies a valid move, and finds the first potential move that the next player
 ;; can take to be next to the first player's move (in clockwise order).
-(define (xtree-algorithm game move)
-  (unless (is-move-valid? (game-player-turn game) (move-from move) (move-to move) (game-state game))
+(define (xtree-algorithm state move)
+  ;; TODO state refactor will change this call
+  (unless (is-move-valid? (player-color (first (state-players state)))
+                          (move-from move)
+                          (move-to move)
+                          state)
     (error "Move provided is invalid, should be valid"))
-  (define moved-game (hash-ref (force (game-children game)) move))
+  (define moved-game (hash-ref (force (game-children (create-game state))) move))
   
   (define target-posns
     (map (λ (mover) (mover (move-to move)))
@@ -39,22 +50,14 @@
   (foldl (λ (posn maybe-best)
            (or maybe-best
                (foldr (λ (move maybe-move)
-                        (if maybe-move
-                            (tiebreaker move maybe-move)
-                            move))
+                        (if (or (not maybe-move) (tiebreaker move maybe-move))
+                            move
+                            maybe-move))
                       #f
                       (filter (λ (move) (equal? (move-to move) posn))
                               (hash-keys (force (game-children moved-game)))))))
          #f
          target-posns))
-
-;; tiebreaker : move? move? -> move?
-;; Given two distinct moves, determines which should be prioritized
-(define (tiebreaker move1 move2)
-  (cond [(< (posn-y (move-from move1)) (posn-y (move-from move2))) move1]
-        [(> (posn-y (move-from move1)) (posn-y (move-from move2))) move2]
-        [(< (posn-x (move-from move1)) (posn-x (move-from move2))) move1]
-        [(> (posn-x (move-from move1)) (posn-x (move-from move2))) move2])) 
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
@@ -66,28 +69,29 @@
 
   ;; +--- xtree-algorithm ---+
   ;; impossible to move
+  (check-false (xtree-algorithm
+                (make-state '((1 1 1 0 1) (1 1 1 1 1))
+                            (list (make-player BLACK 0 (list (make-posn 0 0)))
+                                  (make-player RED 0 (list (make-posn 0 4)))))
+                (make-move (make-posn 0 0) (make-posn 1 2))))
+  ;; move to NE chosen over SE, S, and SW
   (check-equal? (xtree-algorithm
-                 (create-game (make-state '((1 1 1 0 1) (1 1 1 1 1))
-                                        (list (make-player BLACK 0 (list (make-posn 0 0)))
-                                              (make-player RED 0 (list (make-posn 0 4))))))
-                 (make-move (make-posn 0 0) (make-posn 1 2)))
-                #f)
-
-  ;; move to NE over SE, S, and SW
-  (check-equal? (xtree-algorithm
-                 (create-game (make-state '((1 1 1 1 1) (1 1 1 1 1))
-                                        (list (make-player BLACK 0 (list (make-posn 0 0)))
-                                              (make-player RED 0 (list (make-posn 1 4))))))
+                 (make-state '((1 1 1 1 1) (1 1 1 1 1))
+                             (list (make-player BLACK 0 (list (make-posn 0 0)))
+                                   (make-player RED 0 (list (make-posn 1 4)))))
                  (make-move (make-posn 0 0) (make-posn 0 1)))
                 (make-move (make-posn 1 4) (make-posn 1 0)))
-
-  ;; multiple penguins TODO
-
+  ;; multiple penguins
+  (check-equal? (xtree-algorithm
+                 (make-state '((1 1 1 1) (1 1 1 1))
+                             (list (make-player BLACK 0 (list (make-posn 0 2)
+                                                               (make-posn 1 3)))
+                                   (make-player RED 0 (list (make-posn 1 1)
+                                                             (make-posn 1 0)))))
+                 (make-move (make-posn 0 2) (make-posn 0 1)))
+                (make-move (make-posn 1 0) (make-posn 1 2)))
 
   ;; Integration tests
   (check-integration xtree "../Tests/1-in.json" "../Tests/1-out.json")
   (check-integration xtree "../Tests/2-in.json" "../Tests/2-out.json")
   (check-integration xtree "../Tests/3-in.json" "../Tests/3-out.json"))
-  
-  
-

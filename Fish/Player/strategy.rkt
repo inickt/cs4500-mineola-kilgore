@@ -1,13 +1,17 @@
 #lang racket/base
 
-(require racket/list
+(require racket/contract
+         racket/list
+         racket/math
          lang/posn
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
          "../Common/state.rkt"
          "../Common/penguin-color.rkt")
 
-#;(provide ...)
+(provide (contract-out [get-placement (-> state? posn?)])
+         (contract-out [get-move (-> game? natural? move?)])
+         (contract-out [tiebreaker (-> move? move? boolean?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
@@ -33,8 +37,8 @@
   (first (maximin-search game depth (game-player-turn game))))
 
 ;; tiebreaker : move? move? -> boolean?
-;; Given two distinct moves, determines which should be prioritized based on topmost row first, then
-;; leftmost column
+;; Given two distinct moves, should the first be picked over the second in a tie?
+;; Determined by topmost row, then leftmost column for both the from and to positions in the move.
 (define (tiebreaker move1 move2)
   (or (< (posn-y (move-from move1)) (posn-y (move-from move2)))
       (< (posn-x (move-from move1)) (posn-x (move-from move2)))
@@ -124,6 +128,7 @@
                                     (make-player BLACK 0 (list (make-posn 1 0)))
                                     (make-player WHITE 0 (list (make-posn 3 0))))))
    (make-posn 3 1))
+  
   ;; +--- get-move ---+
   (check-equal? (get-move test-game-1 1) (make-move (make-posn 1 2) (make-posn 1 1)))
   (check-equal? (get-move test-game-1 2) (make-move (make-posn 1 2) (make-posn 0 1)))
@@ -132,15 +137,31 @@
   (check-equal? (get-move test-game-2 3) (make-move (make-posn 0 0) (make-posn 1 2)))
   (check-equal? (get-move test-game-2 4) (make-move (make-posn 0 0) (make-posn 1 3)))
   (check-equal? (get-move test-game-2 10) (make-move (make-posn 0 0) (make-posn 1 3)))
+
   ;; +--- tiebreaker ---+
+  ;; top most from
+  (check-true (tiebreaker (make-move (make-posn 3 2) (make-posn 0 0))
+                          (make-move (make-posn 3 3) (make-posn 0 0))))
+  (check-false (tiebreaker (make-move (make-posn 3 3) (make-posn 0 0))
+                           (make-move (make-posn 3 2) (make-posn 0 0))))
+  ;; left most from
+  (check-true (tiebreaker (make-move (make-posn 2 3) (make-posn 0 0))
+                          (make-move (make-posn 3 3) (make-posn 0 0))))
+  (check-false (tiebreaker (make-move (make-posn 3 3) (make-posn 0 0))
+                           (make-move (make-posn 2 3) (make-posn 0 0))))
+  ;; top most to
   (check-true (tiebreaker (make-move (make-posn 3 3) (make-posn 0 0))
                           (make-move (make-posn 3 3) (make-posn 0 1))))
+  (check-false (tiebreaker (make-move (make-posn 3 3) (make-posn 0 1))
+                           (make-move (make-posn 3 3) (make-posn 0 0))))
+  ;; left most to
   (check-true (tiebreaker (make-move (make-posn 3 3) (make-posn 0 0))
                           (make-move (make-posn 3 3) (make-posn 1 0))))
-  (check-true (tiebreaker (make-move (make-posn 0 0) (make-posn 3 3))
-                          (make-move (make-posn 0 1) (make-posn 3 3))))
-  (check-true (tiebreaker (make-move (make-posn 0 0) (make-posn 3 3))
-                          (make-move (make-posn 1 0) (make-posn 3 3))))
+  (check-false (tiebreaker (make-move (make-posn 3 3) (make-posn 1 3))
+                           (make-move (make-posn 3 3) (make-posn 0 3))))
+  ;; equal
+  (check-false (tiebreaker (make-move (make-posn 3 3) (make-posn 0 0))
+                           (make-move (make-posn 3 3) (make-posn 0 0))))
 
   ;; Internal Helper Functions
   ;; +--- maximin-search ---+

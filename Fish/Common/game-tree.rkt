@@ -7,6 +7,7 @@
          "state.rkt"
          "penguin-color.rkt")
 
+; TODO clean up
 (provide (contract-out [game-tree? (-> any/c boolean?)])
          (struct-out game)
          (struct-out end-game)

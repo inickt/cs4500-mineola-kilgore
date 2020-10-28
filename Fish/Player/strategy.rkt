@@ -4,19 +4,13 @@
          lang/posn
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
-         "../Common/state.rkt")
+         "../Common/state.rkt"
+         "../Common/penguin-color.rkt")
 
 #;(provide ...)
 
 ; Programming Task For this assignment, you are to implement a strategy component that takes care of
 ; two decisions:
-
-; penguin placements
-; It places a penguin in the next available free spot followning a zig zag pattern that starts at the
-; top left corner. That is, the search goes from left to right in each row and moves down to the next
-; row when one is filled up.
-; This piece of functionality may assume that the referee will set up a game board that is large
-; enough to accommodate all the penguins of all the players.
 
 ; a choice of action for the player whose turn it is
 ; It picks the action that realizes the minimal maximum gain after looking ahead N > 0 turns for this
@@ -48,19 +42,50 @@
                            (valid-tile? placement board)))
     placement))
 
-;; fish-minimax-search : game-tree? natural? -> (hash-of move? (hash-of penguin-color? natural?))
-;; Determines the best move based on a naive minimax algorithm
 
-;; TODO fix recursion here
-(define (fish-minimax-search game-tree remaining-depth)
-  (if (or (zero? remaining-depth)
-          (end-game? game-tree)
-          (not (can-color-move? (game-player-turn game-tree) (game-state game-tree))))
-      (fish-heuristic game-tree)
-      (apply-to-all-children
-       game-tree
-       (λ (child)
-         (fish-minimax-search child (sub1 remaining-depth))))))
+;; fish-maximin : game? natural? -> move?
+;; Applies the maximin algorithm to determine the best move for the current player, searching up to
+;; depth turns for the current player
+(define (fish-maximin game depth)
+  (car (maximin-search game depth (game-player-turn game))))
+
+;; maximin-search : game? posint? penguin-color? -> (cons/c move (hash-of penguin-color? natural?))
+;; Determines the best move based on a naive minimax algorithm
+(define (maximin-search game remaining-depth original-player)
+  (define color (game-player-turn game))
+  (or (foldr
+       (λ (pair maybe-best)
+         (if (not maybe-best)
+             pair
+             (if (> (hash-ref (cdr pair) color)
+                    (hash-ref (cdr maybe-best) color))
+                 pair
+                 maybe-best)))
+       #f
+       (hash->list (apply-to-all-children
+                    game
+                    (λ (child)
+                      (maximin-h child
+                                 (- remaining-depth
+                                    (if (penguin-color=? (game-player-turn game) original-player)
+                                        1 0))
+                                 original-player)))))
+      (error "apply-to-all-children returned an empty hash")))
+
+;; maximin-h : game-tree? natural? penguin-color? -> (hash-of penguin-color? natural?)
+(define (maximin-h game remaining-depth original-player)
+  (if (or (end-game? game)
+          (zero? remaining-depth))
+      (fish-heuristic game)
+      (cdr (maximin-search game remaining-depth original-player))))
+
+;; tiebreaker : move? move? -> move?
+;; Given two distinct moves, determines which should be prioritized
+(define (tiebreaker move1 move2)
+  (cond [(< (posn-y (move-from move1)) (posn-y (move-from move2))) move1]
+        [(> (posn-y (move-from move1)) (posn-y (move-from move2))) move2]
+        [(< (posn-x (move-from move1)) (posn-x (move-from move2))) move1]
+        [(> (posn-x (move-from move1)) (posn-x (move-from move2))) move2])) 
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPERS
@@ -79,6 +104,18 @@
 (module+ test
   (require rackunit
            "../Common/penguin-color.rkt")
+
+  (define test-game-1
+    (create-game (make-state '((1 2 0 3) (0 4 2 0))
+                             (list (make-player WHITE 0 (list (make-posn 1 2)))
+                                   (make-player BLACK 0 (list (make-posn 0 0)))))))
+  (define test-game-2
+    (create-game (make-state '((0 1 2 3 4 5 4 3 2 1 0)
+                               (5 4 3 2 1 0 1 2 3 4 5)
+                               (0 1 2 3 4 5 4 3 2 1 0))
+                             (list (make-player BLACK 0 (list (make-posn 1 0)))
+                                   (make-player WHITE 0 (list (make-posn 2 5)))
+                                   (make-player RED 0 (list (make-posn 1 10)))))))
   ;; Provided
   ;; +--- get-placement ---+
   ;; Base case

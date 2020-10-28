@@ -27,7 +27,6 @@
   (unless (is-move-valid? (game-player-turn game) (move-from move) (move-to move) (game-state game))
     (error "Move provided is invalid, should be valid"))
   (define moved-game (hash-ref (force (game-children game)) move))
-  (define possible-moves (hash-keys (force (game-children moved-game))))
   
   (define target-posns
     (map (λ (mover) (mover (move-to move)))
@@ -74,7 +73,7 @@
                  (make-move (make-posn 0 0) (make-posn 1 2)))
                 #f)
 
-  ;; move to south east over south
+  ;; move to NE over SE, S, and SW
   (check-equal? (xtree-algorithm
                  (create-game (make-state '((1 1 1 1 1) (1 1 1 1 1))
                                         (list (make-player BLACK 0 (list (make-posn 0 0)))
@@ -86,10 +85,9 @@
 
 
   ;; Integration tests
-  ;(check-integration xtree "../Tests/1-in.json" "../Tests/1-out.json")
+  (check-integration xtree "../Tests/1-in.json" "../Tests/1-out.json")
   (check-integration xtree "../Tests/2-in.json" "../Tests/2-out.json")
-  ;(check-integration xtree "../Tests/3-in.json" "../Tests/3-out.json")
-  )
+  (check-integration xtree "../Tests/3-in.json" "../Tests/3-out.json"))
   
   
 

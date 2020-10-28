@@ -43,49 +43,49 @@
     placement))
 
 
-;; fish-maximin : game? natural? -> move?
+;; determine-move : game? natural? -> move?
 ;; Applies the maximin algorithm to determine the best move for the current player, searching up to
 ;; depth turns for the current player
 (define (fish-maximin game depth)
-  (car (maximin-search game depth (game-player-turn game))))
+  (first (maximin-search game depth (game-player-turn game))))
 
-;; maximin-search : game? posint? penguin-color? -> (cons/c move (hash-of penguin-color? natural?))
-;; Determines the best move based on a naive minimax algorithm
+;; maximin-search : game? posint? penguin-color? -> (list/c move (hash-of penguin-color? natural?))
+;; Determines the best move, and the scores resulting from that move, based on a maximin algorithm
 (define (maximin-search game remaining-depth original-player)
   (define color (game-player-turn game))
-  (or (foldr
-       (λ (pair maybe-best)
-         (if (not maybe-best)
-             pair
-             (if (> (hash-ref (cdr pair) color)
-                    (hash-ref (cdr maybe-best) color))
-                 pair
-                 maybe-best)))
-       #f
-       (hash->list (apply-to-all-children
-                    game
-                    (λ (child)
-                      (maximin-h child
-                                 (- remaining-depth
-                                    (if (penguin-color=? (game-player-turn game) original-player)
-                                        1 0))
-                                 original-player)))))
-      (error "apply-to-all-children returned an empty hash")))
+  (define new-depth (if (penguin-color=? (game-player-turn game) original-player)
+                        (sub1 remaining-depth)
+                        remaining-depth))
+  (define mapped-children
+    (apply-to-all-children game (λ (child) (maximin-h child new-depth original-player))))
+  
+  (for/foldr ([maybe-best #f])
+    ([(move score-map) (in-hash mapped-children)])
+    (cond[(not maybe-best) (list move score-map)]
+         [(> (hash-ref score-map color) (hash-ref (second maybe-best) color))
+          (list move score-map)]
+         [(< (hash-ref score-map color) (hash-ref (second maybe-best) color))
+          maybe-best]
+         [else (if (tiebreaker move (first maybe-best))
+                   (list move score-map)
+                   maybe-best)])))
 
 ;; maximin-h : game-tree? natural? penguin-color? -> (hash-of penguin-color? natural?)
+;; Applies the heuristic if the game is over or the depth has been reached, otherwise applies maximin
 (define (maximin-h game remaining-depth original-player)
   (if (or (end-game? game)
           (zero? remaining-depth))
       (fish-heuristic game)
-      (cdr (maximin-search game remaining-depth original-player))))
+      (second (maximin-search game remaining-depth original-player))))
 
-;; tiebreaker : move? move? -> move?
-;; Given two distinct moves, determines which should be prioritized
+;; tiebreaker : move? move? -> boolean?
+;; Given two distinct moves, determines which should be prioritized based on topmost row first, then
+;; leftmost column
 (define (tiebreaker move1 move2)
-  (cond [(< (posn-y (move-from move1)) (posn-y (move-from move2))) move1]
-        [(> (posn-y (move-from move1)) (posn-y (move-from move2))) move2]
-        [(< (posn-x (move-from move1)) (posn-x (move-from move2))) move1]
-        [(> (posn-x (move-from move1)) (posn-x (move-from move2))) move2])) 
+  (or (< (posn-y (move-from move1)) (posn-y (move-from move2)))
+      (< (posn-x (move-from move1)) (posn-x (move-from move2)))
+      (< (posn-y (move-to move1)) (posn-y (move-to move2)))
+      (< (posn-x (move-to move1)) (posn-x (move-to move2)))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPERS
@@ -110,12 +110,12 @@
                              (list (make-player WHITE 0 (list (make-posn 1 2)))
                                    (make-player BLACK 0 (list (make-posn 0 0)))))))
   (define test-game-2
-    (create-game (make-state '((0 1 2 3 4 5 4 3 2 1 0)
-                               (5 4 3 2 1 0 1 2 3 4 5)
-                               (0 1 2 3 4 5 4 3 2 1 0))
-                             (list (make-player BLACK 0 (list (make-posn 1 0)))
-                                   (make-player WHITE 0 (list (make-posn 2 5)))
-                                   (make-player RED 0 (list (make-posn 1 10)))))))
+    (create-game (make-state '((1 2 3 0 3 1)
+                               (2 0 4 3 1 3)
+                               (1 4 3 1 2 0))
+                             (list (make-player BLACK 0 (list (make-posn 0 0)))
+                                   (make-player WHITE 0 (list (make-posn 2 4)))
+                                   (make-player RED 0 (list (make-posn 1 5)))))))
   ;; Provided
   ;; +--- get-placement ---+
   ;; Base case

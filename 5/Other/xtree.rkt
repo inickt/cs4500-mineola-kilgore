@@ -15,13 +15,13 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
+;; xtree: -> void?
+;; Read a Move-Response-Query from STDIN, applies the move to the state, finds the best move
+;; (according to xtree-algorithm, if possible), writes to STDOUT.
 (define (xtree)
   (define move-response-query (parse-json-move-response-query (read-json)))
-  (define maybe-move (xtree-algorithm (first move-response-query)
-                                      (second move-response-query)))
-  (write-json (and maybe-move
-                   (serialize-posns (list (move-from maybe-move)
-                                          (move-to maybe-move)))))
+  (define maybe-move (xtree-algorithm (first move-response-query) (second move-response-query)))
+  (write-json (and maybe-move (serialize-posns (list (move-from maybe-move) (move-to maybe-move)))))
   (newline))
 
 ;; +-------------------------------------------------------------------------------------------------+

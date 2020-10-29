@@ -31,11 +31,7 @@
 ;; Takes a state, applies a valid move, and finds the first potential move that the next player
 ;; can take to be next to the first player's move (in clockwise order).
 (define (xtree-algorithm state move)
-  ;; TODO state refactor will change this call
-  (unless (is-move-valid? (player-color (first (state-players state)))
-                          (move-from move)
-                          (move-to move)
-                          state)
+  (unless (is-move-valid? state move)
     (error "Move provided is invalid, should be valid"))
   (define moved-game (hash-ref (force (game-children (create-game state))) move))
   

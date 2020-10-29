@@ -79,7 +79,7 @@
 ;; validity is determined by both the from and to positions being on the Fish board, the current
 ;; player in the State having a penguin at from, and there being a direct line unblocked by a hole or
 ;; another player's penguin up from from and up to/including to.
-
+;;
 ;; The coordinate system used for a move's from and to positions is an offset coordinate system, where
 ;; each of the positions is a valid tile on a board.
 

@@ -15,7 +15,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; xtree: -> void?
+;; xtree : -> void?
 ;; Read a Move-Response-Query from STDIN, applies the move to the state, finds the best move
 ;; (according to xtree-algorithm, if possible), writes to STDOUT.
 (define (xtree)

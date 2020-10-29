@@ -80,4 +80,7 @@
   ;; Integration tests
   (check-integration xboard "../Tests/1-in.json" "../Tests/1-out.json")
   (check-integration xboard "../Tests/2-in.json" "../Tests/2-out.json")
-  (check-integration xboard "../Tests/3-in.json" "../Tests/3-out.json"))
+  (check-integration xboard "../Tests/3-in.json" "../Tests/3-out.json")
+
+  ;; Fest tests
+  (check-fest xboard (build-path "./fest")))

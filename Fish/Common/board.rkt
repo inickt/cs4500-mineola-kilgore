@@ -39,7 +39,7 @@
 ;; Each tile has number of fish displayed on it. Penguins can be moved to and from tiles, leaving
 ;; holes in the place of tiles they move off of. A hole has no fish and is not traversable by
 ;; penguins.
-
+;;
 ;; The board is represented as a row major, column minor grid of Tiles.
 ;; INVARIANT: All columns have the same length.
 ;;

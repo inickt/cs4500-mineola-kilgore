@@ -15,7 +15,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; xtree: -> void?
+;; xtree : -> void?
 ;; Read a Move-Response-Query from STDIN, applies the move to the state, finds the best move
 ;; (according to xtree-algorithm, if possible), writes to STDOUT.
 (define (xtree)
@@ -31,14 +31,10 @@
 ;; Takes a state, applies a valid move, and finds the first potential move that the next player
 ;; can take to be next to the first player's move (in clockwise order).
 (define (xtree-algorithm state move)
-  ;; TODO state refactor will change this call
-  (unless (is-move-valid? (player-color (first (state-players state)))
-                          (move-from move)
-                          (move-to move)
-                          state)
+  (unless (is-move-valid? state move)
     (error "Move provided is invalid, should be valid"))
   (define moved-game (hash-ref (force (game-children (create-game state))) move))
-  
+  (define potential-moves (hash-keys (force (game-children moved-game))))
   (define target-posns
     (map (λ (mover) (mover (move-to move)))
          (list top-hexagon-posn
@@ -47,17 +43,17 @@
                bottom-hexagon-posn
                bottom-left-hexagon-posn
                top-left-hexagon-posn)))
-  (foldl (λ (posn maybe-best)
-           (or maybe-best
-               (foldr (λ (move maybe-move)
-                        (if (or (not maybe-move) (tiebreaker move maybe-move))
-                            move
-                            maybe-move))
-                      #f
-                      (filter (λ (move) (equal? (move-to move) posn))
-                              (hash-keys (force (game-children moved-game)))))))
-         #f
-         target-posns))
+  (for*/first ([target-posn target-posns]
+               [found-move (in-value (find-best-move target-posn potential-moves))]
+               #:when found-move)
+    found-move))
+
+;; find-best-move : posn? (list-of move?) -> (or/c false? move?)
+;; Finds the best move to a given position in a list of moves using a tiebreaker if multiple are found
+(define (find-best-move target-posn potential-moves)
+  (for/foldr ([best-move #f])
+    ([move (filter (λ (move) (equal? (move-to move) target-posn)) potential-moves)])
+    (if (or (not best-move) (tiebreaker move best-move)) move best-move)))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
@@ -85,11 +81,21 @@
   (check-equal? (xtree-algorithm
                  (make-state '((1 1 1 1) (1 1 1 1))
                              (list (make-player BLACK 0 (list (make-posn 0 2)
-                                                               (make-posn 1 3)))
+                                                              (make-posn 1 3)))
                                    (make-player RED 0 (list (make-posn 1 1)
-                                                             (make-posn 1 0)))))
+                                                            (make-posn 1 0)))))
                  (make-move (make-posn 0 2) (make-posn 0 1)))
                 (make-move (make-posn 1 0) (make-posn 1 2)))
+
+  ;; +--- find-best-move ---+
+  (check-false (find-best-move (make-posn 0 0) '()))
+  (check-equal? (find-best-move (make-posn 1 1) (list (make-move (make-posn 0 0) (make-posn 1 0))
+                                                      (make-move (make-posn 0 0) (make-posn 1 1))))
+                (make-move (make-posn 0 0) (make-posn 1 1)))
+  (check-equal? (find-best-move (make-posn 1 1) (list (make-move (make-posn 2 3) (make-posn 1 1))
+                                                      (make-move (make-posn 0 0) (make-posn 1 0))
+                                                      (make-move (make-posn 0 1) (make-posn 1 1))))
+                (make-move (make-posn 0 1) (make-posn 1 1)))
 
   ;; Integration tests
   (check-integration xtree "../Tests/1-in.json" "../Tests/1-out.json")

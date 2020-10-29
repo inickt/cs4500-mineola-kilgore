@@ -92,26 +92,6 @@
       (create-game next-state current-player)
       (make-end-game (finalize-state next-state))))
 
-;; next-turn : state? penguin-color? -> penguin-color?
-;; Determines the color of the next player in the game, skipping players who cannot move
-(define (next-turn state starting)
-  (local [;; next-turn-h : state? penguin-color? -> penguin-color?
-          ;; Recursively query until player with color current has valid moves in state
-          (define (next-turn-h state current)
-            (define next-color (get-next-color (state-players state) current))
-            (if (can-color-move? next-color state)
-                next-color
-                (if (penguin-color=? next-color starting)
-                    (raise-arguments-error 'next-turn "State has no valid moves" "state" state)
-                    (next-turn-h state next-color))))]
-    (next-turn-h state starting)))
-
-;; get-next-color : (list-of player?) penguin-color? -> penguin-color?
-;; Get the color of the player in the list after the player with the current color
-(define (get-next-color order current)
-  (define current-index (index-of (map player-color order) current penguin-color=?))
-  (player-color (list-ref order (modulo (add1 current-index) (length order)))))
-
 ;; game-tree=? : game-tree? game-tree? -> bool?
 ;; Are the given game trees equal?
 (define (game-tree=? gt1 gt2)

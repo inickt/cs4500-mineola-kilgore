@@ -81,7 +81,7 @@
                                    (make-player RED 0 (list (make-posn 1 4)))))
                  (make-move (make-posn 0 0) (make-posn 0 1)))
                 (make-move (make-posn 1 4) (make-posn 1 0)))
-  ;; multiple penguins
+  ;; multiple penguins with tiebreaker
   (check-equal? (xtree-algorithm
                  (make-state '((1 1 1 1) (1 1 1 1))
                              (list (make-player BLACK 0 (list (make-posn 0 2)

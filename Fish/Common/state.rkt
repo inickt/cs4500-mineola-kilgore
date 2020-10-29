@@ -11,7 +11,7 @@
          "board.rkt"
          "penguin-color.rkt"
          "tile.rkt")
-
+#;
 (provide (contract-out [state? (-> any/c boolean?)])
          (contract-out [make-state (-> board? (non-empty-listof player?) state?)])
          (contract-out [state-board (-> state? board?)])
@@ -44,6 +44,8 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
+;; TODO make more better
+
 (define-struct state [board players] #:transparent)
 ;; A State is a:
 ;; (make-state board? (non-empty-listof player?))
@@ -75,114 +77,68 @@
   (make-state board (map (λ (color) (make-player color 0 '()))
                          (random-sample PENGUIN-COLORS num-players))))
 
-;; place-penguin : penguin-color? posn? state? -> state?
-;; Places a penguin on the board at the given position.
-;; NOTE: Does not check number of penguins a player has placed. We think this should be
-;;       handled by the game rules
-(define (place-penguin color posn state)
-  (when (not (penguin-color-exists? color state))
-    (raise-arguments-error 'place-penguin
-                           "The given penguin color is not in the game"
-                           "penguin color" color))
-  (when (not (valid-tile? posn (state-board state)))
-    (raise-arguments-error 'place-penguin
-                           "The given posn is either a hole or not on the board"
-                           "posn" posn))
-  (when (penguin-at? posn state)
-    (raise-arguments-error 'place-penguin
-                           "There is already a penguin at the given position"
-                           "posn" posn))
+;; place-penguin : state? posn? -> state?
+;; Places a penguin on the board for the current player at the given position.
+;; NOTES:
+;; - Does not check number of penguins a player has placed
+;; - The given position must be valid (checked with is-place-valid?)
+(define (place-penguin state posn)
+  (unless (is-place-valid? state posn)
+    (raise-arguments-error 'place-penguin "The given placement is not valid" "posn" posn))
+  (define players (state-players state))
   (make-state (state-board state)
-              (map (λ (player) (if (penguin-color=? (player-color player) color)
-                                   (add-player-posn player posn)
-                                   player))
-                   (state-players state))))
+              (rotate-players (cons (add-player-posn (first players) posn) (rest players)))))
 
-;; move-penguin : penguin-color? posn? posn? state? -> state?
-;; Moves the penguin from from-posn to to-posn, if the move is valid
-(define (move-penguin color from-posn to-posn state)
-  (when (not (valid-tile? from-posn (state-board state)))
-    (raise-arguments-error 'move-penguin
-                           "The given FROM position is not valid"
-                           "from-posn" from-posn))
-  (when (not (penguin-color-exists? color state))
-    (raise-arguments-error 'move-penguin
-                           "The given penguin color does not exist in the game"
-                           "penguin color" color))
-  (when (not (player-has-penguin-at? color from-posn state))
-    (raise-arguments-error 'move-penguin
-                           "The given color does not have a penguin at the given FROM position"
-                           "penguin color" color
-                           "from-posn" from-posn))
-  (when (not (move-is-valid? from-posn to-posn state))
-    (raise-arguments-error 'move-penguin
-                           "Moving from from-posn to to-posn is not a valid move"
-                           "from-posn" from-posn
-                           "to-posn" to-posn))
+;; is-place-valid? : state? posn? -> boolean?
+;; Is it valid to place a penguin for the current player at the given position?
+(define (is-place-valid? state posn)
+  (and (valid-tile? posn (state-board state)) (not (any-penguin-at? state posn))))
+
+;; move-penguin : state? move? -> state?
+;; Applies a valid move to a penguin for the current player
+(define (move-penguin state move)
+  (unless (is-move-valid? state move)
+    (raise-arguments-error 'move-penguin "The given move is not valid" "move" move))
+
+  (define from-posn (move-from move))
+  (define players (state-players state))
   (define points (get-tile from-posn (state-board state)))
-  (make-state (remove-tile from-posn (state-board state))
-              (map (λ (player) (if (penguin-color=? (player-color player) color)
-                                   (update-player-posn player from-posn to-posn points)
-                                   player))
-                   (state-players state))))
+  (make-state
+   (remove-tile from-posn (state-board state))
+   ;; TODO: rotate checking if next can move?
+   (rotate-players (cons (update-player-posn (first players) move points) (rest players)))))
 
-;; valid-moves : posn? state? -> (listof posn?)
-;; Determines all positions resulting in a legal move from the given posn
-(define (valid-moves posn state)
-  (when (not (valid-tile? posn (state-board state)))
-    (raise-arguments-error 'valid-moves
-                           "The specified posn is not valid"
-                           "posn" posn))
-  (when (not (penguin-at? posn state))
-    (raise-arguments-error 'valid-moves
-                           "There is no penguin at the given posn"
-                           "posn" posn))
-  (valid-movements posn (penguins-to-holes state)))
+;; is-move-valid? state? move? -> boolean?
+;; Is it valid for the current player to perform the move?
+(define (is-move-valid? state move)
+  (and (current-player-has-penguin-at? state (move-from move))
+       (member move (valid-moves state move))))
 
-;; can-color-move? : penguin-color? state? -> boolean?
-;; Can the player with the given color move?
-(define (can-color-move? color state)
-  (ormap (λ (posn) (cons? (valid-moves posn state)))
-         (player-places (get-player color state))))
+;; valid-moves : state? posn? -> (listof move?)
+;; Determines all legal moves from the given position
+(define (valid-moves state from-posn)
+  (unless (any-penguin-at? state from-posn)
+    (raise-arguments-error 'valid-moves "There is no penguin at the given posn" "posn" from-posn))
+  (map (λ (to-posn) (make-move from-posn to-posn))
+       (valid-movements from-posn (penguins-to-holes state))))
+
+;; state-current-player : state? -> player?
+;; Gets the current player
+(define (state-current-player state)
+  (first (state-players state)))
+
+;; can-current-move? : state? -> boolean?
+;; Can the current player move?
+(define (can-color-move? state)
+  (ormap (λ (penguin) (cons? (valid-moves state penguin)))
+         (player-places (state-current-player state))))
 
 ;; can-any-move? : state? -> boolean?
 ;; Can any players in the game move?
 (define (can-any-move? state)
   (define hole-board (penguins-to-holes state))
-  ;; iterate over all player's penguins, checking each if they have any valid movements
-  (ormap (λ (posn) (not (empty? (valid-movements posn hole-board))))
+  (ormap (λ (posn) (cons? (valid-movements posn hole-board)))
          (append-map player-places (state-players state))))
-
-;; draw-state : state? natural? -> image?
-;; Draws a game state at the given tile size
-;; TODO: We probbaly want to give this a width instead of tile size
-(define (draw-state state tile-size)
-  (beside (draw-board-penguins (state-board state) (state-players state) tile-size)
-          (draw-players (state-players state) tile-size)))
-
-;; is-place-valid? : penguin-color? posn? state? -> boolean?
-;; Is it valid to place a penguin with the given color at the given posn?
-(define (is-place-valid? color posn state)
-  (and (valid-tile? posn (state-board state))
-       (penguin-color-exists? color state)
-       (not (penguin-at? posn state))))
-
-;; is-move-valid? : penguin-color? posn? posn? state? -> boolean?
-;; Is it valid to move a penguin of the given color from from-posn to to-posn?
-(define (is-move-valid? color from-posn to-posn state)
-  (and (valid-tile? from-posn (state-board state))
-       (player-has-penguin-at? color from-posn state)
-       (is-place-valid? color to-posn state)
-       (move-is-valid? from-posn to-posn state)))
-
-;; get-player : penguin-color? state? -> player?
-;; Gets the player with the given penguin color
-(define (get-player color state)
-  (define pl (findf (λ (player) (penguin-color=? color (player-color player))) (state-players state)))
-  (when (false? pl) (raise-arguments-error 'get-player
-                                           "The given player color is not in the state"
-                                           "color" color))
-  pl)
 
 ;; finalize-state : state? -> state?
 ;; Removes all penguins, adding the values of the tiles the penguins were on to their players' scores
@@ -192,64 +148,48 @@
               (map (λ (player) (finalize-player player (state-board end-state)))
                    (state-players end-state))))
 
-;; remove-player-penguins : state? penguin-color? -> player?
-;; Removes all penguins of the given color
-(define (remove-player-penguins state color)
-  (when (not (member color (map player-color (state-players state))))
-    (raise-arguments-error 'remove-player "The given color is not in the game" "color" color))
-  (make-state (state-board state)
-              (map (λ (player) (if (penguin-color=? (player-color player) color)
-                                   (make-player (player-color player) (player-score player) '())
-                                   player))
-                      (state-players state))))
+;; draw-state : state? natural? -> image?
+;; Draws a game state at the given tile size
+;; TODO: We probbaly want to give this a width instead of tile size
+(define (draw-state state tile-size)
+  (beside (draw-board-penguins (state-board state) (state-players state) tile-size)
+          (draw-players (state-players state) tile-size)))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; penguin-color-exists? : penguin-color? state? -> boolean?
-;; Is the pengin color in the game?
-(define (penguin-color-exists? color state)
-  (list? (member color (map player-color (state-players state)))))
+;; rotate-players : (non-empty-list-of player?) -> (non-empty-list-of player?)
+;; Moves the first player to the end of the player list
+(define (rotate-players players)
+  (append (rest players) (list (first player))))
 
-;; penguin-at? : posn? state? -> boolean?
-;; Is there a penguin at the given posn?
-(define (penguin-at? posn state)
+;; any-penguin-at? : state? posn? -> boolean?
+;; Is there any penguin at the given posn?
+(define (any-penguin-at? state posn)
   (list? (member posn (append-map player-places (state-players state)))))
 
-;; player-has-penguin-at? : penguin-color? posn? state? -> boolean?
-;; Does the penguin color have a penguin at the posn?
-(define (player-has-penguin-at? color posn state)
-  (and (penguin-color-exists? color state)
-       (list? (member posn
-                      (player-places (findf (λ (player) (penguin-color=? color (player-color player)))
-                                            (state-players state)))))))
+;; current-player-has-penguin-at? : state? posn? -> boolean?
+;; Does the current player have a penguin at the given position?
+(define (current-player-has-penguin-at? state posn)
+  (list? (member posn (player-places (state-current-player state)))))
 
-;; move-is-valid? : posn? posn? state? -> boolean?
-;; Is the move valid?
-(define (move-is-valid? from-posn to-posn state)
-  (or (list? (member to-posn (valid-movements from-posn (state-board state))))
-      (not (list? (member to-posn (append-map player-places (state-players state)))))))
-
-;; update-player-posn : player? posn? posn? natural? -> player?
-;; Adds points to the players score and replaces the given posn with a new posn.
-;; Does not check if the player has the given posn.
-(define (update-player-posn player old-posn new-posn points)
+;; update-player/move : player? move? natural? -> player?
+;; Adds points to the players score and applies the move
+;; NOTE: Does not check if the player has a penguin at the move.
+(define (update-player/move player move points)
   (make-player (player-color player)
                (+ (player-score player) points)
-               (map (λ (posn) (if (equal? posn old-posn)
-                                  new-posn
-                                  posn))
+               (map (λ (posn) (if (equal? posn (move-from move)) (move-from move) posn))
                     (player-places player))))
 
 ;; add-player-posn : player? posn? -> player?
-;; Adds a posn to a player's penguins. Does not check if the player already has the given posn.
+;; Adds a position to a player's places.
+;; NOTE: Does not check if the player already has a penguin at the given position
 (define (add-player-posn player posn)
-  (make-player (player-color player)
-               (player-score player)
-               (cons posn (player-places player))))
+  (make-player (player-color player) (player-score player) (cons posn (player-places player))))
 
 ;; penguins-to-holes : state? -> board?
-;; removes the positions of the penguins from the board, replacing them with holes
+;; Removes the positions of the penguins from the board, replacing them with holes
 (define (penguins-to-holes state)
   (define penguin-list (append-map player-places (state-players state)))
   (foldr remove-tile (state-board state) penguin-list))
@@ -292,8 +232,30 @@
           (player-places player))
    '()))
 
+;; next-turn : state? penguin-color? -> penguin-color?
+;; Determines the color of the next player in the game, skipping players who cannot move
+#;
+(define (next-turn state starting)
+  (local [;; next-turn-h : state? penguin-color? -> penguin-color?
+          ;; Recursively query until player with color current has valid moves in state
+          (define (next-turn-h state current)
+            (define next-color (get-next-color (state-players state) current))
+            (if (can-color-move? next-color state)
+                next-color
+                (if (penguin-color=? next-color starting)
+                    (raise-arguments-error 'next-turn "State has no valid moves" "state" state)
+                    (next-turn-h state next-color))))]
+    (next-turn-h state starting)))
+
+;; get-next-color : (list-of player?) penguin-color? -> penguin-color?
+;; Get the color of the player in the list after the player with the current color
+(define (get-next-color order current)
+  (define current-index (index-of (map player-color order) current penguin-color=?))
+  (player-color (list-ref order (modulo (add1 current-index) (length order)))))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
+#;
 (module+ test
   (require rackunit)
 
@@ -398,35 +360,15 @@
                             (list (make-player RED 8 '())
                                   (make-player BLACK  4 '())
                                   (make-player WHITE 12 '()))))
-  ;; remove-player-penguins
-  (check-equal? (remove-player-penguins test-state RED)
-                (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
-                (list (make-player RED 1 '())
-                      (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
-                      (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
-  (check-equal? (remove-player-penguins test-state BLACK)
-                (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
-                (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
-                      (make-player BLACK  0 '())
-                      (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
-  (check-equal? (remove-player-penguins test-state WHITE)
-                (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
-                (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
-                      (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
-                      (make-player WHITE 5 '()))))
-  (check-exn exn:fail? (λ () (remove-player-penguins test-state BROWN)))
   
   ;; Internal Helper Functions
-  ;; penguin-color-exists?
-  (check-true (penguin-color-exists? RED test-state))
-  (check-false (penguin-color-exists? BROWN test-state))
-  ;; penguin-at?
-  (check-true (penguin-at? (make-posn 2 3) test-state))
-  (check-false (penguin-at? (make-posn 1 3) test-state))
-  ;; player-has-penguin-at?
-  (check-true (player-has-penguin-at? WHITE (make-posn 2 3) test-state))
-  (check-false (player-has-penguin-at? BLACK (make-posn 2 3) test-state))
-  (check-false (player-has-penguin-at? WHITE (make-posn 1 3) test-state))
+  ;; any-penguin-at?
+  (check-true (any-penguin-at? test-state (make-posn 2 3)))
+  (check-false (any-penguin-at? test-state (make-posn 1 3)))
+  ;; current-player-has-penguin-at?
+  (check-true (current-player-has-penguin-at? WHITE (make-posn 2 3) test-state))
+  (check-false (current-player-has-penguin-at? BLACK (make-posn 2 3) test-state))
+  (check-false (current-player-has-penguin-at? WHITE (make-posn 1 3) test-state))
   ;; move-is-valid?
   (check-true (move-is-valid? (make-posn 0 1) (make-posn 0 0) test-state))
   (check-false (move-is-valid? (make-posn 0 1) (make-posn 2 1) test-state))

@@ -143,16 +143,14 @@
                                     (make-player BLACK 0 (list (make-posn 1 0)))
                                     (make-player WHITE 0 (list (make-posn 3 0))))))
    (make-posn 3 1))
-  #|
   ;; +--- get-move ---+
   (check-equal? (get-move test-game-1 1) (make-move (make-posn 1 2) (make-posn 0 1)))
   (check-equal? (get-move test-game-1 2) (make-move (make-posn 1 2) (make-posn 0 1)))
   (check-equal? (get-move test-game-2 1) (make-move (make-posn 0 0) (make-posn 0 1)))
   (check-equal? (get-move test-game-2 2) (make-move (make-posn 0 0) (make-posn 1 2)))
-  (check-equal? (get-move test-game-2 3) (make-move (make-posn 0 0) (make-posn 1 2)))
-  (check-equal? (get-move test-game-2 4) (make-move (make-posn 0 0) (make-posn 1 3)))
+  (check-equal? (get-move test-game-2 3) (make-move (make-posn 0 0) (make-posn 1 3)))
+  (check-equal? (get-move test-game-2 4) (make-move (make-posn 0 0) (make-posn 1 2)))
   (check-equal? (get-move test-game-2 10) (make-move (make-posn 0 0) (make-posn 1 3)))
-|#
   ;; +--- tiebreaker ---+
   ;; top most from
   (check-true (tiebreaker (make-move (make-posn 3 2) (make-posn 0 0))

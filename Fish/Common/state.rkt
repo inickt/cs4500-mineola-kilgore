@@ -104,14 +104,13 @@
   (define points (get-tile from-posn (state-board state)))
   (make-state
    (remove-tile from-posn (state-board state))
-   ;; TODO: rotate checking if next can move?
    (rotate-players (cons (update-player/move (first players) move points) (rest players)))))
 
 ;; is-move-valid? state? move? -> boolean?
 ;; Is it valid for the current player to perform the move?
 (define (is-move-valid? state move)
   (and (current-player-has-penguin-at? state (move-from move))
-       (member move (valid-moves state move))))
+       (list? (member move (valid-moves state (move-from move))))))
 
 ;; skip-player : state? -> state?
 ;; Skips the current player's turn
@@ -165,7 +164,7 @@
 ;; rotate-players : (non-empty-list-of player?) -> (non-empty-list-of player?)
 ;; Moves the first player to the end of the player list
 (define (rotate-players players)
-  (append (rest players) (list (first player))))
+  (append (rest players) (list (first players))))
 
 ;; any-penguin-at? : state? posn? -> boolean?
 ;; Is there any penguin at the given posn?
@@ -183,7 +182,7 @@
 (define (update-player/move player move points)
   (make-player (player-color player)
                (+ (player-score player) points)
-               (map (λ (posn) (if (equal? posn (move-from move)) (move-from move) posn))
+               (map (λ (posn) (if (equal? posn (move-from move)) (move-to move) posn))
                     (player-places player))))
 
 ;; add-player-posn : player? posn? -> player?
@@ -197,6 +196,16 @@
 (define (penguins-to-holes state)
   (define penguin-list (append-map player-places (state-players state)))
   (foldr remove-tile (state-board state) penguin-list))
+
+;; finalize-player : player? board? -> player?
+;; Adds the score of the tiles a player's penguins are on, and removes all of their penguins
+(define (finalize-player player board)
+  (make-player
+   (player-color player)
+   (foldr (λ (posn score-acc) (+ score-acc (get-tile posn board)))
+          (player-score player)
+          (player-places player))
+   '()))
 
 ;; draw-board-penguins : board? (listof player?) natural? -> image?
 ;; Draws the players' penguins on the given board
@@ -226,16 +235,6 @@
          (text "Players" (* 1.2 size) 'black)
          players))
 
-;; finalize-player : player? board? -> player?
-;; Adds the score of the tiles a player's penguins are on, and removes all of their penguins
-(define (finalize-player player board)
-  (make-player
-   (player-color player)
-   (foldr (λ (posn score-acc) (+ score-acc (get-tile posn board)))
-          (player-score player)
-          (player-places player))
-   '()))
-
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
 (module+ test
@@ -263,49 +262,73 @@
                (list->set (map player-color (state-players (create-state 4 (make-even-board 3 3 2)))))
                PENGUIN-COLORS))
   ;; +--- place-penguin ---+
-  (check-equal? (place-penguin RED (make-posn 0 0) test-state)
+  (check-equal? (place-penguin test-state (make-posn 0 0))
                 (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
-                            (list (make-player RED 1 (list (make-posn 0 0)
+                            (list (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
+                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3)))
+                                  (make-player RED 1 (list (make-posn 0 0)
                                                            (make-posn 0 1)
-                                                           (make-posn 2 1)))
-                                  (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
-                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
-  (check-exn exn:fail?
-             (λ () (place-penguin BROWN (make-posn -1 0) test-state)))
-  (check-exn exn:fail?
-             (λ () (place-penguin RED (make-posn -1 0) test-state)))
-  (check-exn exn:fail?
-             (λ () (place-penguin RED (make-posn 2 2) test-state)))
-  (check-exn exn:fail?
-             (λ () (place-penguin RED (make-posn 1 1) test-state)))
-  ;; move-penguin
-  (check-equal? (move-penguin RED (make-posn 0 1) (make-posn 0 0) test-state)
+                                                           (make-posn 2 1))))))
+  (check-exn exn:fail? (λ () (place-penguin test-state (make-posn 2 0))))
+  (check-exn exn:fail? (λ () (place-penguin test-state (make-posn 0 2))))
+  (check-exn exn:fail? (λ () (place-penguin test-state (make-posn -2 0))))
+  ;; +--- is-place-valid? ---+
+  (check-true (is-place-valid? test-state (make-posn 0 0)))
+  (check-false (is-place-valid? test-state (make-posn -1 0)))
+  (check-false (is-place-valid? test-state (make-posn 2 0)))
+  ;; +--- move-penguin ---+
+  (check-equal? (move-penguin test-state (make-move (make-posn 0 1) (make-posn 0 0)))
                 (make-state '((1 0 0 1) (1 3 1 0) (5 5 0 2))
-                            (list (make-player RED 3 (list (make-posn 0 0) (make-posn 2 1)))
-                                  (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
-                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
-  (check-equal? (move-penguin BLACK (make-posn 1 1) (make-posn 0 3) test-state)
+                            (list (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
+                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3)))
+                                  (make-player RED 3 (list (make-posn 0 0) (make-posn 2 1))))))
+  (check-equal? (move-penguin (skip-player test-state) (make-move (make-posn 1 1) (make-posn 0 3)))
                 (make-state '((1 2 0 1) (1 0 1 0) (5 5 0 2))
-                            (list (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
-                                  (make-player BLACK  3 (list (make-posn 1 0) (make-posn 0 3)))
-                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
+                            (list (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3)))
+                                  (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1)))
+                                  (make-player BLACK  3 (list (make-posn 1 0) (make-posn 0 3))))))
   ; from not valid
   (check-exn exn:fail?
-             (λ () (move-penguin RED (make-posn 0 2) (make-posn 0 0) test-state)))
+             (λ () (move-penguin test-state (make-move (make-posn 0 2) (make-posn 0 0)))))
   ; penguin isn't at from posn
   (check-exn exn:fail?
-             (λ () (move-penguin RED (make-posn 0 0) (make-posn 1 1) test-state)))
-  ; player doesn't exist
-  (check-exn exn:fail?
-             (λ () (move-penguin BROWN (make-posn 0 1) (make-posn 0 0) test-state)))
+             (λ () (move-penguin test-state (make-move (make-posn 0 0) (make-posn 1 1)))))
   ; invalid move
   (check-exn exn:fail?
-             (λ () (move-penguin RED (make-posn 0 1) (make-posn 2 1) test-state)))
+             (λ () (move-penguin test-state (make-move (make-posn 0 1) (make-posn 2 1)))))
+  ;; +--- is-move-valid? ---+
+  (check-true (is-move-valid? test-state (make-move (make-posn 0 1) (make-posn 0 0))))
+  (check-false (is-move-valid? test-state (make-move (make-posn 0 2) (make-posn 0 0))))
+  (check-false (is-move-valid? test-state (make-move (make-posn 0 0) (make-posn 1 1))))
+  (check-false (is-move-valid? test-state (make-move (make-posn 0 1) (make-posn 2 1))))
+  ;; +--- skip-player ---+
+  (check-equal? (skip-player test-state)
+                (make-state (state-board test-state)
+                            (list (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1)))
+                                  (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3)))
+                                  (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1))))))
+  ;; +--- state-current-player ---+
+  (check-equal? (state-current-player test-state)
+                (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1))))
+  ;; +--- valid-moves ---+
+  (check-equal? (valid-moves test-state (make-posn 0 1))
+                (list (make-move (make-posn 0 1) (make-posn 1 2))
+                      (make-move (make-posn 0 1) (make-posn 0 3))
+                      (make-move (make-posn 0 1) (make-posn 0 0))))
+  (check-equal? (valid-moves test-state (make-posn 1 0))
+                (list (make-move (make-posn 1 0) (make-posn 1 2))))
+  (check-equal? (valid-moves test-state (make-posn 1 1))
+                (list (make-move (make-posn 1 1) (make-posn 1 2))
+                      (make-move (make-posn 1 1) (make-posn 0 3))))
+  (check-equal? (valid-moves test-state (make-posn 2 1)) '())
+  (check-exn exn:fail? (λ () (valid-moves test-state (make-posn -1 0))))
+  (check-exn exn:fail? (λ () (valid-moves test-state (make-posn 0 2))))
+  (check-exn exn:fail? (λ () (valid-moves test-state (make-posn 0 0))))
   ;; +--- can-current-move? ---+
   (check-true (can-current-move? test-state))
   (check-false (can-current-move?
                 (make-state '((1)) (list (make-player RED 0 (list (make-posn 0 0)))))))
-  ;; can-any-move?
+  ;; +--- can-any-move? ---+
   (check-false (can-any-move? (create-state 2 (make-even-board 3 3 2))))
   (check-true (can-any-move? test-state))
   (define can-move-test-state
@@ -315,18 +338,7 @@
                                                        (state-board test-state))))
                 (state-players test-state)))
   (check-false (can-any-move? can-move-test-state))
-  ;; is-place-valid?
-  (check-true (is-place-valid? RED (make-posn 0 0) test-state))
-  (check-false (is-place-valid? BROWN (make-posn 0 0) test-state))
-  (check-false (is-place-valid? WHITE (make-posn -1 0) test-state))
-  (check-false (is-place-valid? WHITE (make-posn 2 0) test-state))
-  ;; is-move-valid?
-  (check-true (is-move-valid? RED (make-posn 0 1) (make-posn 0 0) test-state))
-  (check-false (is-move-valid? RED (make-posn 0 2) (make-posn 0 0) test-state))
-  (check-false (is-move-valid? RED (make-posn 0 0) (make-posn 1 1) test-state))
-  (check-false (is-move-valid? BROWN (make-posn 0 1) (make-posn 0 0) test-state))
-  (check-false (is-move-valid? RED (make-posn 0 1) (make-posn 2 1) test-state))
-  ;; finalize-state
+  ;; +--- finalize-state ---+
   (check-equal? (finalize-state (make-state '((4)) (list (make-player RED 0 (list (make-posn 0 0))))))
                 (make-state '((0)) (list (make-player RED 4 '()))))
   (check-equal? (finalize-state test-state)
@@ -334,38 +346,45 @@
                             (list (make-player RED 8 '())
                                   (make-player BLACK  4 '())
                                   (make-player WHITE 12 '()))))
+  ;; +--- draw-state ---+
+  ;; TODO
   
   ;; Internal Helper Functions
-  ;; any-penguin-at?
+  ;; +--- rotate-players ---+
+  (check-equal? (rotate-players (list (make-player BLACK 0 '())
+                                      (make-player WHITE 1 '())
+                                      (make-player RED 2 '())))
+                (list (make-player WHITE 1 '())
+                      (make-player RED 2 '())
+                      (make-player BLACK 0 '())))
+  ;; +--- any-penguin-at? ---+
   (check-true (any-penguin-at? test-state (make-posn 2 3)))
   (check-false (any-penguin-at? test-state (make-posn 1 3)))
-  ;; current-player-has-penguin-at?
-  (check-true (current-player-has-penguin-at? WHITE (make-posn 2 3) test-state))
-  (check-false (current-player-has-penguin-at? BLACK (make-posn 2 3) test-state))
-  (check-false (current-player-has-penguin-at? WHITE (make-posn 1 3) test-state))
-  ;; update-player/move
+  ;; +--- current-player-has-penguin-at? ---+
+  (check-true (current-player-has-penguin-at? test-state (make-posn 2 1)))
+  (check-false (current-player-has-penguin-at? test-state (make-posn 2 3)))
+  (check-false (current-player-has-penguin-at? test-state (make-posn 0 3)))
+  ;; +--- update-player/move ---+
   (check-equal? (update-player/move (make-player RED 10 (list (make-posn 2 2)))
-                                    (make-posn 2 2)
-                                    (make-posn 1 1)
+                                    (make-move (make-posn 2 2) (make-posn 1 1))
                                     5)
                 (make-player RED 15 (list (make-posn 1 1))))
   (check-equal? (update-player/move (make-player RED 10 (list (make-posn 1 1)
                                                               (make-posn 3 3)
                                                               (make-posn 2 2)))
-                                    (make-posn 3 3)
-                                    (make-posn 1 2)
+                                    (make-move (make-posn 3 3) (make-posn 1 2))
                                     10)
                 (make-player RED 20 (list (make-posn 1 1)
                                           (make-posn 1 2)
                                           (make-posn 2 2))))
-  ;; add-player-posn
+  ;; +--- add-player-posn ---+
   (check-equal? (add-player-posn (make-player RED 10 (list (make-posn 2 2)))
                                  (make-posn 1 1))
                 (make-player RED 10 (list (make-posn 1 1) (make-posn 2 2))))
   (check-equal? (add-player-posn (make-player RED 10 '())
                                  (make-posn 2 2))
                 (make-player RED 10 (list (make-posn 2 2))))
-  ;; penguins-to-holes
+  ;; +--- penguins-to-holes ---+
   (check-equal? (penguins-to-holes test-state)
                 '((1 0 0 1) (0 0 1 0) (0 0 0 0)))
   (check-equal? (penguins-to-holes
@@ -376,10 +395,15 @@
                    (make-player BLACK 0 (list (make-posn 2 2) (make-posn 3 0) (make-posn 3 2)))
                    (make-player BROWN 0 (list (make-posn 3 3) (make-posn 4 3))))))
                 '((1 1 1 1) (0 0 0 1) (1 1 0 1) (0 1 0 0) (1 1 1 0)))
-  ;; finalize-player
+  ;; +--- finalize-player ---+
   (check-equal? (finalize-player (make-player BLACK 0 (list (make-posn 0 0))) '((4)))
                 (make-player BLACK 4 '()))
   (check-equal? (finalize-player (make-player RED 0 (list (make-posn 0 0) (make-posn 0 1)
                                                           (make-posn 1 0) (make-posn  2 2)))
                                  '((1 1 1) (2 2 2) (3 3 3)))
-                (make-player RED 7 '())))
+                (make-player RED 7 '()))
+  ;; +--- draw-board-penguins ---+
+  ;; TODO
+  ;; +--- draw-players ---+
+  ;; TODO
+  )

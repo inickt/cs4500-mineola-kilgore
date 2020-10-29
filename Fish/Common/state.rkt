@@ -106,13 +106,23 @@
   (make-state
    (remove-tile from-posn (state-board state))
    ;; TODO: rotate checking if next can move?
-   (rotate-players (cons (update-player-posn (first players) move points) (rest players)))))
+   (rotate-players (cons (update-player/move (first players) move points) (rest players)))))
 
 ;; is-move-valid? state? move? -> boolean?
 ;; Is it valid for the current player to perform the move?
 (define (is-move-valid? state move)
   (and (current-player-has-penguin-at? state (move-from move))
        (member move (valid-moves state move))))
+
+;; skip-player : state? -> state?
+;; Skips the current player's turn
+(define (skip-player state)
+  (make-state (state-board state) (rotate-players (state-players state))))
+
+;; state-current-player : state? -> player?
+;; Gets the current player
+(define (state-current-player state)
+  (first (state-players state)))
 
 ;; valid-moves : state? posn? -> (listof move?)
 ;; Determines all legal moves from the given position
@@ -122,14 +132,9 @@
   (map (λ (to-posn) (make-move from-posn to-posn))
        (valid-movements from-posn (penguins-to-holes state))))
 
-;; state-current-player : state? -> player?
-;; Gets the current player
-(define (state-current-player state)
-  (first (state-players state)))
-
 ;; can-current-move? : state? -> boolean?
 ;; Can the current player move?
-(define (can-color-move? state)
+(define (can-current-move? state)
   (ormap (λ (penguin) (cons? (valid-moves state penguin)))
          (player-places (state-current-player state))))
 
@@ -232,30 +237,8 @@
           (player-places player))
    '()))
 
-;; next-turn : state? penguin-color? -> penguin-color?
-;; Determines the color of the next player in the game, skipping players who cannot move
-#;
-(define (next-turn state starting)
-  (local [;; next-turn-h : state? penguin-color? -> penguin-color?
-          ;; Recursively query until player with color current has valid moves in state
-          (define (next-turn-h state current)
-            (define next-color (get-next-color (state-players state) current))
-            (if (can-color-move? next-color state)
-                next-color
-                (if (penguin-color=? next-color starting)
-                    (raise-arguments-error 'next-turn "State has no valid moves" "state" state)
-                    (next-turn-h state next-color))))]
-    (next-turn-h state starting)))
-
-;; get-next-color : (list-of player?) penguin-color? -> penguin-color?
-;; Get the color of the player in the list after the player with the current color
-(define (get-next-color order current)
-  (define current-index (index-of (map player-color order) current penguin-color=?))
-  (player-color (list-ref order (modulo (add1 current-index) (length order)))))
-
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
-#;
 (module+ test
   (require rackunit)
 
@@ -266,7 +249,7 @@
                       (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))))
   
   ;; Provided Functions
-  ;; create-state
+  ;; +--- create-state ---+
   (check-equal? (state-board (create-state 2 (make-even-board 3 3 2)))
                 (make-even-board 3 3 2))
   (check-equal? (state-board (create-state 4 (make-even-board 3 3 2)))
@@ -280,7 +263,7 @@
   (check-true (subset?
                (list->set (map player-color (state-players (create-state 4 (make-even-board 3 3 2)))))
                PENGUIN-COLORS))
-  ;; place-penguin
+  ;; +--- place-penguin ---+
   (check-equal? (place-penguin RED (make-posn 0 0) test-state)
                 (make-state '((1 2 0 1) (1 3 1 0) (5 5 0 2))
                             (list (make-player RED 1 (list (make-posn 0 0)
@@ -319,10 +302,10 @@
   ; invalid move
   (check-exn exn:fail?
              (λ () (move-penguin RED (make-posn 0 1) (make-posn 2 1) test-state)))
-  ;; can-color-move?
-  (check-true (can-color-move? RED test-state))
-  (check-true (can-color-move? BLACK test-state))
-  (check-false (can-color-move? WHITE test-state))
+  ;; +--- can-current-move? ---+
+  (check-true (can-current-move? test-state))
+  (check-false (can-current-move?
+                (make-state '((1)) (list (make-player RED 0 (list (make-posn 0 0)))))))
   ;; can-any-move?
   (check-false (can-any-move? (create-state 2 (make-even-board 3 3 2))))
   (check-true (can-any-move? test-state))
@@ -344,14 +327,6 @@
   (check-false (is-move-valid? RED (make-posn 0 0) (make-posn 1 1) test-state))
   (check-false (is-move-valid? BROWN (make-posn 0 1) (make-posn 0 0) test-state))
   (check-false (is-move-valid? RED (make-posn 0 1) (make-posn 2 1) test-state))
-  ;; get-player
-  (check-equal? (get-player RED test-state)
-                (make-player RED 1 (list (make-posn 0 1) (make-posn 2 1))))
-  (check-equal? (get-player BLACK test-state)
-                (make-player BLACK  0 (list (make-posn 1 0) (make-posn 1 1))))
-  (check-equal? (get-player WHITE test-state)
-                (make-player WHITE 5 (list (make-posn 2 0) (make-posn 2 3))))
-  (check-exn exn:fail? (λ () (get-player BROWN test-state)))
   ;; finalize-state
   (check-equal? (finalize-state (make-state '((4)) (list (make-player RED 0 (list (make-posn 0 0))))))
                 (make-state '((0)) (list (make-player RED 4 '()))))
@@ -369,16 +344,13 @@
   (check-true (current-player-has-penguin-at? WHITE (make-posn 2 3) test-state))
   (check-false (current-player-has-penguin-at? BLACK (make-posn 2 3) test-state))
   (check-false (current-player-has-penguin-at? WHITE (make-posn 1 3) test-state))
-  ;; move-is-valid?
-  (check-true (move-is-valid? (make-posn 0 1) (make-posn 0 0) test-state))
-  (check-false (move-is-valid? (make-posn 0 1) (make-posn 2 1) test-state))
-  ;; update-player-posn
-  (check-equal? (update-player-posn (make-player RED 10 (list (make-posn 2 2)))
+  ;; update-player/move
+  (check-equal? (update-player/move (make-player RED 10 (list (make-posn 2 2)))
                                     (make-posn 2 2)
                                     (make-posn 1 1)
                                     5)
                 (make-player RED 15 (list (make-posn 1 1))))
-  (check-equal? (update-player-posn (make-player RED 10 (list (make-posn 1 1)
+  (check-equal? (update-player/move (make-player RED 10 (list (make-posn 1 1)
                                                               (make-posn 3 3)
                                                               (make-posn 2 2)))
                                     (make-posn 3 3)

@@ -103,6 +103,22 @@
            (equal? (game-state gt1) (game-state gt2))
            (equal? (game-player-turn gt1) (game-player-turn gt2)))))
 
+;; next-playable-state : state? -> state?
+;; Determines the next state, skipping players who are unable to move
+;; NOTE: Must take a state with at least one player who can move
+(define (next-playable-state state)
+  (local [;; next-turn-h : state? penguin-color? -> penguin-color?
+          ;; Recursively query until state where current player can play is reached
+          (define (next-playable-state-h current)
+            (define next-state (skip-player current))
+            (if (can-current-move? next-state)
+                next-state
+                (if (equal? current state)
+                    (raise-arguments-error
+                     'next-playable-state "No players in state can move" "state" state)
+                    (next-turn-h current))))]
+    (next-playable-state-h state)))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
 (module+ test

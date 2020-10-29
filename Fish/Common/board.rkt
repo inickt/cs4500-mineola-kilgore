@@ -34,8 +34,14 @@
 ;; PROVIDED
 
 ;; A Board is a (non-empty-listof (non-empty-listof tile?))
-;; and represents a row major, column minor grid of Tiles
-;; INVARIANT: All columns have the same length
+;; and represents the board for a game of Fish. The board is a set of hexagonal tiles and holes laid
+;; out in an approximate rectangle, as seen in the diagram below.
+;; Each tile has number of fish displayed on it. Penguins can be moved to and from tiles, leaving
+;; holes in the place of tiles they move off of. A hole has no fish and is not traversable by
+;; penguins.
+
+;; The board is represented as a row major, column minor grid of Tiles.
+;; INVARIANT: All columns have the same length.
 ;;
 ;; An offset coordinate system us used to represent a grid of tesselated hexagons. Each column begins
 ;; with a tile in the left position, and zig-zags down such that tiles with even rows are on the left

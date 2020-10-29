@@ -114,7 +114,7 @@
   (local [;; next-turn-h : state? penguin-color? -> penguin-color?
           ;; Recursively query until state where current player can play is reached
           (define (next-playable-state-h current)
-            (if (can-current-move? current)
+            (if (can-color-move? current (player-color (state-current-player current)))
                 current
                 (let
                     ([next-state (skip-player current)])

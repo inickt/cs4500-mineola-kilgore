@@ -35,7 +35,7 @@
          (contract-out [skip-player (-> state? state?)])
          (contract-out [state-current-player (-> state? player?)])
          (contract-out [valid-moves (-> state? posn? (listof move?))])
-         (contract-out [can-current-move? (-> state? boolean?)])
+         (contract-out [can-color-move? (-> state? penguin-color? boolean?)])
          (contract-out [can-any-move? (-> state? boolean?)])
          (contract-out [finalize-state (-> state? state?)])
          (contract-out [draw-state (-> state? natural? image?)]))
@@ -152,11 +152,12 @@
   (map (λ (to-posn) (make-move from-posn to-posn))
        (valid-movements from-posn (penguins-to-holes state))))
 
-;; can-current-move? : state? -> boolean?
+;; can-color-move? : state? -> boolean?
 ;; Can the current player move?
-(define (can-current-move? state)
+(define (can-color-move? state color)
   (ormap (λ (penguin) (cons? (valid-moves state penguin)))
-         (player-places (state-current-player state))))
+         (player-places (findf (λ (player) (penguin-color=? (player-color player) color))
+                               (state-players state)))))
 
 ;; can-any-move? : state? -> boolean?
 ;; Can any players in the game move?
@@ -346,10 +347,10 @@
   (check-exn exn:fail? (λ () (valid-moves test-state (make-posn -1 0))))
   (check-exn exn:fail? (λ () (valid-moves test-state (make-posn 0 2))))
   (check-exn exn:fail? (λ () (valid-moves test-state (make-posn 0 0))))
-  ;; +--- can-current-move? ---+
-  (check-true (can-current-move? test-state))
-  (check-false (can-current-move?
-                (make-state '((1)) (list (make-player RED 0 (list (make-posn 0 0)))))))
+  ;; +--- can-color-move? ---+
+  (check-true (can-color-move? test-state BLACK))
+  (check-true (can-color-move? test-state RED))
+  (check-false (can-color-move? test-state WHITE))
   ;; +--- can-any-move? ---+
   (check-false (can-any-move? (create-state 2 (make-even-board 3 3 2))))
   (check-true (can-any-move? test-state))

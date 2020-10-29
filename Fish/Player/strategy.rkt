@@ -34,7 +34,7 @@
 ;; Applies the maximin algorithm to determine the best move for the current player, searching up to
 ;; depth turns for the current player
 (define (get-move game depth)
-  (first (maximin-search game depth (game-player-turn game))))
+  (first (maximin-search game depth (player-color (state-current-player (game-state game))))))
 
 ;; tiebreaker : move? move? -> boolean?
 ;; Given two distinct moves, should the first be picked over the second in a tie?
@@ -51,13 +51,12 @@
 ;; maximin-search : game? posint? penguin-color? -> (list/c move (hash-of penguin-color? natural?))
 ;; Determines the best move, and the scores resulting from that move, based on a maximin algorithm
 (define (maximin-search game remaining-depth original-player)
-  (define color (game-player-turn game))
-  (define new-depth (if (penguin-color=? (game-player-turn game) original-player)
+  (define color (player-color (state-current-player (game-state game))))
+  (define new-depth (if (penguin-color=? color original-player)
                         (sub1 remaining-depth)
                         remaining-depth))
   (define mapped-children
     (apply-to-all-children game (λ (child) (maximin-recur child new-depth original-player))))
-  
   (for/foldr ([maybe-best #f])
     ([(move score-map) (in-hash mapped-children)])
     
@@ -89,6 +88,7 @@
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
+
 (module+ test
   (require rackunit
            "../Common/penguin-color.rkt")

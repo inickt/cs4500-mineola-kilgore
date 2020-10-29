@@ -7,13 +7,17 @@
          "state.rkt"
          "penguin-color.rkt")
 
-; TODO clean up
 (provide (contract-out [game-tree? (-> any/c boolean?)])
-         (struct-out game)
-         (struct-out end-game)
-         create-game
-         (contract-out
-          [apply-to-all-children (-> game? (-> game-tree? any/c) (hash/c move? any/c))]))
+
+         (contract-out [game? (-> any/c boolean?)])
+         (contract-out [game-state (-> game? state?)])
+         (contract-out [game-children (-> game? (promise/c (hash/c move? game-tree?)))])
+
+         (contract-out [end-game? (-> any/c boolean?)])
+         (contract-out [end-game-state (-> end-game? state?)])
+
+         (contract-out [create-game (-> state? game-tree?)])
+         (contract-out [apply-to-all-children (-> game? (-> game-tree? any/c) (hash/c move? any/c))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -21,13 +25,21 @@
 (define-struct game [state children] #:transparent)
 (define-struct end-game [state] #:transparent)
 (define game-tree? (or/c game? end-game?))
-;; TODO Clean up
+
 ;; A GameTree is one of:
-;; - (make-end-game state? (listof? penguin-color?)])
-;; - (make-game state? penguin-color? (promise? (hash/c move? game-tree?)))
+;; - EndGame
+;; - Game
 ;; and represents a game tree with either no moves or some remaining moves.
 
-;; A Game is a (make-game state? penguin-color? (promise? (hash/c move? GameTree)))
+;; An EndGame is a (make-end-game state?])
+;; and represents a terminal GameTree with a final state.
+;;
+;; EndGames are created from states in which no valid move is remaining for any player, and the
+;; EndGame itself will be finalized such that all remaining penguins are removed from the board and
+;; the fish on the tiles they occupied will be added to their players' scores.
+;; INVARIANT: EndGames have no penguins placed on the board.
+
+;; A Game is a (make-game state? (promise? (hash/c move? game-tree?)))
 ;; and represents a node in a game tree with a state, a current player, and a list of kicked players.
 ;;
 ;; The current player (game-player-turn) is guaranteed to have one or more valid moves remaining.
@@ -36,15 +48,6 @@
 ;; The application of any move to a Game that creates a state where no further moves are possible will
 ;; create an EndGame.
 ;; INVARIANT: All Games have at least one valid move for the current player.
-
-;; An EndGame is a (make-end-game state? (listof? penguin-color?)])
-;; and represents a terminal GameTree with a state and a list of kicked players.
-;;
-;; EndGames are created from states in which no valid move is remaining for any player, and the
-;; EndGame itself will be finalized such that all remaining penguins are removed from the board and
-;; the fish on the tiles they occupied will be added to their players' scores.
-;; INVARIANT: EndGames have no penguins placed on the board.
-
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
@@ -55,14 +58,10 @@
 ;; - If there are no possible moved in the state, an end-game is returned with the state finalized
 ;; - The current player of the returned game is the first player in the list of players that can move
 ;; - Games start with no kicked players
-;; - TODO
 (define (create-game state)
-  (define prev-player (last (state-players state)))
   (if (can-any-move? state)
-      (make-game (next-playable-state
-                 (make-state (state-board state)
-                             (cons prev-player (remove prev-player (state-players state)))))
-                 (delay (all-possible-moves state)))
+      (let ([next-state (next-playable-state state)])
+        (make-game next-state (delay (all-possible-moves next-state))))
       (make-end-game (finalize-state state))))
 
 ;; apply-to-all-children : game? (-> game-tree? any/c) -> (hash-of move? any/c)
@@ -85,7 +84,10 @@
 ;; Creates the next game state for a given valid move by the current player in the provided game
 ;; IMPORTANT: is-move-valid? should be queried prior to calling apply-move without exception handling
 ;; NOTES:
-;; - MOVE IS VALID TODO SAY BETTER
+;; - The provided move must be valid for the given state
+;;   - both FROM and TO positions are valid Tiles on the board
+;;   - a penguin of the current player's color exists at the FROM position
+;;   - there is a path from the FROM position the TO position that is not blocked by holes or penguins
 ;; - Constructs an end-game if the resultant state has no valid moves
 ;; - Skips the turns of players who cannot move
 (define (apply-move state move)
@@ -105,19 +107,21 @@
            (equal? (game-state gt1) (game-state gt2)))))
 
 ;; next-playable-state : state? -> state?
-;; Determines the next state, skipping players who are unable to move
+;; Skips to the next state in which the current player can move, or the given state if current can
+;; already move
 ;; NOTE: Must take a state with at least one player who can move
 (define (next-playable-state state)
   (local [;; next-turn-h : state? penguin-color? -> penguin-color?
           ;; Recursively query until state where current player can play is reached
           (define (next-playable-state-h current)
-            (define next-state (skip-player current))
-            (if (can-current-move? next-state)
-                next-state
-                (if (equal? next-state state)
-                    (raise-arguments-error
-                     'next-playable-state "No players in state can move" "state" state)
-                    (next-playable-state-h next-state))))]
+            (if (can-current-move? current)
+                current
+                (let
+                    ([next-state (skip-player current)])
+                  (if (equal? next-state state)
+                      (raise-arguments-error
+                       'next-playable-state "No players in state can move" "state" state)
+                      (next-playable-state-h next-state)))))]
     (next-playable-state-h state)))
 
 ;; +-------------------------------------------------------------------------------------------------+
@@ -150,7 +154,18 @@
                                    (list (make-player RED 0 (list (make-posn 0 0)))
                                          (make-player BLACK 0 (list (make-posn 2 2))))))
   (check-equal? (player-color (state-current-player (game-state (create-game cg-state-ex1)))) RED)
-  
+  (check-equal?
+   (for/hash
+       ([(move child)
+         (in-hash
+          (force (game-children
+                  (create-game (make-state '((1 2 1 0))
+                                           (list (make-player BLACK 0 (list (make-posn 0 0)))))))))])
+     (values move (game-state child)))
+   (hash (make-move (make-posn 0 0) (make-posn 0 1))
+         (make-state '((0 2 1 0)) (list (make-player BLACK 1 (list (make-posn 0 1)))))
+         (make-move (make-posn 0 0) (make-posn 0 2))
+         (make-state '((0 2 1 0)) (list (make-player BLACK 1 (list (make-posn 0 2)))))))
   ;; none can move
   (define cg-state-ex2 (make-state (make-even-board 1 2 1)
                                    (list (make-player BROWN 0 (list (make-posn 0 0)))
@@ -219,15 +234,14 @@
                        (list (make-player BLACK 0 (list (make-posn 0 2)))
                              (make-player RED 0 (list (make-posn 0 0))))))]
          [hash-expected
-          (hash (make-move (make-posn 0 2)
-                           (make-posn 0 1))
+          (hash (make-move (make-posn 0 2) (make-posn 0 1))
                 (make-end-game (make-state '((0 0 0 0 1))
-                                           (list (make-player BLACK 2 '())
-                                                 (make-player RED 1 '()))))
+                                           (list (make-player RED 1 '())
+                                                 (make-player BLACK 2 '()))))
                 (make-move (make-posn 0 2) (make-posn 0 4))
                 (create-game (make-state '((1 1 0 0 1))
-                                         (list (make-player BLACK 1 (list (make-posn 0 4)))
-                                               (make-player RED 0 (list (make-posn 0 0)))))))])
+                                         (list (make-player RED 0 (list (make-posn 0 0)))
+                                               (make-player BLACK 1 (list (make-posn 0 4)))))))])
      (andmap (λ (move)
                (game-tree=? (hash-ref hash-actual move) (hash-ref hash-expected move)))
              (append (hash-keys hash-expected) (hash-keys hash-actual)))))
@@ -236,7 +250,7 @@
   ;; In one state, WHITE will move into the position BLACK is attempting to move into using the λ
   ;; The resulting list should state that the move is legal for BLACK in all but one case
   (check-equal? (apply-to-all-children
-                 (create-game (next-playable-state (game-state test-game)))
+                 (create-game (skip-player (game-state test-game)))
                  (λ (gametree) (if (end-game? gametree)
                                    (error "No terminal games should exist")
                                    (is-move-valid? (game-state gametree)
@@ -261,13 +275,9 @@
   
   ;; Internal Helper Functions
   ;; +---- next-turn ---+
-  ;; wrap around the end of the list
+  ;; return the unchanged state because the current player can play
   (check-equal? (next-playable-state (game-state test-game))
-                (make-state
-                 '((1 3 0 1 3) (1 0 1 2 4) (2 0 2 3 5))
-                 (list (make-player WHITE 6 (list (make-posn 0 4) (make-posn 1 2) (make-posn 2 3)))
-                       (make-player BLACK 8 (list (make-posn 0 3) (make-posn 1 4) (make-posn 2 0)))
-                       (make-player RED 3 '()))))
+                (game-state test-game))
   ;; skip a player with no moves
   (check-equal? (next-playable-state (make-state '((1 1) (1 1))
                                                  (list (make-player WHITE 0 (list (make-posn 0 1)

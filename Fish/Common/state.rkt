@@ -45,7 +45,12 @@
 
 (define-struct state [board players] #:transparent)
 ;; A State is a (make-state board? (non-empty-listof player?))
-;; And represents a fish game state, containing:
+;; And represents a snapshot of a game of Fish at some  point in time.
+;; Actions that can be performed on a Fish State include placing a penguin at a non-hole Tile on the
+;; board with no other penguin for the current player, and moving one of the current player's penguins
+;; from one tile to another in a straight line without crossing a hole or another player's penguin.
+
+;; A State contains:
 ;; - the current board
 ;; - the players in the game
 ;; INVARIANTS:
@@ -57,7 +62,11 @@
 
 (define-struct player [color score places] #:transparent)
 ;; A Player is a (make-player penguin-color? natural? (listof posn?))
-;; And represents a player in a fish game, containing:
+;; And represents a player in a game of Fish. Each player is denoted by a unique color, and has some
+;; number of penguins that they have placed on the board and can move on their turn. A player who's
+;; penguins have no valid moves is considered stuck, and must be skipped.
+
+; A Player contains:
 ;; - the player's color
 ;; - the player's score in the game
 ;; - the player's penguin positions
@@ -66,7 +75,11 @@
 
 (define-struct move [from to] #:transparent)
 ;; A Move is a (make-move posn? posn?)
-;; and represents a penguin's move on a fish board
+;; and represents a penguin's move on a fish board. Not all Moves are valid for a given Fish state:
+;; validity is determined by both the from and to positions being on the Fish board, the current
+;; player in the State having a penguin at from, and there being a direct line unblocked by a hole or
+;; another player's penguin up from from and up to/including to.
+
 ;; The coordinate system used for a move's from and to positions is an offset coordinate system, where
 ;; each of the positions is a valid tile on a board.
 

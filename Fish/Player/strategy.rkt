@@ -82,7 +82,7 @@
 (define (fish-heuristic game-tree)
   (define players (state-players (if (end-game? game-tree)
                                      (end-game-state game-tree)
-                                     (finalize-state (game-state game-tree)))))
+                                     (game-state game-tree))))
   (for/hash ([player players])
     (values (player-color player) (player-score player))))
 
@@ -130,10 +130,10 @@
    (make-posn 3 1))
   
   ;; +--- get-move ---+
-  (check-equal? (get-move test-game-1 1) (make-move (make-posn 1 2) (make-posn 1 1)))
+  (check-equal? (get-move test-game-1 1) (make-move (make-posn 1 2) (make-posn 0 1)))
   (check-equal? (get-move test-game-1 2) (make-move (make-posn 1 2) (make-posn 0 1)))
-  (check-equal? (get-move test-game-2 1) (make-move (make-posn 0 0) (make-posn 1 2)))
-  (check-equal? (get-move test-game-2 2) (make-move (make-posn 0 0) (make-posn 1 3)))
+  (check-equal? (get-move test-game-2 1) (make-move (make-posn 0 0) (make-posn 0 1)))
+  (check-equal? (get-move test-game-2 2) (make-move (make-posn 0 0) (make-posn 1 2)))
   (check-equal? (get-move test-game-2 3) (make-move (make-posn 0 0) (make-posn 1 2)))
   (check-equal? (get-move test-game-2 4) (make-move (make-posn 0 0) (make-posn 1 3)))
   (check-equal? (get-move test-game-2 10) (make-move (make-posn 0 0) (make-posn 1 3)))
@@ -167,7 +167,7 @@
   ;; +--- maximin-search ---+
   ;; Game 1 partial searches
   (check-equal? (maximin-search test-game-1 1 WHITE)
-                (list (make-move (make-posn 1 2) (make-posn 1 1)) (hash WHITE 6 BLACK 1)))
+                (list (make-move (make-posn 1 2) (make-posn 0 1)) (hash WHITE 2 BLACK 0)))
   ;; Game 1 complete searches
   (check-equal? (maximin-search test-game-1 2 WHITE)
                 (list (make-move (make-posn 1 2) (make-posn 0 1)) (hash WHITE 7 BLACK 1)))
@@ -216,9 +216,9 @@
                 (hash BLACK 15 RED 8 WHITE 11))
   ;; +--- fish-heuristic ---+
   (check-equal? (fish-heuristic test-game-1)
-                (hash BLACK 1 WHITE 2))
+                (hash BLACK 0 WHITE 0))
   (check-equal? (fish-heuristic test-game-2)
-                (hash BLACK 1 RED 3 WHITE 2))
+                (hash BLACK 0 RED 0 WHITE 0))
   (check-equal? (fish-heuristic
                  (create-game (make-state '((2))
                                           (list (make-player WHITE 10 (list (make-posn 0 0)))))))

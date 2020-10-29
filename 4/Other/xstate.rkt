@@ -16,9 +16,12 @@
 ;; Read a State from STDIN, applies the first move around the current player's penguin, and writes
 ;; the resultant state (if possible) to STDOUT.
 (define (xstate)
-  (define state (parse-json-state (read-json)))
-  (define maybe-state (get-result-state state))
-  (write-json (and maybe-state (serialize-state maybe-state)))
+  (define maybe-state (with-handlers ([exn:fail? (λ (exn) #f)])
+                        (parse-json-state (read-json))))
+  (define maybe-result-state (and maybe-state
+                                  (cons? (player-places (first (state-players maybe-state))))
+                                  (get-result-state maybe-state)))
+  (write-json (and maybe-result-state (serialize-state maybe-result-state)))
   (newline))
 
 ;; +-------------------------------------------------------------------------------------------------+
@@ -37,6 +40,7 @@
 ;; TESTS
 (module+ test
   (require rackunit
+           racket/path
            "../../Fish/Other/util.rkt")
 
   ;; Testing helpers
@@ -71,7 +75,10 @@
                                   (make-player WHITE 1 (list (make-posn 0 4)
                                                              (make-posn 1 2)
                                                              (make-posn 1 4))))))
-
+  ;; Integration tests
   (check-integration xstate "../Tests/1-in.json" "../Tests/1-out.json")
   (check-integration xstate "../Tests/2-in.json" "../Tests/2-out.json")
-  (check-integration xstate "../Tests/3-in.json" "../Tests/3-out.json"))
+  (check-integration xstate "../Tests/3-in.json" "../Tests/3-out.json")
+
+  ;; Fest tests
+  (check-fest xstate (build-path "./fest")))

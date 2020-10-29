@@ -33,10 +33,15 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-;; A Board is a (non-empty-listof (non-empty-listof tile?)) and uses an offset coordinate system to
-;; represent a grid of tesselated hexagons.
+;; A Board is a (non-empty-listof (non-empty-listof tile?))
+;; and represents a row major, column minor grid of Tiles
+;; INVARIANT: All columns have the same length
 ;;
-;; The following is a visual representation of a 3x7 board:
+;; An offset coordinate system us used to represent a grid of tesselated hexagons. Each column begins
+;; with a tile in the left position, and zig-zags down such that tiles with even rows are on the left
+;; and tiles with odd rows are on the right.
+;; 
+;; The following is a visual representation of a 7x3 board (7 rows, 3 columns):
 ;;     ______          ______          ______
 ;;    /      \        /      \        /      \
 ;;   / (0, 0) \______/ (1, 0) \______/ (2, 0) \______

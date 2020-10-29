@@ -43,28 +43,34 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
 
-;; TODO make more better
-
 (define-struct state [board players] #:transparent)
-;; A State is a:
-;; (make-state board? (non-empty-listof player?))
+;; A State is a (make-state board? (non-empty-listof player?))
 ;; And represents a fish game state, containing:
-;; - the current board state
+;; - the current board
 ;; - the players in the game
-;; INVARIANT: state-players is an ordered list representing the turn order of the players. The length
-;;            of the list is the number of players. The list order does not change.
+;; INVARIANTS:
+;; - state-players is an ordered list representing the turn order of the players. The length
+;;   of the list is the number of players. The first in the list is the current player for
+;;   the state, and will move to the end of the list after taking a turn.
+;; - The positions of a player's penguines are unique, valid, and within the boundareis of the board
+;; - Players have a unique color
 
 (define-struct player [color score places] #:transparent)
-;; A Player is a:
-;; (make-player penguin-color? natural? (listof posn?))
+;; A Player is a (make-player penguin-color? natural? (listof posn?))
 ;; And represents a player in a fish game, containing:
 ;; - the player's color
 ;; - the player's score in the game
 ;; - the player's penguin positions
+;; The coordinate system used for a player's penguins is an offset coordinate system, where each
+;; of the player's positions is a valid tile on a board.
 
 (define-struct move [from to] #:transparent)
 ;; A Move is a (make-move posn? posn?)
-;; and represents a penguin move on a fish board
+;; and represents a penguin's move on a fish board
+;; The coordinate system used for a move's from and to positions is an offset coordinate system, where
+;; each of the positions is a valid tile on a board.
+
+;; For visual examples of the coordinate system, see 'board.rkt'.
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
@@ -95,6 +101,9 @@
 
 ;; move-penguin : state? move? -> state?
 ;; Applies a valid move to a penguin for the current player
+;; NOTES:
+;; - The current player is moved to the end of the turn order
+;; - The current player's score increases by the amount of the tile they moved from
 (define (move-penguin state move)
   (unless (is-move-valid? state move)
     (raise-arguments-error 'move-penguin "The given move is not valid" "move" move))

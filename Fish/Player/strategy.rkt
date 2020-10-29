@@ -14,6 +14,13 @@
          (contract-out [tiebreaker (-> move? move? boolean?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
+;; DESCRIPTION
+
+;; No Data Definitions were required for this strategy component.
+;; - The definition for a State and Move can be found in "Fish/Common/state.rkt"
+;; - The definition for a GameTree, Game, and EndGame can be found in "Fish/Common/game-tree.rkt"
+
+;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
 ;; get-placement : state? -> posn?

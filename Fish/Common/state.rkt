@@ -2,7 +2,6 @@
 
 (require 2htdp/image
          lang/posn
-         racket/bool
          racket/contract
          racket/list
          racket/math
@@ -11,7 +10,7 @@
          "board.rkt"
          "penguin-color.rkt"
          "tile.rkt")
-#;
+
 (provide (contract-out [state? (-> any/c boolean?)])
          (contract-out [make-state (-> board? (non-empty-listof player?) state?)])
          (contract-out [state-board (-> state? board?)])
@@ -23,23 +22,23 @@
          (contract-out [player-score (-> player? natural?)])
          (contract-out [player-places (-> player? (listof posn?))])
 
-         (contract-out [move? (-> move? boolean?)])
+         (contract-out [move? (-> any/c boolean?)])
          (contract-out [make-move (-> posn? posn? move?)])
          (contract-out [move-to (-> move? posn?)])
          (contract-out [move-from (-> move? posn?)])
 
          (contract-out [create-state (-> (integer-in 2 4) board? state?)])
-         (contract-out [place-penguin (-> penguin-color? posn? state? state?)])
-         (contract-out [move-penguin (-> penguin-color? posn? posn? state? state?)])
+         (contract-out [place-penguin (-> state? posn? state?)])
+         (contract-out [is-place-valid? (-> state? posn? boolean?)])
+         (contract-out [move-penguin (-> state? move? state?)])
+         (contract-out [is-move-valid? (-> state? move? boolean?)])
+         (contract-out [skip-player (-> state? state?)])
+         (contract-out [state-current-player (-> state? player?)])
+         (contract-out [valid-moves (-> state? posn? (listof move?))])
+         (contract-out [can-current-move? (-> state? boolean?)])
          (contract-out [can-any-move? (-> state? boolean?)])
-         (contract-out [can-color-move? (-> penguin-color? state? boolean?)])
-         (contract-out [draw-state (-> state? natural? image?)])
-         (contract-out [is-place-valid? (-> penguin-color? posn? state? boolean?)])
-         (contract-out [is-move-valid? (-> penguin-color? posn? posn? state? boolean?)])
-         (contract-out [valid-moves (-> posn? state? (listof posn?))])
-         (contract-out [get-player (-> penguin-color? state? player?)])
          (contract-out [finalize-state (-> state? state?)])
-         (contract-out [remove-player-penguins (-> state? penguin-color? state?)]))
+         (contract-out [draw-state (-> state? natural? image?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS

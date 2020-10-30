@@ -14,16 +14,38 @@ Describe how each function is called by the tournament manager
 ```racket
 (define referee-interface
   (interface ()
-    ;; create-game : (non-empty-list-of (is-a?/c player-interface?)) natural? natural? -> game-tree?
+    ;; subscribe-as-game-observer : (is-a?/c game-observer-interface) -> boolean?
+    ;; Inputs: observer
+    ;;
+    ;; The Tournament Manager will call this function with a game-observer that wishes to be informed
+    ;; of FishGameEvents. The referee will then call the observer's observe function with all FishGameEvent
+    ;; updates produced as the game of Fish is run.
+    ;; Returns true when the subscription is successful.
+    ;; 
+    [subscribe-as-game-observer (->m (is-a?/c game-observer-interface) boolean?)]
+    
+    ;; run-game : (non-empty-list-of (is-a?/c player-interface?)) natural? natural? -> (list/c end-game? (is-a?/c player-interface))
     ;; Inputs: list-of-players, num-rows, num-columns
     ;;
-    ;; Notes: 2-4 players
-    [create-game (->m (non-empty-list-of (is-a?/c player-interface?)) natural? natural? game-tee?)]
-    
-    ;; subscribe-as-game-observer : 
-    [subscribe-as-game-observer (->m )]
-    
-    []))
+    ;; When called by a Tournament Manager, causes the Referee to run a game of Fish.
+    ;; The Referee determines the initial layout of the board, which will have a number of rows specified by
+    ;; num-rows, and a number of columns specified by num-columns. The referee may remove some tiles,
+    ;; creating holes on the initial board.
+    ;; The Referee will then determine a play order, which starts with the player who's age is lowest and cycles
+    ;; through the players in a round-robin fashion.
+    ;; The Referee will call `get-place` on each player 6 - N times, where N is the number of players.
+    ;; The Referee will then call `get-move` on the current player of the GameTree until it reaches an EndGame
+    ;; where there are no valid moves remaining.
+    ;; If, during this process, a player fails to make a move or cheats, the Referee will kick the player from
+    ;; the game and then resume the game without that player or it's penguins.
+    ;; The Referee will finally return the EndGame and the list of players who were kicked.
+    ;;
+    ;; For each step of the game for which a FishGameEvent can be produced (start, placement, move, kick, end),
+    ;; the Referee will call observe once on each observer of the game and pass it the FishGameEvent.
+    ;;
+    ;; NOTE: The Tournament Manager must provide between 2 and 4 players, inclusive.
+    ;;
+    [run-game (->m (non-empty-list-of (is-a?/c player-interface?)) natural? natural? (list/c end-game? (is-a?/c player-interface)))]))
 
 (define-struct start-event [board player-colors])
 (define-struct place-event [state position color])

@@ -22,8 +22,8 @@
     ;; creating holes on the initial board.
     ;; The Referee will then determine a play order, which starts with the player who's age is lowest and cycles
     ;; through the players in a round-robin fashion.
-    ;; The Referee will call `get-place` on each player 6 - N times, where N is the number of players.
-    ;; The Referee will then call `get-move` on the current player of the GameTree until it reaches an EndGame
+    ;; The Referee will call `get-placement` on each player 6 - N times, where N is the number of players.
+    ;; The Referee will then call `get-movement` on the current player of the GameTree until it reaches an EndGame
     ;; where there are no valid moves remaining.
     ;; If, during this process, a player fails to make a move or cheats, the Referee will kick the player from
     ;; the game and then resume the game without that player or it's penguins.
@@ -85,23 +85,11 @@
 # Referee Protocol
 
 ## Functions
- 1. `create-game`
- A referee supervises an individual game after being handed a number of players. The referee sets up a board...
- 
- 2. `subscribe-as-game-observer`
- during the game it may need to inform game observers of on-going actions.
- 
- 3. `run-game` : -> (list/c end-game? (list-of player?))
- ...and interacts with the players according to the interface protocol. It removes a player—really its penguins—that fails or cheats. When the game is over, it reports the outcome of the game and the failing and cheating players;
+There are two functions a Tournament Manager will call on a Referee.
 
+ - `subscribe-as-game-observer`
+   - The referee implements the Observer Pattern by providing this function. The Tournament Manager will call `subscribe-as-game-observer` once, providing each observer to the Referee, which will add them as observers of the game of Fish. Any time an action occurs in the Fish game, each observer is notified by having their `observe` method called with the relevant FishGameAction.
+ - `run-game`
+   - The Tournament Manager calls `run-game` on the Referee, providing a list of players as well as a number of rows and columns for the board. The Referee then runs a full game of Fish. It interacts with players according to the player protocol defined [here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/jake/Fish/Planning/player-protocol.md). During the game, it informs game observers of any occurring FishGameActions. Any players who cheat or fail to play are kicked and their penguins removed from the game, and then the game is restarted without that player. When finished, the Referee returns the final `EndGame` produced, as well as a list of players who were kicked from the game for cheating or failing to play.
 
-# Design Task
-A referee manages a game of Fish for some set of players. The software component sets up the game, runs the rounds, and shuts down the game. It is the tournament administrator that sets up referees and players for games. See Fish.Com, a Plan.
-
-Create a design document for the referee component, including its API. It should come with sufficient detail so that a sub-contractor in the far-away land of Codemanistan could implement it for you. In the meantime, you might be charged to implement a tournament manager.
-
-Two pages should suffice. Less is more.
-
-# Referee Component Spec
-USE THE WORDS "OBSERVER PATTERN"
-Describe how each function is called by the tournament manager
+## Order of Funciton Calls

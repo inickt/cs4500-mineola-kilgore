@@ -1,14 +1,3 @@
-# Design Task
-A referee manages a game of Fish for some set of players. The software component sets up the game, runs the rounds, and shuts down the game. It is the tournament administrator that sets up referees and players for games. See Fish.Com, a Plan.
-
-Create a design document for the referee component, including its API. It should come with sufficient detail so that a sub-contractor in the far-away land of Codemanistan could implement it for you. In the meantime, you might be charged to implement a tournament manager.
-
-Two pages should suffice. Less is more.
-
-# Referee Component Spec
-USE THE WORDS "OBSERVER PATTERN"
-Describe how each function is called by the tournament manager
-
 # Referee Interface
 
 ```racket
@@ -92,6 +81,9 @@ Describe how each function is called by the tournament manager
     
 ```
 
+
+# Referee Protocol
+
 ## Functions
  1. `create-game`
  A referee supervises an individual game after being handed a number of players. The referee sets up a board...
@@ -102,4 +94,14 @@ Describe how each function is called by the tournament manager
  3. `run-game` : -> (list/c end-game? (list-of player?))
  ...and interacts with the players according to the interface protocol. It removes a player—really its penguins—that fails or cheats. When the game is over, it reports the outcome of the game and the failing and cheating players;
 
-# Referee Protocol
+
+# Design Task
+A referee manages a game of Fish for some set of players. The software component sets up the game, runs the rounds, and shuts down the game. It is the tournament administrator that sets up referees and players for games. See Fish.Com, a Plan.
+
+Create a design document for the referee component, including its API. It should come with sufficient detail so that a sub-contractor in the far-away land of Codemanistan could implement it for you. In the meantime, you might be charged to implement a tournament manager.
+
+Two pages should suffice. Less is more.
+
+# Referee Component Spec
+USE THE WORDS "OBSERVER PATTERN"
+Describe how each function is called by the tournament manager

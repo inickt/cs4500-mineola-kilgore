@@ -7,6 +7,7 @@
          "../../Fish/Common/board.rkt"
          "../../Fish/Common/json.rkt"
          "../../Fish/Common/game-tree.rkt"
+         "../../Fish/Common/penguin-color.rkt"
          "../../Fish/Common/state.rkt"
          "../../Fish/Player/strategy.rkt")
 
@@ -34,19 +35,23 @@
   (unless (is-move-valid? state move)
     (error "Move provided is invalid, should be valid"))
   (define moved-game (hash-ref (force (game-children (create-game state))) move))
-  (define potential-moves (hash-keys (force (game-children moved-game))))
-  (define target-posns
-    (map (λ (mover) (mover (move-to move)))
-         (list top-hexagon-posn
-               top-right-hexagon-posn
-               bottom-right-hexagon-posn
-               bottom-hexagon-posn
-               bottom-left-hexagon-posn
-               top-left-hexagon-posn)))
-  (for*/first ([target-posn target-posns]
-               [found-move (in-value (find-best-move target-posn potential-moves))]
-               #:when found-move)
-    found-move))
+  (and (not (end-game? moved-game))
+       (penguin-color=? (player-color (state-current-player (game-state moved-game)))
+                        (player-color (list-ref (state-players state)
+                                                (modulo 1 (length (state-players state))))))
+       (let ([potential-moves (hash-keys (force (game-children moved-game)))]
+             [target-posns
+              (map (λ (mover) (mover (move-to move)))
+                   (list top-hexagon-posn
+                         top-right-hexagon-posn
+                         bottom-right-hexagon-posn
+                         bottom-hexagon-posn
+                         bottom-left-hexagon-posn
+                         top-left-hexagon-posn))])
+         (for*/first ([target-posn target-posns]
+                      [found-move (in-value (find-best-move target-posn potential-moves))]
+                      #:when found-move)
+           found-move))))
 
 ;; find-best-move : posn? (list-of move?) -> (or/c false? move?)
 ;; Finds the best move to a given position in a list of moves using a tiebreaker if multiple are found
@@ -60,8 +65,7 @@
 (module+ test
   (require lang/posn
            rackunit
-           "../../Fish/Other/util.rkt"
-           "../../Fish/Common/penguin-color.rkt")
+           "../../Fish/Other/util.rkt")
 
   ;; +--- xtree-algorithm ---+
   ;; impossible to move
@@ -86,6 +90,23 @@
                                                             (make-posn 1 0)))))
                  (make-move (make-posn 0 2) (make-posn 0 1)))
                 (make-move (make-posn 1 0) (make-posn 1 2)))
+  ;; next can't move
+  (check-false (xtree-algorithm (make-state '((3 0 0 2 2) (1 0 2 3 1))
+                                            (list (make-player RED 3 (list (make-posn 1 3)))
+                                                  (make-player BLACK 6 (list (make-posn 0 0)))
+                                                  (make-player WHITE 4 (list (make-posn 1 4)))))
+                                (make-move (make-posn 1 3) (make-posn 1 2))))
+  ;; one player - weird edge case, moves to spot next to itself
+  (check-equal? (xtree-algorithm (make-state '((1 1 0 1 1) (1 1 1 1 1))
+                                             (list (make-player BLACK 0 (list (make-posn 0 0)))))
+                                 (make-move (make-posn 0 0 ) (make-posn 1 2)))
+                (make-move (make-posn 1 2) (make-posn 1 0)))
+  ;; end game - cant move after
+  (check-false (xtree-algorithm (make-state '((1 1 0 0 1) (0 1 0 0 1))
+                                            (list (make-player BLACK 0 (list (make-posn 0 0)))
+                                                  (make-player RED 0 (list (make-posn 0 4)))
+                                                  (make-player WHITE 0 (list (make-posn 1 4)))))
+                                (make-move (make-posn 0 0) (make-posn 0 1))))
 
   ;; +--- find-best-move ---+
   (check-false (find-best-move (make-posn 0 0) '()))

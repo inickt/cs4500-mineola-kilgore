@@ -5,8 +5,9 @@ TAs can find:
 
 - the data definition, including interpretation, of penguin placements for setups 
 
-https://github.ccs.neu.edu/CS4500-F20/mineola/blob/6ce07d4cd505b92442d1e4941a5465d35870fbae/Fish/Common/state.rkt#L63-L74
-
+We did not need to create any new data definitions for the placement of penguins, because by default Racket provides the `posn` struct. All (x, y) or (row, col) coordinate pairs are represented by posns. We describe the ways a player's penguins must meet the board's coordinate system specification here:  
+https://github.ccs.neu.edu/CS4500-F20/mineola/blob/6ce07d4cd505b92442d1e4941a5465d35870fbae/Fish/Common/state.rkt#L63-L74  
+And under the bolded section below you can find our description of the `Board`'s coordinate system.
 
 - the data definition, including interpretation, of penguin movements for turns
 

@@ -47,7 +47,9 @@
 ;; Given two distinct moves, should the first be picked over the second in a tie?
 ;; Determined by topmost row, then leftmost column for both the from and to positions in the move.
 (define (tiebreaker move1 move2)
-  (or (< (posn-y (move-from move1)) (posn-y (move-from move2)))
+
+  
+  (< (posn-y (move-from move1)) (posn-y (move-from move2)))
       (< (posn-x (move-from move1)) (posn-x (move-from move2)))
       (< (posn-y (move-to move1)) (posn-y (move-to move2)))
       (< (posn-x (move-to move1)) (posn-x (move-to move2)))))

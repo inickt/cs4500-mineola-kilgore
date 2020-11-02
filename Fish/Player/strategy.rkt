@@ -47,12 +47,23 @@
 ;; Given two distinct moves, should the first be picked over the second in a tie?
 ;; Determined by topmost row, then leftmost column for both the from and to positions in the move.
 (define (tiebreaker move1 move2)
-
+  (define x1-from (posn-x (move-from move1)))
+  (define y1-from (posn-y (move-from move1)))
   
-  (< (posn-y (move-from move1)) (posn-y (move-from move2)))
-      (< (posn-x (move-from move1)) (posn-x (move-from move2)))
-      (< (posn-y (move-to move1)) (posn-y (move-to move2)))
-      (< (posn-x (move-to move1)) (posn-x (move-to move2)))))
+  (define x1-to (posn-x (move-to move1)))
+  (define y1-to (posn-y (move-to move1)))
+  
+  (define x2-from (posn-x (move-from move2)))
+  (define y2-from (posn-y (move-from move2)))
+  
+  (define x2-to (posn-x (move-to move2)))
+  (define y2-to (posn-y (move-to move2)))
+  
+  (cond [(not (= y1-to y2-to)) (< y1-to y2-to)]
+        [(not (= x1-to x2-to)) (< x1-to x2-to)]
+        [(not (= y1-from y2-from)) (< y1-from y2-from)]
+        [(not (= x1-from x2-from)) (< x1-from x2-from)]
+        [else #f]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPERS
@@ -177,6 +188,12 @@
   ;; equal
   (check-false (tiebreaker (make-move (make-posn 3 3) (make-posn 0 0))
                            (make-move (make-posn 3 3) (make-posn 0 0))))
+  ;; y1-to < y2-to but x1-to > x2-to
+  (check-true (tiebreaker (make-move (make-posn 3 3) (make-posn 1 0))
+                          (make-move (make-posn 3 3) (make-posn 0 1))))
+  ;; y1-from < y2-from but x1-from > x2-from
+  (check-true (tiebreaker (make-move (make-posn 1 0) (make-posn 0 0))
+                          (make-move (make-posn 0 1) (make-posn 0 0))))
   ;; Internal Helper Functions
   ;; +--- maximin-search ---+
   ;; Game 1 partial searches

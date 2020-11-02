@@ -19,12 +19,22 @@
 ;; xstrategy : -> void?
 ;; 
 (define (xstrategy)
-  (write-json #f)
+  (define depth-state (parse-json-depth-state (read-json)))
+  (define maybe-move (xstrategy-helper (second depth-state) (first depth-state)))
+  (write-json (and maybe-move (serialize-posns (list (move-from maybe-move) (move-to maybe-move)))))
   (newline))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL HELPER FUNCTIONS
 
+;; xstrategy-helper : state? (integer-in 1 2) -> (or/c false? move?)
+;; Find the next best move for the given state's first player, searching up to the specified depth
+(define (xstrategy-helper state depth)
+  (define initial-game (create-game state))
+  (and (not (end-game? initial-game))
+       (penguin-color=? (player-color (state-current-player (game-state initial-game)))
+                        (player-color (state-current-player state)))
+       (get-move initial-game depth)))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
@@ -33,7 +43,7 @@
   (require lang/posn
            rackunit
            "../../Fish/Other/util.rkt")
-  
+
   ;; Integration tests
   (check-integration xstrategy "../Tests/1-in.json" "../Tests/1-out.json")
   (check-integration xstrategy "../Tests/2-in.json" "../Tests/2-out.json")

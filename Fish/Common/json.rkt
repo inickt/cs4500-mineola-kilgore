@@ -9,7 +9,9 @@
          "penguin-color.rkt"
          "state.rkt")
 
-(provide (contract-out [parse-json-move-response-query
+(provide (contract-out [parse-json-depth-state (-> (list/c (integer-in 1 2) (hash/c symbol? jsexpr?))
+                                                   (list/c (integer-in 1 2) state?))])
+         (contract-out [parse-json-move-response-query
                         (-> (hash/c symbol? jsexpr?) (list/c state? move?))])
          (contract-out [parse-json-state (-> (hash/c symbol? jsexpr?) state?)])
          (contract-out [parse-json-players
@@ -45,6 +47,13 @@
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED PARSING
+
+;; parse-json-depth-state :
+;; (list/c (integer-in 1 2) (hash/c symbol? jsexpr?)) -> (list/c (integer-in 1 2) state?)
+;; Parse a depth and a Fish game state from well formed JSON
+;; JSON: Depth-State
+(define (parse-json-depth-state json)
+  (list (first json) (parse-json-state (second json))))
 
 ;; parse-json-move-response-query : (hash/c symbol? jsexpr?) -> (list/c state? move?)
 ;; Parse a Fish game state with a from and to position from well formed JSON
@@ -174,6 +183,23 @@
   (require rackunit)
   
   ;; Provided Functions
+  ;; parse-json-depth-state
+  (check-equal?
+   (parse-json-depth-state
+    (list 2
+          (hash POSITION-KEY '(6 0)
+                BOARD-KEY '((1 2 3) (4 5 6) (7 8 9))
+                PLAYERS-KEY (list (hash COLOR-KEY "red"
+                                        SCORE-KEY 10
+                                        PLACES-KEY '())
+                                  (hash COLOR-KEY "black"
+                                        SCORE-KEY 5
+                                        PLACES-KEY (list (list 0 0) (list 3 1)))))))
+   (list 2
+         (make-state '((1 4 7) (2 5 8) (3 6 9))
+                     (list (make-player RED 10 '())
+                           (make-player BLACK 5 (list (make-posn 0 0) (make-posn 1 3)))))))
+  
   ;; parse-json-move-response-query
   (check-equal?
    (parse-json-move-response-query

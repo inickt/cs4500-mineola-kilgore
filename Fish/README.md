@@ -17,13 +17,19 @@ Fish/
 │   ├── state.rkt
 │   └── tile.rkt
 ├── Planning/
+│   ├── PlayerProtocolDiagram.png
 │   ├── game-state.md
 │   ├── games.md
 │   ├── milestones.pdf
 │   ├── player-protocol.md
+│   ├── referee.md
 │   ├── self-1.md
 │   ├── self-2.md
+│   ├── self-3.md
+│   ├── self-4.md
 │   └── system.pdf
+├── Player/
+│   └── strategy.rkt
 ├── README.md
 └── xtest
 ```
@@ -103,6 +109,15 @@ A self reflective document describing our thoughts on tile.rkt and board.rkt in 
 
 ##### systems.pdf
 A memo release for planning the systems that the complete Fish game and tournament systems would require.
+
+### Player
+Contains all information for building a player in a Fish tournament and game system.
+
+##### strategy.rkt
+Contains function definitions used for making basic player strategy decisions.
+1. Place a penguin given a board
+2. Find the next optimal move using a maximin algorithm
+3. A tiebreaker function for two moves that are weighted equally
 
 ## Testing
 To run all tests in `Fish/`, execute

@@ -13,6 +13,16 @@
     ;; 
     [subscribe-as-game-observer (->m (is-a?/c game-observer-interface) boolean?)]
     
+    ;; remove-game-observer : (is-a?/c game-observer-interface) -> boolean?
+    ;; Inputs: observer
+    ;;
+    ;; The Tournament Manager will call this function with a game-observer that wishes to be removed
+    ;; from the list of observers and not receive any more FishGameEvent updates for this Referee's
+    ;; games of Fish.
+    ;; Returns true if the observer is successfully removed from the list, or false if the observer isn't found.
+    ;; 
+    [remove-game-observer (->m (is-a?/c game-observer-interface) boolean?)]
+    
     ;; run-game : (non-empty-list-of (is-a?/c player-interface?)) natural? natural? -> (list/c end-game? (is-a?/c player-interface))
     ;; Inputs: list-of-players, num-rows, num-columns
     ;;
@@ -74,7 +84,7 @@
 (define game-observer-interface
   (interface ()
     ;; observe : fish-game-event? -> void?
-    ;; Observes the FishGameEvent. The implementer can decide if and how this information is relevant to them.
+    ;; Observes the FishGameEvent. The implementer can decide if and how this information is relevant to it.
     ;; Notes:
     ;; - Called by the Referee on all observers each time any FishGameEvent occurs.
     [observe (->m fish-game-event? void?)]))
@@ -85,11 +95,19 @@
 # Referee Protocol
 
 ## Functions
-There are two functions a Tournament Manager will call on a Referee.
+There are three functions a Tournament Manager will call on a Referee.
 
  - `subscribe-as-game-observer`
-   - The referee implements the Observer Pattern by providing this function. The Tournament Manager will call `subscribe-as-game-observer` once, providing each observer to the Referee, which will add them as observers of the game of Fish. Any time an action occurs in the Fish game, each observer is notified by having their `observe` method called with the relevant FishGameAction.
+   - The referee implements the Observer Pattern by providing this function and `remove-game-observer`. The Tournament Manager will call `subscribe-as-game-observer` for each observer desiring to be subscribed to `FishGameEvent` updates for games of Fish this Referee manages, providing the observer to the Referee which will add it as an observer of the game of Fish. Any time an action occurs in any Fish game this Referee manages, each observer is notified by having its `observe` method called with the relevant FishGameAction.
+ - `remove-game-observer`
+   - The referee implements the Observer Pattern by providing this function and `subscribe-as-game-observer`. The Tournament Manager will call `remove-game-observer` once for each observer of a Referee desiring to be unsubscribed from `FishGameEvent` updates. The Referee will then cease to call it's `observe` method.
  - `run-game`
-   - The Tournament Manager calls `run-game` on the Referee, providing a list of players as well as a number of rows and columns for the board. The Referee then runs a full game of Fish. It interacts with players according to the player protocol defined [here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/jake/Fish/Planning/player-protocol.md). During the game, it informs game observers of any occurring FishGameActions. Any players who cheat or fail to play are kicked and their penguins removed from the game, and then the game is restarted without that player. When finished, the Referee returns the final `EndGame` produced, as well as a list of players who were kicked from the game for cheating or failing to play.
+   - The Tournament Manager calls `run-game` on the Referee, providing a list of players as well as a number of rows and columns for the board. The Referee then runs a full game of Fish. It interacts with players according to the player protocol defined [here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/jake/Fish/Planning/player-protocol.md). During the game, it informs game observers of any occurring FishGameActions. Any players who cheat or fail to play are kicked and its penguins removed from the game, and then the game is restarted without that player. When finished, the Referee returns the final `EndGame` produced, as well as a list of players who were kicked from the game for cheating or failing to play.
 
-## Order of Funciton Calls
+## Order of Function Calls
+
+Once a Tournament Manager has created a Referee, it may call `subscribe-as-game-observer`, `remove-game-observer`, and `run-game` at any point on the Referee.
+
+Observers of the Referee will receive `FishGameEvent` updates for each game of Fish the Referee runs for which the observer subscribes via the `subscribe-as-game-observer` call, and has not been removed from the list of observers via the `remove-game-observer`, call prior to the Referee running the game via the `run-game` call.
+
+A Referee may be used to run any number of games the Tournament Manager wishes. A Referee has no notion of concurrency. If a Tournament Manager wishes to run multiple games of Fish concurrently, it will create multiple Referees and follow this referee protocol for each one individually.Fi

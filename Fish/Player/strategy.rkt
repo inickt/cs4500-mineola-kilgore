@@ -70,6 +70,9 @@
 
 ;; maximin-search : game? posint? penguin-color? -> (cons/c move? natural?)
 ;; Determines the best move, and the scores resulting from that move, based on a maximin algorithm
+;; TERMINATION: This generative recursion terminates in two cases
+;; - The original player can make no more moves
+;; - The original player is able to move with a remaining depth of 1
 (define (maximin-search game remaining-depth original-player)
   (define color (player-color (state-current-player (game-state game))))
   (define maximizing-player? (penguin-color=? color original-player))
@@ -86,6 +89,13 @@
         move-score-pair
         (maximin-better-move move-score-pair maybe-best maximizing-player?))))
 
+;; maximin-recur : game-tree? natural? penguin-color? -> natural?
+;; Applies the heuristic if the game is over or the depth has been reached, otherwise applies maximin
+(define (maximin-recur game remaining-depth original-player)
+  (if (or (end-game? game) (zero? remaining-depth))
+      (fish-heuristic game original-player)
+      (cdr (maximin-search game remaining-depth original-player))))
+
 ;; maximin-better-move :
 ;; (cons/c move? natural?) (cons/c move? natural?) boolean? -> (cons/c move? natural?)
 ;; Determines the higher score if maximizing, the lower score if not maximizing, else whichever
@@ -98,13 +108,6 @@
                   previous)]
         [candidate-preferred candidate]
         [else previous]))
-
-;; maximin-recur : game-tree? natural? penguin-color? -> natural?
-;; Applies the heuristic if the game is over or the depth has been reached, otherwise applies maximin
-(define (maximin-recur game remaining-depth original-player)
-  (if (or (end-game? game) (zero? remaining-depth))
-      (fish-heuristic game original-player)
-      (cdr (maximin-search game remaining-depth original-player))))
 
 ;; fish-heuristic : game-tree? penguin-color? -> natural?
 ;; Gets the score of the maximizing player

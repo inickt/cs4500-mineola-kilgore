@@ -201,9 +201,9 @@
                 (cons (make-move (make-posn 1 2) (make-posn 0 1)) 2))
   ;; Game 1 complete searches
   (check-equal? (maximin-search test-game-1 2 WHITE)
-                (cons (make-move (make-posn 1 2) (make-posn 0 1)) 7))
+                (cons (make-move (make-posn 1 2) (make-posn 0 1)) 4))
   (check-equal? (maximin-search test-game-1 3 WHITE)
-                (cons (make-move (make-posn 1 2) (make-posn 0 1)) 7))
+                (cons (make-move (make-posn 1 2) (make-posn 0 1)) 4))
   ;; Game 2 partial searches
   (check-equal? (maximin-search test-game-2 1 BLACK)
                 (cons (make-move (make-posn 0 0) (make-posn 0 1)) 1))
@@ -215,9 +215,9 @@
                 (cons (make-move (make-posn 0 0) (make-posn 1 2)) 10))
   ;; Game 2 complete searches
   (check-equal? (maximin-search test-game-2 5 BLACK)
-                (cons (make-move (make-posn 0 0) (make-posn 1 3)) 15))
+                (cons (make-move (make-posn 0 0) (make-posn 1 3)) 13))
   (check-equal? (maximin-search test-game-2 6 BLACK)
-                (cons (make-move (make-posn 0 0) (make-posn 1 3)) 15))
+                (cons (make-move (make-posn 0 0) (make-posn 1 3)) 13))
   ;; +--- maximin-better-move ---+
   (check-equal? (maximin-better-move (cons (make-move (make-posn 0 0) (make-posn 0 1)) 0)
                                      (cons (make-move (make-posn 1 0) (make-posn 1 1)) 1)
@@ -248,8 +248,8 @@
   (check-equal? (maximin-recur test-game-1 0 WHITE) 0)
   (check-equal? (maximin-recur test-game-1 1 WHITE) 2)
   ;; Game 1 complete searches
-  (check-equal? (maximin-recur test-game-1 2 WHITE) 7)
-  (check-equal? (maximin-recur test-game-1 3 WHITE) 7)
+  (check-equal? (maximin-recur test-game-1 2 WHITE) 4)
+  (check-equal? (maximin-recur test-game-1 3 WHITE) 4)
   ;; Game 2 partial searches
   (check-equal? (maximin-recur test-game-2 0 BLACK) 0)
   (check-equal? (maximin-recur test-game-2 1 BLACK) 1)
@@ -257,8 +257,8 @@
   (check-equal? (maximin-recur test-game-2 3 BLACK) 8)
   (check-equal? (maximin-recur test-game-2 4 BLACK) 10)
   ;; Game 2 complete searches
-  (check-equal? (maximin-recur test-game-2 5 BLACK) 15)
-  (check-equal? (maximin-recur test-game-2 6 BLACK) 15)
+  (check-equal? (maximin-recur test-game-2 5 BLACK) 13)
+  (check-equal? (maximin-recur test-game-2 6 BLACK) 13)
   ;; +--- fish-heuristic ---+
   (check-equal? (fish-heuristic test-game-1 BLACK) 0)
   (check-equal? (fish-heuristic test-game-1 WHITE) 0)
@@ -273,4 +273,4 @@
                                '((2))
                                (list (make-player WHITE 10 (list (make-posn 0 0))))))
                  WHITE)
-                12))
+                10))

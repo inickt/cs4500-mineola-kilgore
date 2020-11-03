@@ -216,9 +216,9 @@
                                  (list (make-player BLACK 0 (list (make-posn 0 2)))
                                        (make-player RED 0 (list (make-posn 0 0)))))
                      (make-move (make-posn 0 2) (make-posn 0 1)))
-         (make-end-game (make-state '((0 0 0 0 1))
-                                    (list (make-player RED 1 '())
-                                          (make-player BLACK 2 '())))))
+         (make-end-game (make-state '((1 1 0 0 1))
+                                    (list (make-player RED 0 '())
+                                          (make-player BLACK 1 '())))))
 
   ;; +--- all-possible-moves ---+
   (check-equal? (list->set (hash-keys (all-possible-moves (game-state test-game))))
@@ -235,9 +235,9 @@
                              (make-player RED 0 (list (make-posn 0 0))))))]
          [hash-expected
           (hash (make-move (make-posn 0 2) (make-posn 0 1))
-                (make-end-game (make-state '((0 0 0 0 1))
-                                           (list (make-player RED 1 '())
-                                                 (make-player BLACK 2 '()))))
+                (make-end-game (make-state '((1 1 0 0 1))
+                                           (list (make-player RED 0 '())
+                                                 (make-player BLACK 1 '()))))
                 (make-move (make-posn 0 2) (make-posn 0 4))
                 (create-game (make-state '((1 1 0 0 1))
                                          (list (make-player RED 0 (list (make-posn 0 0)))

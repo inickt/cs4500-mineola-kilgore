@@ -1,29 +1,38 @@
 #lang racket/base
 
-(require lang/posn
-         racket/class
-         racket/math
-         "../Common/board.rkt"
-         "../Common/game-tree.rkt"
-         "../Common/penguin-color.rkt"
-         "../Common/state.rkt")
+(require racket/class
+         "../Common/player-interface.rkt"
+         (prefix-in strategy: "strategy.rkt"))
 
-(provide player-interface)
+(provide player%)
 
-;; +-------------------------------------------------------------------------------------------------+
-;; INTERFACE
+(define DEFAULT-SEARCH-DEPTH 2)
 
-;; The PlayerInterface is the API for a player in a Fish game.
-;; Software components that implement this interface may be entered into Fish games and tournaments.
-;; The goal of the player is to only perform legal actions to win a game of Fish by moving penguins
-;; around the board and collecting fish to score points.
-(define player-interface
-  (interface ()
-    ;; Initializes a player with the initial board, number of players, and the color of this player's
-    ;; penguins.
-    ;; The Referee will call this once when the game is initialized, to provide the player with the
-    ;; initial board, a color, and the number of opponents.
-    [initialize (->m board? natural? penguin-color? void?)]
+(define player%
+  (class* object% (player-interface)
+    (init [depth DEFAULT-SEARCH-DEPTH])
+    (define search-depth depth)
+    (super-new)
+    (define/public (initialize board num-players color)
+      (void))
+
+    (define/public (get-placement state)
+      (strategy:get-placement state))
+    
+    (define/public (get-move game)
+      (strategy:get-move game search-depth))
+
+    (define/public (listen game-tree)
+      (void))
+
+    (define/public (terminate message)
+      (void))
+
+    (define/public (finalize end-game)
+      (void))))
+
+  #|
+    [initialize (->m board? natural? penguin-color? natural?)]
 
     ;; Determines where to place this players next penguin given the current state.
     ;; The Referee will call this up to 6 - N times, where N is the number of players in the game.
@@ -47,4 +56,6 @@
 
     ;; Receives the final EndGame state, where no more moves are possible.
     ;; The Referee will call this exactly once with the final state of the Game when it ends.
-    [finalize (->m end-game? void?)]))
+    [finalize (->m end-game? void?)])
+|#
+  

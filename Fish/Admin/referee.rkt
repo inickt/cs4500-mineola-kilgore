@@ -3,11 +3,15 @@
 (require lang/posn
          racket/class
          racket/contract
+         racket/list
          racket/math
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
          "../Common/player-interface.rkt"
-         "../Common/state.rkt")
+         "../Common/state.rkt"
+         "../Player/player.rkt")
+
+(define INIT-MAX-HOLE-RATIO 1/5)
 
 (define-struct start-event [board player-colors])
 (define-struct place-event [state position color])
@@ -75,7 +79,7 @@
     ;;
     [remove-game-observer (->m (is-a?/c game-observer-interface) boolean?)]
     
-    ;; run-game : (non-empty-list-of (is-a?/c player-interface?)) natural? natural?
+    ;; run-game : (non-empty-list-of (is-a?/c player-interface?)) posint? posint?
     ;;             -> (list/c end-game? (is-a?/c player-interface))
     ;; Inputs: list-of-players, num-rows, num-columns
     ;;
@@ -100,8 +104,11 @@
     ;; NOTE: The Tournament Manager must provide between 2 and 4 players, inclusive.
     ;;
     [run-game (->m (non-empty-listof (is-a?/c player-interface))
-                   natural? natural?
-                   (list/c end-game? (is-a?/c player-interface)))]))
+                   posint?
+                   posint?
+                   (list/c end-game?
+                           (non-empty-listof (list/c (is-a?/c player-interface) natural?))
+                           (listof (is-a?/c player-interface))))]))
 
 
 (define referee%
@@ -113,9 +120,15 @@
       (void))
 
     (define/public (run-game players num-cols num-rows)
-      ; state init
-      (define initial-board ...)
-      (define initial-state ...)
+      ; Board initialization
+      (define init-board (create-initial-board num-rows num-cols (length players)))
+      ; State initialization
+      (define init-state (create-state (length players) init-board))
+      (define player-color-map (create-player-color-map players init-state))
+      ;; Get placements
+      (define state-with-placements (get-all-placements init-state player-color-map))
+      ;; Get all moves
+      (define end-game (get-all-moves (create-game state-with-placements)))
       ; - assign players to colors from initial state based on order
       ; start placement
       ; - (6 - n) players
@@ -124,7 +137,9 @@
       ; - check validity
       ; - kick on invalid moves/timeout
 
-      )))
+      (list end-game
+            (map (λ (player) (list player 0)) players)
+            '()))))
 
 ;; create-player-color-map : (non-empty-listof (is-a?/c player-interface)) state?
 ;;                           -> (hash/c penguin-color? (is-a?/c player-interface))
@@ -132,21 +147,69 @@
 ;; NOTE: Players and state players must be the same length
 (define (create-player-color-map players state)
   (for/hash ([color (map player-color (state-players state))]
-             [player players]))
-  (values color player))
+             [player players])
+    (values color player)))
+
+;; create-initial-board : posint? posint? posint? -> board?
+;; Builds an initial board with the given number of rows, columns, and players
+;; NOTE:
+;; - num-rows * num-cols >= num-players
+;; - Uses INIT-MAX-HOLE-RATIO to determine the number of board tiles that can be initialized as holes
+(define (create-initial-board num-rows num-cols num-players)
+  (make-board-with-holes
+   num-rows
+   num-cols
+   (build-random-holes
+    (floor (* (- (* num-rows num-cols)
+                 (* num-players (penguins-per-player num-players)))
+              INIT-MAX-HOLE-RATIO))
+    num-rows
+    num-cols)
+   num-players))
+
+;; build-random-holes : posint? posint? natural? -> (list-of posn?)
+;; Builds a list of up to n random holes on a board with given width and height
+(define (build-random-holes n num-rows num-cols)
+  (remove-duplicates (build-list n (λ (_) (make-posn (random num-cols) (random num-rows))))))
+
+;; get-all-placements : state? (hash-of penguin-color? (is-a?/c player-interface?)) -> state?
+(define (get-all-placements state player-color-map)
+  (if (all-penguins-placed? state)
+      state
+      (get-all-placements
+       (place-penguin state
+                      (send-fn-to-player
+                       player-color-map
+                       (player-color (state-current-player state))
+                       get-placement
+                       state))
+       player-color-map)))
+
+;; send-fn-to-player : (hash-of penguin-color? (is-a?/c player-interface?))
+(define (send-fn-to-player player-color-map color fn data)
+  (send (hash-ref player-color-map color) fn data))
 
 ;; all-penguins-placed? : state? -> boolean?
 ;; Are all of the players penguins placed on the board?
 (define (all-penguins-placed? state)
-  (define num-penguions (- 6 (length (state-players state))))
+  (define num-penguins (penguins-per-player (length (state-players state))))
   (andmap (λ (player) (= (length (player-places player)) num-penguins)) (state-players state)))
-                           
-     
 
+;; penguins-per-player : posint? -> posint?
+;; Determines the number of penguins per player
+(define (penguins-per-player n) (- 6 n))
 
-
-
-
-
-
-
+;; get-all-moves : game? (hash-of penguin-color? (is-a?/c player-interface?)) -> end-game?
+(define (get-all-moves game player-color-map)
+  (if (end-game? game)
+      game
+      (get-all-moves
+       (move-penguin game
+                     (send-fn-to-player
+                      player-color-map
+                      (player-color
+                       (player-color
+                        (state-current-player (game-state game))))
+                      get-move
+                      game))
+       player-color-map)))

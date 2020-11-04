@@ -67,6 +67,9 @@
 ;;   \        /      \        /      \        /
 ;;    \______/        \______/        \______/
 ;;
+;;
+;; Positions on a board are represented as posns, where posn-x is the column and posn-y is the row.
+
 
 ;; board? : any/c -> boolean?
 ;; Is the given value a board?

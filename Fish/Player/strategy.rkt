@@ -25,6 +25,7 @@
 
 ;; get-placement : state? -> posn?
 ;; Determines the next desired placement for a penguin of the given color
+;; The returned posn is a (make-posn column row) with the desired column and row of the placement.
 ;; NOTE: The passed state must have a legal tile for the penguin to be placed on.
 (define (get-placement state)
   (define board (state-board state))

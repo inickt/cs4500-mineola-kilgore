@@ -30,9 +30,9 @@
   (define board (state-board state))
   (define width (length board))
   (define height (length (first board)))
-  (for*/first ([col height]
-               [row width]
-               [placement (in-value (make-posn row col))]
+  (for*/first ([row height]
+               [col width]
+               [placement (in-value (make-posn col row))]
                #:when (and (not (member placement (append-map player-places (state-players state))))
                            (valid-tile? placement board)))
     placement))

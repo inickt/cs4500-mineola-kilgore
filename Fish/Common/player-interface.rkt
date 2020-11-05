@@ -35,12 +35,6 @@
     ;; player's turns if this player has no remaining moves (the player will be skipped).
     [get-move (->m game? move?)]
 
-    ;; Informs the player about updates to the GameTree.
-    ;; The Referee will call this once per action that occurs on the GameTree, changing it's state.
-    ;; NOTE: This can be safely ignored if the player does care about updates to the GameTree
-    ;;       occuring on other players' turns
-    [listen (->m game-tree? void?)]
-
     ;; Informs the player that they were kicked from a Game.
     ;; The Referee will call this exactly once if/when a player attempts to cheat or fails to play.
     [terminate (->m void?)]

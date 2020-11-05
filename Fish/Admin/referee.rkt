@@ -47,8 +47,10 @@
       (define init-state (create-state (length players) init-board))
       (define player-color-map (create-player-color-map players init-state))
 
-      (for ([(color player) (in-hash player-color-map)])
-        (send player initialize init-board (length players) color))
+      (call-on-all-players
+       player-color-map
+       (λ (player color) (send player initialize init-board (length players) color))
+       timeout)
       
       (define-values (state-with-placements kicked)
         (get-all-placements init-state player-color-map timeout))
@@ -57,8 +59,10 @@
         (play-game (create-game state-with-placements) player-color-map kicked timeout))
       (define results (state-players (end-game-state final-game)))
 
-      (for ([(color player) (in-hash player-color-map)])
-        (send player finalize final-game))
+      (call-on-all-players
+       player-color-map
+       (λ (player _) (send player finalize final-game))
+       timeout)
       
       (list (map (λ (player) (list (hash-ref player-color-map (player-color player))
                                    (player-score player)))
@@ -111,10 +115,12 @@
         (let ([color (player-color (state-current-player state))])
           (if (member color kicked)
               (place (skip-player state) kicked)
-              (let ([maybe-state
-                     (get-single-placement state (get-player player-color-map state) timeout)])
+              (let* ([player (get-player player-color-map state)]
+                     [maybe-state
+                      (get-single-placement state player timeout)])
                 (if (not maybe-state)
-                    (place (skip-player (remove-penguins state color)) (cons color kicked))
+                    (begin (run-with-timeout (λ () (send player terminate)) (λ (_) (void)) timeout)
+                           (place (skip-player (remove-penguins state color)) (cons color kicked)))
                     (place maybe-state kicked))))))))
 
 ;; get-single-placement : state? (is-a?/c player-interface?) positive? -> (or/c state? false?)
@@ -153,14 +159,14 @@
 ;; the game, and the game continues with that player's penguins removed from the board.
 (define (play-game initial-game player-color-map initial-kicked timeout)
   (let play ([game initial-game]
-             [kicked '()])
+             [kicked initial-kicked])
     (if (end-game? game)
         (values game kicked)
         (let* ([player-color (player-color (state-current-player (game-state game)))]
                [player (get-player player-color-map (game-state game))]
                [maybe-game-tree (play-one-move game player timeout)])
           (if (not maybe-game-tree)
-              (begin (send player terminate)
+              (begin (run-with-timeout (λ () (send player terminate)) (λ (_) (void)) timeout)
                      (play (kick-player game player-color) (cons player-color kicked)))
               (play maybe-game-tree kicked))))))
 
@@ -186,7 +192,7 @@
 ;; Returns false if run-proc times out, or if either run-proc or result-proc error
 (define (run-with-timeout run-proc result-proc timer)
   (define run-engine (engine (λ (_) (run-proc))))
-  (with-handlers ([exn:fail? (λ (exn) (displayln exn) #f)])
+  (with-handlers ([exn:fail? (λ (exn) #f)])
     (engine-run (* timer 1000) run-engine)
     (if (engine-result run-engine)
         (result-proc (engine-result run-engine))
@@ -198,6 +204,12 @@
   (sort (filter (λ (player) (not (member (player-color player) kicked))) players)
         >
         #:key player-score))
+
+;; call-on-all-players :
+;; (hashof penguin-color? (is-a/c? player-interface?)) [void? -> void?] positive? -> void?
+(define (call-on-all-players player-color-map procedure timeout)
+  (for ([(color player) (in-hash player-color-map)])
+    (run-with-timeout (λ () (procedure player color)) (λ (_) (void)) timeout)))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
@@ -221,6 +233,17 @@
   (define test-timeout 0.1)
   (define strict-referee (new referee% [timeout test-timeout]))
   (define lenient-referee (new referee% [timeout 5]))
+
+  (define bad-player%
+    (class* object% (player-interface)
+      (super-new)
+      (define/public (initialize board num-players color) (error "haha gotcha"))
+      (define/public (get-placement state) (get-placement state))
+      (define/public (get-move game) (get-move game))
+      (define/public (terminate) (error "get rekt nerd"))
+      (define/public (finalize end-game) (finalize end-game))))
+  (define bad-player (new bad-player%))
+  
   ;; Provided
   ;; Internal Helper Functions
   ;; +--- create-player-color-map ---+
@@ -252,19 +275,35 @@
   (define-values (get-all-placements-test2-state get-all-placements-test2-kicked)
     (get-all-placements test-state test-pcm 1))
   (check-equal? get-all-placements-test2-state
-               (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
-                           (list (make-player RED 0 (list (make-posn 1 2)
-                                                          (make-posn 0 0)
-                                                          (make-posn 1 1)))
-                                 (make-player BLACK 1 (list (make-posn 2 2)
-                                                            (make-posn 1 0)
-                                                            (make-posn 2 1)))
-                                 (make-player WHITE 2 (list (make-posn 0 3)
-                                                            (make-posn 2 0)
-                                                            (make-posn 0 2))))))
+                (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                            (list (make-player RED 0 (list (make-posn 1 2)
+                                                           (make-posn 0 0)
+                                                           (make-posn 1 1)))
+                                  (make-player BLACK 1 (list (make-posn 2 2)
+                                                             (make-posn 1 0)
+                                                             (make-posn 2 1)))
+                                  (make-player WHITE 2 (list (make-posn 0 3)
+                                                             (make-posn 2 0)
+                                                             (make-posn 0 2))))))
   (check-equal? get-all-placements-test2-kicked '())
+  (define-values (get-all-placements-test3-state get-all-placements-test3-kicked)
+    (get-all-placements
+     (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                 (list (make-player RED 0 '()) (make-player BLACK 0 '()) (make-player WHITE 0 '())))
+     (create-player-color-map (list dumb-player smart-player bad-player) test-state)
+     1))
+  (check-equal? get-all-placements-test3-state
+                (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                            (list (make-player WHITE 0 '())
+                                  (make-player RED 0 (list (make-posn 2 1)
+                                                           (make-posn 2 0)
+                                                           (make-posn 0 0)))
+                                  (make-player BLACK 0 (list (make-posn 0 2)
+                                                             (make-posn 1 1)
+                                                             (make-posn 1 0))))))
+  (check-equal? get-all-placements-test3-kicked (list WHITE))
   ;; +--- get-single-placement ---+
-  (check-false (get-single-placement test-state smart-player 0.0000001))
+  (check-false (get-single-placement test-state bad-player 1))
   (check-equal?
    (get-single-placement (make-state '((1)) (list (make-player RED 0 '()))) dumb-player 1)
    (make-state '((1)) (list (make-player RED 0 (list (make-posn 0 0))))))
@@ -302,7 +341,9 @@
   (check-equal? (penguins-per-player 4) 2)
   ;; +--- play-game ---+
   (define-values (play-game-test1-game play-game-test1-kicked)
-    (play-game (create-game test-state) test-pcm '() 0.00000001))
+    (play-game (create-game test-state)
+               (create-player-color-map (list bad-player bad-player bad-player) test-state)
+               '() 1))
   (check-equal? play-game-test1-game
                 (create-game (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
                                          (list (make-player WHITE 2 '())
@@ -317,10 +358,26 @@
                                                (make-player RED 6 '())
                                                (make-player BLACK 4 '())))))
   (check-equal? play-game-test2-kicked '())
+  (define play-game-test3-state
+    (make-state '((1 2 3) (4 5 6) (7 8 9))
+                (list (make-player RED 0 '())
+                      (make-player WHITE 0 (list (make-posn 0 0) (make-posn 2 0) (make-posn 1 1)))
+                      (make-player BLACK 0 (list (make-posn 1 0) (make-posn 0 1) (make-posn 2 1))))))
+  (define-values (play-game-test3-game play-game-test3-kicked)
+    (play-game (create-game play-game-test3-state)
+               (create-player-color-map (list bad-player bad-player dumb-player)
+                                        play-game-test3-state)
+               (list RED) 0.1))
+  (check-equal? play-game-test3-game
+                (create-game (make-state '((0 0 3) (4 0 6) (0 0 9))
+                                         (list (make-player RED 0 '())
+                                               (make-player WHITE 0 '())
+                                               (make-player BLACK 23 '())))))
+  (check-equal? play-game-test3-kicked (list WHITE RED))
   ;; +--- play-one-move ---+
   (check-equal? (game-state (play-one-move (create-game test-state) dumb-player 1))
                 (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 1 2)))))
-  (check-false (play-one-move (create-game test-state) smart-player 0.0001))
+  (check-false (play-one-move (create-game test-state) bad-player 1))
   (check-equal? (game-state (play-one-move (create-game test-state) smart-player 30))
                 (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 2 2)))))
   ;; +--- kick-player ---+

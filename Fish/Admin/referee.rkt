@@ -53,17 +53,17 @@
       (define-values (state-with-placements kicked)
         (get-all-placements init-state player-color-map timeout))
       
-    (define-values (final-game final-kicked)
-      (play-game (create-game state-with-placements) player-color-map kicked timeout))
-    (define results (state-players (end-game-state final-game)))
+      (define-values (final-game final-kicked)
+        (play-game (create-game state-with-placements) player-color-map kicked timeout))
+      (define results (state-players (end-game-state final-game)))
 
-    (for ([(color player) (in-hash player-color-map)])
-      (send player finalize final-game))
+      (for ([(color player) (in-hash player-color-map)])
+        (send player finalize final-game))
       
-    (list (map (λ (player) (list (hash-ref player-color-map (player-color player))
-                                 (player-score player)))
-               (get-rankings results final-kicked))
-          (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
+      (list (map (λ (player) (list (hash-ref player-color-map (player-color player))
+                                   (player-score player)))
+                 (get-rankings results final-kicked))
+            (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -224,19 +224,39 @@
   ;; +--- create-player-color-map ---+
   (check-equal? (create-player-color-map (list dumb-player smart-player)
                                          (make-state '((1)) (list (make-player RED 0 '())
-                                                                 (make-player BLACK 0 '()))))
+                                                                  (make-player BLACK 0 '()))))
                 (hash RED dumb-player BLACK smart-player))
   ;; +--- create-initial-board ---+
   (check-equal? (length (create-initial-board 4 3 2)) 4)
   (check-equal? (length (first (create-initial-board 4 3 2))) 3)
+  (check-true (<= (foldr (λ (tile count) (if (zero? tile) (add1 count) count))
+                         0
+                         (foldr append '() (create-initial-board 4 4 2)))
+                  (floor (* INIT-MAX-HOLE-RATIO 8))))
   ;; +--- build-random-holes ---+
   (check-equal? (length (build-random-holes 0 4 4)) 0)
-  (check-equal? (length (build-random-holes 4 4 4)) 3)
+  (check-true (<= (length (build-random-holes 4 4 4)) 4))
   (check-false (check-duplicates (build-random-holes 25 10 10)))
   ;; +--- get-all-placements ---+
   ;; +--- get-single-placement ---+
   ;; +--- get-player ---+
+  (check-equal? (get-player (hash RED dumb-player BLACK smart-player) test-state) dumb-player)
+  (check-equal? (get-player (hash RED dumb-player BLACK smart-player)
+                            (make-state '((1)) (list (make-player BLACK 0 '())
+                                                     (make-player RED 0 '()))))
+                smart-player)
   ;; +--- all-penguins-placed? ---+
+  (check-false (all-penguins-placed? test-state '()))
+  (check-true (all-penguins-placed?
+               (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                           (list (make-player RED 0 (list (make-posn 0 0)
+                                                          (make-posn 1 1)))
+                                 (make-player BLACK 1 (list (make-posn 1 0)
+                                                            (make-posn 2 1)))
+                                 (make-player WHITE 2 (list (make-posn 2 0)
+                                                            (make-posn 0 2)))
+                                 (make-player BROWN 3 '())))
+               (list BROWN)))
   ;; +--- penguins-per-player ---+
   (check-equal? (penguins-per-player 2) 4)
   (check-equal? (penguins-per-player 3) 3)

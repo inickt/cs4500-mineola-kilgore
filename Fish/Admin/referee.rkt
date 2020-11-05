@@ -50,19 +50,20 @@
       (for ([(color player) (in-hash player-color-map)])
         (send player initialize init-board (length players) color))
       
-      (define state-with-placements (get-all-placements init-state player-color-map timeout))
+      (define-values (state-with-placements kicked)
+        (get-all-placements init-state player-color-map timeout))
       
-      (define-values (final-game kicked)
-        (play-game (create-game state-with-placements) player-color-map))
-      (define results (state-players (end-game-state final-game)))
+    (define-values (final-game final-kicked)
+      (play-game (create-game state-with-placements) player-color-map kicked timeout))
+    (define results (state-players (end-game-state final-game)))
 
-      (for ([(color player) (in-hash player-color-map)])
-        (send player finalize final-game))
+    (for ([(color player) (in-hash player-color-map)])
+      (send player finalize final-game))
       
-      (list (map (λ (player) (list (hash-ref player-color-map (player-color player))
-                                   (player-score player)))
-                 (get-rankings results kicked))
-            (map (λ (player) (hash-ref player-color-map player)) kicked)))))
+    (list (map (λ (player) (list (hash-ref player-color-map (player-color player))
+                                 (player-score player)))
+               (get-rankings results final-kicked))
+          (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -99,17 +100,26 @@
 (define (build-random-holes n num-rows num-cols)
   (remove-duplicates (build-list n (λ (_) (make-posn (random num-cols) (random num-rows))))))
 
-;; get-all-placements :
-;; state? (hash-of penguin-color? (is-a?/c player-interface?)) positive? -> state?
-(define (get-all-placements state player-color-map timeout)
-  (if (all-penguins-placed? state)
-      state
-      (get-all-placements
-       (get-single-placement state (get-player player-color-map state))
-       player-color-map
-       timeout)))
+;; get-all-placements : state? (hash-of penguin-color? (is-a?/c player-interface?)) positive?
+;;                      -> state? (listof penguin-color?)
+;; Recursively gets placements for the current player until each player has 
+(define (get-all-placements initial-state player-color-map timeout)
+  (let place ([state initial-state]
+              [kicked '()])
+    (if (all-penguins-placed? state kicked)
+        (values state kicked)
+        (let ([color (state-current-player state)])
+          (if (member color kicked)
+              (place (skip-player state) kicked)
+              (let ([maybe-state
+                     (get-single-placement state (get-player player-color-map state) timeout)])
+                (if (not maybe-state)
+                    (place (skip-player (remove-penguins state color)) (cons color kicked))
+                    (place maybe-state kicked))))))))
 
-;; get-single-placement : state? (is-a?/c player-interface?) positive? -> state?
+;; get-single-placement : state? (is-a?/c player-interface?) positive? -> (or/c state? false?)
+;; Gets a single placement from the current player. Returns false if the placement is invalid or
+;; if timer expires before the placement has been chosen.
 (define (get-single-placement state player timeout)
   (run-with-timeout
    (λ () (send player get-placement state))
@@ -118,26 +128,30 @@
 
 ;; get-player :
 ;; (hash-of penguin-color? (is-a?/c player-interface?)) state? -> (is-a?/c player-interface?))
-;; Gets the 
+;; Gets the player object assigned the given color
+;; NOTE: The player color has an assigned player
 (define (get-player player-color-map state)
   (hash-ref player-color-map (player-color (state-current-player state))))
 
-;; all-penguins-placed? : state? -> boolean?
+;; all-penguins-placed? : state? (listof penguin-color?) -> boolean?
 ;; Are all of the players penguins placed on the board?
-(define (all-penguins-placed? state)
+(define (all-penguins-placed? state kicked)
   (define num-penguins (penguins-per-player (length (state-players state))))
-  (andmap (λ (player) (= (length (player-places player)) num-penguins)) (state-players state)))
+  (andmap (λ (player) (= (length (player-places player)) num-penguins))
+          (filter (λ (player) (not (member (player-color player) kicked)))
+                  (state-players state))))
 
 ;; penguins-per-player : posint? -> posint?
 ;; Determines the number of penguins per player
 (define (penguins-per-player n) (- 6 n))
 
-;; play-game : game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) positive?
-;;             -> end-game? (listof penguin-color?)
+;; play-game :
+;; game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) (list-of penguin-color?) positive?
+;; -> end-game? (listof penguin-color?)
 ;; Plays a complete game of Fish by querying each player for its desired move.
 ;; NOTE: If a player cheats, or exceeds the timeout threshold for choosing a move, it is kicked from
 ;; the game, and the game continues with that player's penguins removed from the board.
-(define (play-game initial-game player-color-map timeout)
+(define (play-game initial-game player-color-map initial-kicked timeout)
   (let play ([game initial-game]
              [kicked '()])
     (if (end-game? game)
@@ -147,8 +161,8 @@
                [maybe-game-tree (play-one-move game player timeout)])
           (if (not maybe-game-tree)
               (begin (send player terminate)
-                     (play (kick-player game player-color) (cons player-color kicked) timeout))
-              (play maybe-game-tree kicked timeout))))))
+                     (play (kick-player game player-color) (cons player-color kicked)))
+              (play maybe-game-tree kicked))))))
 
 ;; play-one-move : game? (is-a?/c player-interface?) positive? -> (or/c false? game-tree?)
 ;; Gets a player's move and applies it to the given game tree
@@ -192,7 +206,7 @@
   (require rackunit
            "../Common/penguin-color.rkt")
 
-  (define test-state (make-state '((1 0 5 3 6) (3 3 3 5 4) (1 1 2 2 1))
+  (define test-state (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
                                  (list (make-player RED 0 (list (make-posn 0 0)
                                                                 (make-posn 1 1)))
                                        (make-player BLACK 1 (list (make-posn 1 0)
@@ -202,22 +216,58 @@
   (define children (force (game-children (create-game test-state))))
   (define dumb-player (new player% [depth 1]))
   (define smart-player (new player% [depth 2]))
-  (define slow-player (new player% [depth 50]))
-  (define test-timeout 0.01)
+  (define test-timeout 0.1)
   (define strict-referee (new referee% [timeout test-timeout]))
-  (define lenient-referee (new referee% [timeout 1]))
+  (define lenient-referee (new referee% [timeout 5]))
   ;; Provided
   ;; Internal Helper Functions
+  ;; +--- create-player-color-map ---+
+  (check-equal? (create-player-color-map (list dumb-player smart-player)
+                                         (make-state '((1)) (list (make-player RED 0 '())
+                                                                 (make-player BLACK 0 '()))))
+                (hash RED dumb-player BLACK smart-player))
+  ;; +--- create-initial-board ---+
+  (check-equal? (length (create-initial-board 4 3 2)) 4)
+  (check-equal? (length (first (create-initial-board 4 3 2))) 3)
+  ;; +--- build-random-holes ---+
+  (check-equal? (length (build-random-holes 0 4 4)) 0)
+  (check-equal? (length (build-random-holes 4 4 4)) 3)
+  (check-false (check-duplicates (build-random-holes 25 10 10)))
+  ;; +--- get-all-placements ---+
+  ;; +--- get-single-placement ---+
+  ;; +--- get-player ---+
+  ;; +--- all-penguins-placed? ---+
+  ;; +--- penguins-per-player ---+
+  (check-equal? (penguins-per-player 2) 4)
+  (check-equal? (penguins-per-player 3) 3)
+  (check-equal? (penguins-per-player 4) 2)
+  ;; +--- play-game ---+
   ;; +--- play-one-move ---+
   (check-equal? (game-state (play-one-move (create-game test-state) dumb-player 1))
                 (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 1 2)))))
-  (check-false (play-one-move (create-game test-state) smart-player test-timeout))
+  (check-false (play-one-move (create-game test-state) smart-player 0.0001))
   (check-equal? (game-state (play-one-move (create-game test-state) smart-player 30))
-                (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 1 3)))))
+                (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 2 2)))))
+  ;; +--- kick-player ---+
+  (check-equal? (game-state (kick-player (create-game test-state) RED))
+                (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                            (list (make-player BLACK 1 (list (make-posn 1 0)
+                                                             (make-posn 2 1)))
+                                  (make-player WHITE 2 (list (make-posn 2 0)
+                                                             (make-posn 0 2)))
+                                  (make-player RED 0 '()))))
+  (check-equal? (kick-player
+                 (create-game (make-state '((1 0 0 1 1))
+                                          (list (make-player RED 0 (list (make-posn 0 3)))
+                                                (make-player WHITE 0 (list (make-posn 0 0))))))
+                 RED)
+                (create-game (make-state '((1 0 0 1 1))
+                                         (list (make-player RED 0 '())
+                                               (make-player WHITE 0 '())))))
   ;; +--- run-with-timeout ---+
   (check-false (run-with-timeout (λ () (sleep 10)) (λ (result) result) 0.01))
   (check-false (run-with-timeout (λ () (error "Error")) (λ (result) result) 10))
-  (check-equal? (run-with-timeout (λ () (sleep 0.01) 1) (λ (result) (and (= result 1) 7)) 0.1) 7)
+  (check-equal? (run-with-timeout (λ () 1) (λ (result) (and (= result 1) 7)) 0.1) 7)
   ;; +--- get-rankings ---+
   (check-equal? (get-rankings '() (list BLACK WHITE RED)) '())
   (check-equal? (get-rankings (state-players test-state) '())

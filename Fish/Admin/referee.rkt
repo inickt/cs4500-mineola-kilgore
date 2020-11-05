@@ -29,20 +29,13 @@
   (class* object% (referee-interface)
     (super-new)
     (init-field [timeout TIMEOUT])
-    
-    (define/public (subscribe-as-game-observer game-observer)
-      (void))
-    ;; NOTE: Not implemented as of Milestone 6
-    ;; The spec for this may vary drastically pending the method in which the game is networked,
-    ;; so we have chosen to hold off on implementing this for now.
-    
-    (define/public (remove-game-observer game-observer)
-      (void))
-    ;; NOTE: Not implemented as of Milestone 6
+    ;; NOTE: Observer updates not implemented as of Milestone 6, per Piazza @317
     ;; The spec for this may vary drastically pending the method in which the game is networked,
     ;; so we have chosen to hold off on implementing this for now.
 
-    (define/public (run-game players num-cols num-rows)
+    (define/public (run-game players num-cols num-rows observers)
+      ;; TODO: Pass observers through, and call observe for each FishGameAction that occurs
+      
       (define init-board (create-initial-board num-cols num-rows (length players)))
       (define init-state (create-state (length players) init-board))
       (define player-color-map (create-player-color-map players init-state))
@@ -245,6 +238,9 @@
   (define bad-player (new bad-player%))
   
   ;; Provided
+  ;; +--- run-game ---+
+  ;; TODO test run-game
+  
   ;; Internal Helper Functions
   ;; +--- create-player-color-map ---+
   (check-equal? (create-player-color-map (list dumb-player smart-player)

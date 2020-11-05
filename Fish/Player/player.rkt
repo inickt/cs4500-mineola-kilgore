@@ -6,7 +6,13 @@
 
 (provide player%)
 
+;; +-------------------------------------------------------------------------------------------------+
+;; CONSTANTS
+
 (define DEFAULT-SEARCH-DEPTH 2)
+
+;; +-------------------------------------------------------------------------------------------------+
+;; PROVIDED
 
 (define player%
   (class* object% (player-interface)
@@ -22,40 +28,36 @@
     (define/public (get-move game)
       (strategy:get-move game search-depth))
 
-    (define/public (listen game-tree)
-      (void))
-
-    (define/public (terminate message)
+    (define/public (terminate)
       (void))
 
     (define/public (finalize end-game)
       (void))))
 
-  #|
-    [initialize (->m board? natural? penguin-color? natural?)]
+;; +-------------------------------------------------------------------------------------------------+
+;; TESTS
+(module+ test
+  (require lang/posn
+           rackunit
+           "../Common/game-tree.rkt"
+           "../Common/penguin-color.rkt"
+           "../Common/state.rkt")
 
-    ;; Determines where to place this players next penguin given the current state.
-    ;; The Referee will call this up to 6 - N times, where N is the number of players in the game.
-    [get-placement (->m state? posn?)]
+  (define player1 (new player% [depth 1]))
+  (define player2 (new player% [depth 2]))
 
-    ;; Determines where to move a player's penguin given the current state of the Game.
-    ;; The Referee will call this once on each of this player's turns until the Game reaches an
-    ;; EndGame state in which no more moves are possible. This function will not be called on this
-    ;; player's turns if this player has no remaining moves (the player will be skipped).
-    [get-move (->m game? move?)]
-
-    ;; Informs the player about updates to the GameTree.
-    ;; The Referee will call this once per action that occurs on the GameTree, changing it's state.
-    ;; NOTE: This can be safely ignored if the player does care about updates to the GameTree
-    ;;       occuring on other players' turns
-    [listen (->m game-tree? void?)]
-
-    ;; Informs the player that they were kicked from a Game, with a given reason why.
-    ;; The Referee will call this exactly once if/when a player attempts to cheat or fails to play.
-    [terminate (->m string? void?)]
-
-    ;; Receives the final EndGame state, where no more moves are possible.
-    ;; The Referee will call this exactly once with the final state of the Game when it ends.
-    [finalize (->m end-game? void?)])
-|#
+  (define test-state (make-state '((1 2 3) (1 2 0) (2 2 1))
+                                 (list (make-player RED 0 (list (make-posn 0 0)))
+                                       (make-player WHITE 0 (list (make-posn 2 0))))))
   
+  (check-equal? (send player1 get-placement test-state)
+                (make-posn 1 0))
+  (check-equal? (send player2 get-placement
+                      (make-state '((1 2 3) (0 2 0) (2 2 1))
+                                  (list (make-player RED 0 (list (make-posn 0 0)))
+                                        (make-player WHITE 0 (list (make-posn 2 0))))))
+                (make-posn 0 1))
+  (check-equal? (send player1 get-move (create-game test-state))
+                (make-move (make-posn 0 0) (make-posn 0 1)))
+  (check-equal? (send player2 get-move (create-game test-state))
+                (make-move (make-posn 0 0) (make-posn 0 2))))

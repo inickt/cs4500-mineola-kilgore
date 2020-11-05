@@ -9,6 +9,7 @@
          "tile.rkt")
 
 (provide (contract-out [board? (-> any/c boolean?)])
+         (contract-out [posint? (-> any/c boolean?)])
          (contract-out [make-board-with-holes (-> posint? posint? (listof posn?) natural? board?)])
          (contract-out [make-even-board (-> posint? posint? tile? board?)])
          (contract-out [get-tile (-> posn? board? tile?)])
@@ -66,6 +67,9 @@
 ;;   \        /      \        /      \        /
 ;;    \______/        \______/        \______/
 ;;
+;;
+;; Positions on a board are represented as posns, where posn-x is the column and posn-y is the row.
+
 
 ;; board? : any/c -> boolean?
 ;; Is the given value a board?

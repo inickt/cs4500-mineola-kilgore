@@ -108,7 +108,7 @@
               [kicked '()])
     (if (all-penguins-placed? state kicked)
         (values state kicked)
-        (let ([color (state-current-player state)])
+        (let ([color (player-color (state-current-player state))])
           (if (member color kicked)
               (place (skip-player state) kicked)
               (let ([maybe-state
@@ -186,7 +186,7 @@
 ;; Returns false if run-proc times out, or if either run-proc or result-proc error
 (define (run-with-timeout run-proc result-proc timer)
   (define run-engine (engine (λ (_) (run-proc))))
-  (with-handlers ([exn:fail? (λ (exn) #f)])
+  (with-handlers ([exn:fail? (λ (exn) (displayln exn) #f)])
     (engine-run (* timer 1000) run-engine)
     (if (engine-result run-engine)
         (result-proc (engine-result run-engine))
@@ -216,6 +216,8 @@
   (define children (force (game-children (create-game test-state))))
   (define dumb-player (new player% [depth 1]))
   (define smart-player (new player% [depth 2]))
+  (define slow-player (new player% [depth 50]))
+  (define test-pcm (create-player-color-map (list dumb-player smart-player smart-player) test-state)) 
   (define test-timeout 0.1)
   (define strict-referee (new referee% [timeout test-timeout]))
   (define lenient-referee (new referee% [timeout 5]))
@@ -238,7 +240,44 @@
   (check-true (<= (length (build-random-holes 4 4 4)) 4))
   (check-false (check-duplicates (build-random-holes 25 10 10)))
   ;; +--- get-all-placements ---+
+  (define-values (get-all-placements-test1-state get-all-placements-test1-kicked)
+    (get-all-placements test-state test-pcm 0.0000001))
+  (check-equal? get-all-placements-test1-state
+                (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                            (list (make-player RED 0 '())
+                                  (make-player BLACK 1 '())
+                                  (make-player WHITE 2 '()))))
+  (check-equal? get-all-placements-test1-kicked
+                (list WHITE BLACK RED))
+  (define-values (get-all-placements-test2-state get-all-placements-test2-kicked)
+    (get-all-placements test-state test-pcm 1))
+  (check-equal? get-all-placements-test2-state
+               (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                           (list (make-player RED 0 (list (make-posn 1 2)
+                                                          (make-posn 0 0)
+                                                          (make-posn 1 1)))
+                                 (make-player BLACK 1 (list (make-posn 2 2)
+                                                            (make-posn 1 0)
+                                                            (make-posn 2 1)))
+                                 (make-player WHITE 2 (list (make-posn 0 3)
+                                                            (make-posn 2 0)
+                                                            (make-posn 0 2))))))
+  (check-equal? get-all-placements-test2-kicked '())
   ;; +--- get-single-placement ---+
+  (check-false (get-single-placement test-state smart-player 0.0000001))
+  (check-equal?
+   (get-single-placement (make-state '((1)) (list (make-player RED 0 '()))) dumb-player 1)
+   (make-state '((1)) (list (make-player RED 0 (list (make-posn 0 0))))))
+  (check-equal?
+   (get-single-placement test-state smart-player 1)
+   (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+               (list (make-player BLACK 1 (list (make-posn 1 0)
+                                                (make-posn 2 1)))
+                     (make-player WHITE 2 (list (make-posn 2 0)
+                                                (make-posn 0 2)))
+                     (make-player RED 0 (list (make-posn 1 2)
+                                              (make-posn 0 0)
+                                              (make-posn 1 1))))))
   ;; +--- get-player ---+
   (check-equal? (get-player (hash RED dumb-player BLACK smart-player) test-state) dumb-player)
   (check-equal? (get-player (hash RED dumb-player BLACK smart-player)
@@ -262,6 +301,22 @@
   (check-equal? (penguins-per-player 3) 3)
   (check-equal? (penguins-per-player 4) 2)
   ;; +--- play-game ---+
+  (define-values (play-game-test1-game play-game-test1-kicked)
+    (play-game (create-game test-state) test-pcm '() 0.00000001))
+  (check-equal? play-game-test1-game
+                (create-game (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                                         (list (make-player WHITE 2 '())
+                                               (make-player RED 0 '())
+                                               (make-player BLACK 1 '())))))
+  (check-equal? play-game-test1-kicked (list WHITE BLACK RED))
+  (define-values (play-game-test2-game play-game-test2-kicked)
+    (play-game (create-game test-state) test-pcm '() 5))
+  (check-equal? play-game-test2-game
+                (create-game (make-state '((1 0 0 3) (3 0 0 5) (1 0 0 2))
+                                         (list (make-player WHITE 7 '())
+                                               (make-player RED 6 '())
+                                               (make-player BLACK 4 '())))))
+  (check-equal? play-game-test2-kicked '())
   ;; +--- play-one-move ---+
   (check-equal? (game-state (play-one-move (create-game test-state) dumb-player 1))
                 (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 1 2)))))

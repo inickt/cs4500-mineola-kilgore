@@ -38,6 +38,7 @@
          (contract-out [can-color-move? (-> state? penguin-color? boolean?)])
          (contract-out [can-any-move? (-> state? boolean?)])
          (contract-out [finalize-state (-> state? state?)])
+         (contract-out [remove-penguins (-> state? penguin-color? state?)])
          (contract-out [draw-state (-> state? natural? image?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
@@ -93,7 +94,7 @@
 ;; Players are randomly assigned colors, and the turn order is set by the order of the player list.
 (define (create-state num-players board)
   (make-state board (map (λ (color) (make-player color 0 '()))
-                         (random-sample PENGUIN-COLORS num-players))))
+                         (random-sample PENGUIN-COLORS num-players #:replacement? #f))))
 
 ;; place-penguin : state? posn? -> state?
 ;; Places a penguin on the board for the current player at the given position.
@@ -152,8 +153,8 @@
   (map (λ (to-posn) (make-move from-posn to-posn))
        (valid-movements from-posn (penguins-to-holes state))))
 
-;; can-color-move? : state? -> boolean?
-;; Can the current player move?
+;; can-color-move? : state? penguin-color? -> boolean?
+;; Can the player with the given color move?
 (define (can-color-move? state color)
   (ormap (λ (penguin) (cons? (valid-moves state penguin)))
          (player-places (findf (λ (player) (penguin-color=? (player-color player) color))
@@ -173,6 +174,15 @@
   (make-state (state-board end-state)
               (map (λ (player) (finalize-player player))
                    (state-players end-state))))
+
+;; remove-penguins : state? penguin-color? -> state?
+;; Remove the given player's penguins
+(define (remove-penguins state color)
+  (make-state (state-board state)
+               (map (λ (player) (if (penguin-color=? (player-color player) color)
+                                    (make-player color (player-score player) '())
+                                    player))
+                    (state-players state))))
 
 ;; draw-state : state? natural? -> image?
 ;; Draws a game state at the given tile size

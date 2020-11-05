@@ -3,15 +3,21 @@
 (require lang/posn
          racket/class
          racket/contract
+         racket/engine
          racket/list
          racket/math
+         racket/promise
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
          "../Common/player-interface.rkt"
          "../Common/state.rkt"
          "../Player/player.rkt")
 
+;; +-------------------------------------------------------------------------------------------------+
+;; PROVIDED
+
 (define INIT-MAX-HOLE-RATIO 1/5)
+(define TIMEOUT 10)
 
 (define-struct start-event [board player-colors])
 (define-struct place-event [state position color])
@@ -121,14 +127,17 @@
 
     (define/public (run-game players num-cols num-rows)
       ; Board initialization
-      (define init-board (create-initial-board num-rows num-cols (length players)))
+      (define init-board (create-initial-board num-cols num-rows (length players)))
       ; State initialization
       (define init-state (create-state (length players) init-board))
+      (displayln (draw-state init-state 40))
       (define player-color-map (create-player-color-map players init-state))
       ;; Get placements
       (define state-with-placements (get-all-placements init-state player-color-map))
+      (displayln (draw-state state-with-placements 40))
       ;; Get all moves
-      (define end-game (get-all-moves (create-game state-with-placements)))
+      (define-values (end-game kicked)
+        (play-game (create-game state-with-placements) player-color-map))
       ; - assign players to colors from initial state based on order
       ; start placement
       ; - (6 - n) players
@@ -136,10 +145,14 @@
       ; start movements
       ; - check validity
       ; - kick on invalid moves/timeout
+      (displayln kicked)
 
       (list end-game
             (map (λ (player) (list player 0)) players)
             '()))))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL
 
 ;; create-player-color-map : (non-empty-listof (is-a?/c player-interface)) state?
 ;;                           -> (hash/c penguin-color? (is-a?/c player-interface))
@@ -177,17 +190,14 @@
   (if (all-penguins-placed? state)
       state
       (get-all-placements
-       (place-penguin state
-                      (send-fn-to-player
-                       player-color-map
-                       (player-color (state-current-player state))
-                       get-placement
-                       state))
+       (place-penguin state (send (get-player player-color-map state) get-placement state))
        player-color-map)))
 
-;; send-fn-to-player : (hash-of penguin-color? (is-a?/c player-interface?))
-(define (send-fn-to-player player-color-map color fn data)
-  (send (hash-ref player-color-map color) fn data))
+;; get-player :
+;; (hash-of penguin-color? (is-a?/c player-interface?)) state? -> (is-a?/c player-interface?))
+;; Gets the 
+(define (get-player player-color-map state)
+  (hash-ref player-color-map (player-color (state-current-player state))))
 
 ;; all-penguins-placed? : state? -> boolean?
 ;; Are all of the players penguins placed on the board?
@@ -199,17 +209,43 @@
 ;; Determines the number of penguins per player
 (define (penguins-per-player n) (- 6 n))
 
-;; get-all-moves : game? (hash-of penguin-color? (is-a?/c player-interface?)) -> end-game?
-(define (get-all-moves game player-color-map)
-  (if (end-game? game)
-      game
-      (get-all-moves
-       (move-penguin game
-                     (send-fn-to-player
-                      player-color-map
-                      (player-color
-                       (player-color
-                        (state-current-player (game-state game))))
-                      get-move
-                      game))
-       player-color-map)))
+;; play-game : game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) (listof penguin-color?) -> end-game? (listof penguin-color?)
+;; 
+(define (play-game initial-game player-color-map)
+  (let play ([game initial-game]
+             [kicked '()])
+    (displayln (draw-state ((if (end-game? game) end-game-state game-state) game) 40))
+    (if (end-game? game)
+        (values game kicked)
+        (let ([player-color (player-color (state-current-player (game-state game)))]
+              [maybe-game-tree (play-one-move game (get-player player-color-map (game-state game)))])
+          (if (not maybe-game-tree)
+              (play (kick-player game player-color) (cons player-color kicked))
+              (play maybe-game-tree kicked))))))
+
+;; play-one-move : game? (is-a?/c player-interface?) -> (or/c false? game-tree?)
+;; Gets a player's move and applies it to the given game tree
+;; NOTE: It must be the given player's turn in the provided game
+;; 
+(define (play-one-move game player)
+  (define children (force (game-children game)))
+  (define player-engine (engine (λ (_) (send player get-move game))))
+  (with-handlers ([exn:fail? (λ (exn) #f)])
+    (engine-run (* TIMEOUT 1000) player-engine)
+    (hash-ref children (engine-result player-engine))))
+
+;; kick-player : game? penguin-color -> game-tree?
+(define (kick-player game penguin-color)
+  (create-game (remove-penguins (game-state game) penguin-color)))
+
+
+
+(define p1 (new player% [depth 2]))
+(define p2 (new player% [depth 2]))
+(define r (new referee%))
+
+
+
+
+                         
+

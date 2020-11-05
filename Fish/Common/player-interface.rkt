@@ -41,9 +41,9 @@
     ;;       occuring on other players' turns
     [listen (->m game-tree? void?)]
 
-    ;; Informs the player that they were kicked from a Game, with a given reason why.
+    ;; Informs the player that they were kicked from a Game.
     ;; The Referee will call this exactly once if/when a player attempts to cheat or fails to play.
-    [terminate (->m string? void?)]
+    [terminate (->m void?)]
 
     ;; Receives the final EndGame state, where no more moves are possible.
     ;; The Referee will call this exactly once with the final state of the Game when it ends.

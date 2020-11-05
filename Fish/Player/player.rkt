@@ -25,7 +25,7 @@
     (define/public (listen game-tree)
       (void))
 
-    (define/public (terminate message)
+    (define/public (terminate)
       (void))
 
     (define/public (finalize end-game)

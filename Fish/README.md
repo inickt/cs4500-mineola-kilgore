@@ -8,7 +8,12 @@ The Fish Game system will run individual games of Fish, determining a winner (or
 ## Directory Structure
 ```
 Fish/
-├── Common/
+├── Admin
+│   ├── manager-interface.rkt
+│   ├── observer-interface.rkt
+│   ├── referee-interface.rkt
+│   └── referee.rkt
+├── Common
 │   ├── board.rkt
 │   ├── game-tree.rkt
 │   ├── json.rkt
@@ -16,10 +21,12 @@ Fish/
 │   ├── player-interface.rkt
 │   ├── state.rkt
 │   └── tile.rkt
+├── Other
+│   └── util.rkt
 ├── Planning/
-│   ├── PlayerProtocolDiagram.png
 │   ├── game-state.md
 │   ├── games.md
+│   ├── manager-protocol.md
 │   ├── milestones.pdf
 │   ├── player-protocol.md
 │   ├── referee.md
@@ -27,12 +34,28 @@ Fish/
 │   ├── self-2.md
 │   ├── self-3.md
 │   ├── self-4.md
+│   ├── self-5.md
 │   └── system.pdf
-├── Player/
+├── Player
+│   ├── player.rkt
 │   └── strategy.rkt
 ├── README.md
 └── xtest
 ```
+### Admin
+Contains all functionality for running both Fish games and tournament systems.
+
+##### manager-interface.rkt
+An interface for a tournament system that provides the ability to run an entire Fish tournament given a list of players.
+
+##### observer-interface.rkt
+Contains interfaces used for both game and tournament observers and the common data definitions shared between them.
+
+##### referee-interface.rkt
+An interface for a referee that provides the ability to run a Fish game with a given set of players.
+
+##### referee.rkt
+An implementation of the referee protocol that can play out a game of Fish with a given set of players, making sure they do not perform illegal/bad actions.
 
 ### Common
 Contains all information for building a spec for a Fish tournament and game systems.
@@ -85,6 +108,12 @@ Provides functionality to:
 Contains the data and function definitions describing a tile.
 Provides predicates for Tile and Hole, and a function to draw a tile.
 
+### Other
+Assorted Racket utilties not tied to a specific part of the Firsh game system.
+
+#### util.rkt
+Utilities for running integration/fest tests using `rackunit`.
+
 ### Planning
 Contains all files dictating the common ontology for the Fish game system.
 
@@ -93,6 +122,9 @@ A memo release describing the components we believe are needed to complete the F
 
 ##### games.md
 A memo release describing the data reperesentation and interface specifications we would like to use to represent an entire game of Fish. The data representation and interface are designed to be used by either a referee or player for legality checking moves and potentially planning ahead.
+
+#### manager-protocol.md
+A document describing the protocol by which a server component can run Fish tournaments using the interface specified in `Fish/Admin/manager-interface.rkt`.
 
 ##### milestones.pdf
 A memo release stating the intended milestones for the Fish game and tournament systems, including demoable intermediate steps.
@@ -112,6 +144,9 @@ A memo release for planning the systems that the complete Fish game and tourname
 
 ### Player
 Contains all information for building a player in a Fish tournament and game system.
+
+#### player.rkt
+A basic implementation of a player interface using a zig-zag placement strategy and a maximin algorithm for moving penguins.
 
 ##### strategy.rkt
 Contains function definitions used for making basic player strategy decisions.

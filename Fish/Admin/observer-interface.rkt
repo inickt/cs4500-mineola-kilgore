@@ -67,6 +67,7 @@
 ;;       P4 2
 ;;       P5 5)
 
+;; A GameObserver is an object of a class implementing the game-observer-interface.
 (define game-observer-interface
   (interface ()
     ;; observe : fish-game-event? -> void?
@@ -83,13 +84,14 @@
 ;; the most recently completed game of Fish where earlier FishGameEvents appear at the start of the
 ;; list.
 
+;; A TournamentObserver is an object of a class implementing the tournament-observer-interface.
 (define tournament-observer-interface
   (interface ()
     ;; observe : tournament-event? -> void?
     ;; Observes the TournamentEvent. The implementer can decide if and how this information is
     ;; relevant
     ;; Notes:
-    ;; - Called by the Tournament Manager on all Tournament Observers each time any game of Fish
+    ;; - Called by the Tournament Manager on all TournamentObservers each time any game of Fish
     ;;   concludes.
     [observe (->m tournament-event? void?)]))
 (define tournament-observer? (is-a?/c tournament-observer-interface))

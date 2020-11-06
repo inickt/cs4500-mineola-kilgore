@@ -40,10 +40,10 @@
     ;; Thus, players who register earlier will have earlier positions in the turn orderings of Fish
     ;; games.
     ;;
-    ;; The tournament will be run according to the Tournament Manager's specification
+    ;; The tournament will be run according to the TournamentManager's specification
     ;; (see manager-protocol.md).
     ;;
-    ;; Once the tournament is complete, the Tournament Manager  will return a list Rankings,
+    ;; Once the tournament is complete, the TournamentManager  will return a list Rankings,
     ;; sorted by player rank in ascending order such that the player(s) who won the tournament in 1st
     ;; place appear at the beginning of the list.
     [run-tournament (-> (non-empty-listof (list/c (is-a?/c player-interface) positive?))

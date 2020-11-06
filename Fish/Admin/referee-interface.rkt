@@ -98,6 +98,6 @@
     [run-game (->m (non-empty-listof (is-a?/c player-interface))
                    posint?
                    posint?
-                   (list-of (is-a/c game-observer-interface))
+                   (listof (is-a?/c game-observer-interface))
                    (list/c (non-empty-listof (list/c (is-a?/c player-interface) natural?))
                            (listof (is-a?/c player-interface))))]))

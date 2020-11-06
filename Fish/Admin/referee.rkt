@@ -223,9 +223,7 @@
   (define smart-player (new player% [depth 2]))
   (define slow-player (new player% [depth 50]))
   (define test-pcm (create-player-color-map (list dumb-player smart-player smart-player) test-state)) 
-  (define test-timeout 0.1)
-  (define strict-referee (new referee% [timeout test-timeout]))
-  (define lenient-referee (new referee% [timeout 5]))
+  (define referee (new referee% [timeout 1]))
 
   (define bad-player%
     (class* object% (player-interface)
@@ -239,8 +237,14 @@
   
   ;; Provided
   ;; +--- run-game ---+
-  ;; TODO test run-game
-  
+  (check-equal? (second (send referee run-game (list dumb-player dumb-player) 4 4 '())) '())
+  (check-equal? (second (send referee run-game (list dumb-player bad-player) 4 4 '()))
+                (list bad-player))
+  (check-equal? (map first (first (send referee run-game (list dumb-player bad-player) 4 4 '())))
+                (list dumb-player))
+  (define results
+    (first (send referee run-game (list smart-player smart-player dumb-player) 5 5 '())))
+  (check-equal? results (sort results > #:key second))
   ;; Internal Helper Functions
   ;; +--- create-player-color-map ---+
   (check-equal? (create-player-color-map (list dumb-player smart-player)

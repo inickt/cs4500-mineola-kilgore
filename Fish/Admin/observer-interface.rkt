@@ -1,7 +1,9 @@
 #lang racket/base
 
 (require racket/class
-         racket/contract)
+         racket/contract
+         "../Common/board.rkt"
+         "../Common/player-interface.rkt")
 
 (provide start-event
          place-event
@@ -10,10 +12,12 @@
          end-event
          fish-game-event?
          game-observer-interface
+         game-observer?
 
          tournament-event?
          standing?
-         tournament-observer-interface)
+         tournament-observer-interface
+         tournament-observer?)
 
 (define-struct start-event [board player-colors])
 (define-struct place-event [state position color])
@@ -47,23 +51,8 @@
 ;;   - represented by an end-event, with a final game node and a list of player colors that were
 ;;     kicked from the game.
 
-(define game-observer-interface
-  (interface ()
-    ;; observe : fish-game-event? -> void?
-    ;; Observes the FishGameEvent. The implementer can decide if and how this information is relevant
-    ;; Notes:
-    ;; - Called by the Referee on all Game Observers each time any FishGameEvent occurs.
-    [observe (->m fish-game-event? void?)]))
-
-;; A TournamentEvent is a (list Standing (listof FishGameEvent))
-(define tournament-event? (list/c standing? (listof fish-game-event?)))
-;; Where the Standing represents each player's current rank in the tournament (where ties may be
-;; possible), and the (listof FishGameEvent) is the ordered series of FishGameEvents returned by
-;; the most recently completed game of Fish where earlier FishGameEvents appear at the start of the
-;; list.
-
 ;; A Standing is a (hash (is-a?/c player-interface) posint?)
-(define standing? (hashof (is-a?/c player-interface) posint?))
+(define standing? (hash/c (is-a?/c player-interface) posint?))
 ;; Representing the standing of a Fish tournament.
 ;; Each key in a Standing is an object implementing the player interface, and the corresponding value
 ;; is a positive integer representing that player's rank in the tournament, where 1 is the player in
@@ -78,6 +67,22 @@
 ;;       P4 2
 ;;       P5 5)
 
+(define game-observer-interface
+  (interface ()
+    ;; observe : fish-game-event? -> void?
+    ;; Observes the FishGameEvent. The implementer can decide if and how this information is relevant
+    ;; Notes:
+    ;; - Called by the Referee on all Game Observers each time any FishGameEvent occurs.
+    [observe (->m fish-game-event? void?)]))
+(define game-observer? (is-a?/c game-observer-interface))
+
+;; A TournamentEvent is a (list Standing (listof FishGameEvent))
+(define tournament-event? (list/c standing? (listof fish-game-event?)))
+;; Where the Standing represents each player's current rank in the tournament (where ties may be
+;; possible), and the (listof FishGameEvent) is the ordered series of FishGameEvents returned by
+;; the most recently completed game of Fish where earlier FishGameEvents appear at the start of the
+;; list.
+
 (define tournament-observer-interface
   (interface ()
     ;; observe : tournament-event? -> void?
@@ -87,3 +92,4 @@
     ;; - Called by the Tournament Manager on all Tournament Observers each time any game of Fish
     ;;   concludes.
     [observe (->m tournament-event? void?)]))
+(define tournament-observer? (is-a?/c tournament-observer-interface))

@@ -23,6 +23,7 @@
 ;; Represents a list of Rankings in a tournament with 5 players where P1 is 1st, P2-P4 tie for 2nd,
 ;; and P5 comes in 5th.
 
+;; A TournamentManager is an object of a class implementing the manager-interface.
 (define manager-interface
   (interface ()
     ;; run-tournament

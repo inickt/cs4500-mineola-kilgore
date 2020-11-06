@@ -91,7 +91,7 @@
     ;; Observes the TournamentEvent. The implementer can decide if and how this information is
     ;; relevant
     ;; Notes:
-    ;; - Called by the Tournament Manager on all TournamentObservers each time any game of Fish
+    ;; - Called by the TournamentManager on all TournamentObservers each time any game of Fish
     ;;   concludes.
     [observe (->m tournament-event? void?)]))
 (define tournament-observer? (is-a?/c tournament-observer-interface))

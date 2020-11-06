@@ -9,7 +9,11 @@
          kick-event
          end-event
          fish-game-event?
-         game-observer-interface)
+         game-observer-interface
+
+         tournament-event?
+         standing?
+         tournament-observer-interface)
 
 (define-struct start-event [board player-colors])
 (define-struct place-event [state position color])
@@ -17,6 +21,7 @@
 (define-struct kick-event [game kicked-player])
 (define-struct end-event [game kicked-players])
 (define fish-game-event? (or/c start-event? place-event? move-event? kick-event? end-event?))
+
 ;; A FishGameEvent is one of:
 ;; - (make-start-event board? (list-of penguin-color?))
 ;; - (make-place-event state? posn? penguin-color?)
@@ -47,5 +52,38 @@
     ;; observe : fish-game-event? -> void?
     ;; Observes the FishGameEvent. The implementer can decide if and how this information is relevant
     ;; Notes:
-    ;; - Called by the Referee on all observers each time any FishGameEvent occurs.
+    ;; - Called by the Referee on all Game Observers each time any FishGameEvent occurs.
     [observe (->m fish-game-event? void?)]))
+
+;; A TournamentEvent is a (list Standing (listof FishGameEvent))
+(define tournament-event? (list/c standing? (listof fish-game-event?)))
+;; Where the Standing represents each player's current rank in the tournament (where ties may be
+;; possible), and the (listof FishGameEvent) is the ordered series of FishGameEvents returned by
+;; the most recently completed game of Fish where earlier FishGameEvents appear at the start of the
+;; list.
+
+;; A Standing is a (hash (is-a?/c player-interface) posint?)
+(define standing? (hashof (is-a?/c player-interface) posint?))
+;; Representing the standing of a Fish tournament.
+;; Each key in a Standing is an object implementing the player interface, and the corresponding value
+;; is a positive integer representing that player's rank in the tournament, where 1 is the player in
+;; 1st place.
+;; In the case of a tie, multiple players may have the same ranking. However, the next ranking(s)
+;; will skipped to properly accommodate "missing" rankings due to ties. For example, in a 4-player
+;; tournament with P1-P5 where P1 is first, P2/P3/P4 are tied for 2nd, and P4 is following, the
+;; Standing would be:
+;; (hash P1 1
+;;       P2 2
+;;       P3 2
+;;       P4 2
+;;       P5 5)
+
+(define tournament-observer-interface
+  (interface ()
+    ;; observe : tournament-event? -> void?
+    ;; Observes the TournamentEvent. The implementer can decide if and how this information is
+    ;; relevant
+    ;; Notes:
+    ;; - Called by the Tournament Manager on all Tournament Observers each time any game of Fish
+    ;;   concludes.
+    [observe (->m tournament-event? void?)]))

@@ -26,10 +26,10 @@ https://github.ccs.neu.edu/CS4500-F20/mineola/blob/6113d5162877ed8283c64a154a9fb
 https://github.ccs.neu.edu/CS4500-F20/mineola/blob/6113d5162877ed8283c64a154a9fbd4745ad2225/Fish/Admin/referee.rkt#L342-L376
 
 - the "one-round loop" function  
-Our GameTree doesn't have the concept of a 'round' of turns - we skip players who cannot play in GameTree, so it is an invariant that the 'current player' is always up to date. The result is that playing a full game of Fish just means getting a move for the current player until the result of applying the given move produces an EndGame (no more moves remain) instead of a Game (more moves exist).
+Our GameTree doesn't have the concept of a 'round' of turns - we skip players who cannot play in GameTree, so it is an invariant that the 'current player' is always up to date. The result is that playing a full game of Fish just means getting a move for the current player until the result of applying the given move produces an EndGame (no more moves remain) instead of a Game (more moves exist). [Here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/6113d5162877ed8283c64a154a9fbd4745ad2225/Fish/Common/game-tree.rkt#L55-L65) is the function that enforces this inariant.
 
-- a unit test for the "one-round loop" function
-Our GameTree doesn't have the concept of a 'round' of turns - we skip players who cannot play in GameTree, so it is an invariant that the 'current player' is always up to date. The result is that playing a full game of Fish just means getting a move for the current player until the result of applying the given move produces an EndGame (no more moves remain) instead of a Game (more moves exist).
+- a unit test for the "one-round loop" function  
+Our GameTree doesn't have the concept of a 'round' of turns - we skip players who cannot play in GameTree, so it is an invariant that the 'current player' is always up to date. The result is that playing a full game of Fish just means getting a move for the current player until the result of applying the given move produces an EndGame (no more moves remain) instead of a Game (more moves exist). [Here](https://github.ccs.neu.edu/CS4500-F20/mineola/blob/6113d5162877ed8283c64a154a9fbd4745ad2225/Fish/Common/game-tree.rkt#L152-L192) are tests for that invariant.
 
 - the "one-turn" per player function  
 https://github.ccs.neu.edu/CS4500-F20/mineola/blob/6113d5162877ed8283c64a154a9fbd4745ad2225/Fish/Admin/referee.rkt#L166-L176

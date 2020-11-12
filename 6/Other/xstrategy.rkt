@@ -78,4 +78,7 @@
 
   ;; Prelim tests
   (check-integration xstrategy "prelims/1-in.json" "prelims/1-out.json")
-  (check-integration xstrategy "prelims/2-in.json" "prelims/2-out.json"))
+  (check-integration xstrategy "prelims/2-in.json" "prelims/2-out.json")
+
+  ;; Fest tests
+  (check-fest xstrategy (build-path "./fest")))

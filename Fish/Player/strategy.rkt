@@ -29,10 +29,8 @@
 ;; NOTE: The passed state must have a legal tile for the penguin to be placed on.
 (define (get-placement state)
   (define board (state-board state))
-  (define width (length board))
-  (define height (length (first board)))
-  (for*/first ([row height]
-               [col width]
+  (for*/first ([row (board-rows board)]
+               [col (board-columns board)]
                [placement (in-value (make-posn col row))]
                #:when (and (not (member placement (append-map player-places (state-players state))))
                            (valid-tile? placement board)))

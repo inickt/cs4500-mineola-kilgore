@@ -13,6 +13,8 @@
          (contract-out [make-board-with-holes (-> posint? posint? (listof posn?) natural? board?)])
          (contract-out [make-even-board (-> posint? posint? tile? board?)])
          (contract-out [get-tile (-> posn? board? tile?)])
+         (contract-out [board-columns (-> board? posint?)])
+         (contract-out [board-rows (-> board? posint?)])
          (contract-out [remove-tile (-> posn? board? board?)])
          (contract-out [valid-movements (-> posn? board? (listof posn?))])
          (contract-out [valid-tile? (-> posn? board? boolean?)])
@@ -118,6 +120,16 @@
   (list-ref (list-ref board (posn-x posn))
             (posn-y posn)))
 
+;; board-columns : board? -> posint?
+;; Number of columns in the board
+(define (board-columns board)
+  (length board))
+
+;; board-rows : board? -> posint?
+;; Number of rows in the board
+(define (board-rows board)
+  (length (first board)))
+
 ;; remove-tile : posn? board? -> board?
 ;; Removes the tile at the given doubled position from the board
 (define (remove-tile posn board)
@@ -172,16 +184,6 @@
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
-
-;; board-columns : board? -> posint?
-;; Number of columns in the board
-(define (board-columns board)
-  (length board))
-
-;; board-rows : board? -> posint?
-;; Number of rows in the board
-(define (board-rows board)
-  (length (first board)))
 
 ;; posn-within-bounds? : posn? natural? natural? -> boolean?
 ;; Is the given posn-x on [0, width) and posn-y on [0, height)?

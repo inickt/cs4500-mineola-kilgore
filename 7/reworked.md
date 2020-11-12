@@ -6,3 +6,7 @@
 When the game ends, we remove all players' penguins from the state, which is not required and obfuscates test cases.
   - We got rid of the `finalize-state` function, which also had a inaccurate purpose statement.
   - [Commit](https://github.ccs.neu.edu/CS4500-F20/kilgore/commit/951a5e03c24750becd5fd55ddbc326d5a3140c12)
+
+Missing tests for in referee for misbehaving players
+  - We added more types of bad players and passed the to all the unit tests
+  - [Commit](https://github.ccs.neu.edu/CS4500-F20/kilgore/commit/6553c6d4c8066eedd3eb55ee4f4fbc52e80bfa29)

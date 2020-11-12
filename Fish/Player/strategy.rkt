@@ -60,10 +60,10 @@
   (define x2-to (posn-x (move-to move2)))
   (define y2-to (posn-y (move-to move2)))
   
-  (cond [(not (= y1-to y2-to)) (< y1-to y2-to)]
-        [(not (= x1-to x2-to)) (< x1-to x2-to)]
-        [(not (= y1-from y2-from)) (< y1-from y2-from)]
+  (cond [(not (= y1-from y2-from)) (< y1-from y2-from)]
         [(not (= x1-from x2-from)) (< x1-from x2-from)]
+        [(not (= y1-to y2-to)) (< y1-to y2-to)]
+        [(not (= x1-to x2-to)) (< x1-to x2-to)]
         [else #f]))
 
 ;; +-------------------------------------------------------------------------------------------------+

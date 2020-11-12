@@ -221,22 +221,49 @@
   (define test-pcm (create-player-color-map (list dumb-player smart-player smart-player) test-state)) 
   (define referee (new referee% [timeout 1]))
 
-  (define bad-player%
+  ;; Player that throws errors
+  (define bad-player-error%
     (class* object% (player-interface)
       (super-new)
-      (define/public (initialize board num-players color) (error "haha gotcha"))
+      (define/public (initialize board num-players color) (error "fail"))
+      (define/public (get-placement state) (error "fail"))
+      (define/public (get-move game) (error "fail"))
+      (define/public (terminate) (error "fail"))
+      (define/public (finalize end-game) (error "fail"))))
+  (define bad-player-error (new bad-player-error%))
+
+  ;; Player that timesout when moving
+  (define bad-player-timeout%
+    (class* object% (player-interface)
+      (super-new)
+      (define/public (initialize board num-players color) (initialize board num-players color))
       (define/public (get-placement state) (get-placement state))
       (define/public (get-move game) (get-move game))
-      (define/public (terminate) (error "get rekt nerd"))
+      (define/public (terminate) (terminate))
       (define/public (finalize end-game) (finalize end-game))))
-  (define bad-player (new bad-player%))
+  (define bad-player-timeout (new bad-player-timeout%))
   
+  ;; Player that gives garbage moves
+  (define bad-player-garbage%
+    (class* object% (player-interface)
+      (super-new)
+      (define/public (initialize board num-players color) (void))
+      (define/public (get-placement state) (make-posn 0 0))
+      (define/public (get-move game) (make-move (make-posn 0 0) (make-posn 0 1)))
+      (define/public (terminate) (void))
+      (define/public (finalize end-game) (void))))
+  (define bad-player-garbage (new bad-player-garbage%))
+
   ;; Provided
   ;; +--- run-game ---+
   (check-equal? (second (send referee run-game (list dumb-player dumb-player) 4 4 '())) '())
-  (check-equal? (second (send referee run-game (list dumb-player bad-player) 4 4 '()))
-                (list bad-player))
-  (check-equal? (map first (first (send referee run-game (list dumb-player bad-player) 4 4 '())))
+  (check-equal? (second (send referee run-game (list dumb-player bad-player-error) 4 4 '()))
+                (list bad-player-error))
+  (check-equal? (second (send referee run-game (list dumb-player bad-player-timeout) 4 4 '()))
+                (list bad-player-timeout))
+  (check-equal? (second (send referee run-game (list dumb-player bad-player-garbage) 4 4 '()))
+                (list bad-player-garbage))
+  (check-equal? (map first (first (send referee run-game (list dumb-player bad-player-error) 4 4 '())))
                 (list dumb-player))
   (define results
     (first (send referee run-game (list smart-player smart-player dumb-player) 5 5 '())))
@@ -282,24 +309,25 @@
                                                              (make-posn 2 0)
                                                              (make-posn 0 2))))))
   (check-equal? get-all-placements-test2-kicked '())
+  (define bad-placement-state (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
+                 (list (make-player RED 0 '()) (make-player BLACK 0 '()) (make-player WHITE 0 '()) (make-player BROWN 0 '()))))
   (define-values (get-all-placements-test3-state get-all-placements-test3-kicked)
     (get-all-placements
-     (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
-                 (list (make-player RED 0 '()) (make-player BLACK 0 '()) (make-player WHITE 0 '())))
-     (create-player-color-map (list dumb-player smart-player bad-player) test-state)
+     bad-placement-state
+     (create-player-color-map (list smart-player bad-player-error bad-player-timeout bad-player-timeout) bad-placement-state)
      1))
   (check-equal? get-all-placements-test3-state
                 (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
-                            (list (make-player WHITE 0 '())
-                                  (make-player RED 0 (list (make-posn 2 1)
-                                                           (make-posn 2 0)
-                                                           (make-posn 0 0)))
-                                  (make-player BLACK 0 (list (make-posn 0 2)
-                                                             (make-posn 1 1)
-                                                             (make-posn 1 0))))))
-  (check-equal? get-all-placements-test3-kicked (list WHITE))
+                            (list (make-player BLACK 0 '())
+                                  (make-player WHITE 0 '())
+                                  (make-player BROWN 0 '())
+                                  (make-player RED 0 (list (make-posn 1 0)
+                                                           (make-posn 0 0))))))
+  (check-equal? get-all-placements-test3-kicked (list BROWN WHITE BLACK))
   ;; +--- get-single-placement ---+
-  (check-false (get-single-placement test-state bad-player 1))
+  (check-false (get-single-placement test-state bad-player-error 1))
+  (check-false (get-single-placement test-state bad-player-timeout 1))
+  (check-false (get-single-placement test-state bad-player-garbage 1))
   (check-equal?
    (get-single-placement (make-state '((1)) (list (make-player RED 0 '()))) dumb-player 1)
    (make-state '((1)) (list (make-player RED 0 (list (make-posn 0 0))))))
@@ -338,7 +366,7 @@
   ;; +--- play-game ---+
   (define-values (play-game-test1-game play-game-test1-kicked)
     (play-game (create-game test-state)
-               (create-player-color-map (list bad-player bad-player bad-player) test-state)
+               (create-player-color-map (list bad-player-error bad-player-timeout bad-player-garbage) test-state)
                '() 1))
   (check-equal? play-game-test1-game
                 (create-game (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
@@ -361,7 +389,7 @@
                       (make-player BLACK 0 (list (make-posn 1 0) (make-posn 0 1) (make-posn 2 1))))))
   (define-values (play-game-test3-game play-game-test3-kicked)
     (play-game (create-game play-game-test3-state)
-               (create-player-color-map (list bad-player bad-player dumb-player)
+               (create-player-color-map (list bad-player-error bad-player-garbage dumb-player)
                                         play-game-test3-state)
                (list RED) 0.1))
   (check-equal? play-game-test3-game
@@ -373,7 +401,9 @@
   ;; +--- play-one-move ---+
   (check-equal? (game-state (play-one-move (create-game test-state) dumb-player 1))
                 (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 1 2)))))
-  (check-false (play-one-move (create-game test-state) bad-player 1))
+  (check-false (play-one-move (create-game test-state) bad-player-error 1))
+  (check-false (play-one-move (create-game test-state) bad-player-timeout 1))
+  (check-false (play-one-move (create-game test-state) bad-player-garbage 1))
   (check-equal? (game-state (play-one-move (create-game test-state) smart-player 30))
                 (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 2 2)))))
   ;; +--- kick-player ---+

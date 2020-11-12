@@ -5,4 +5,4 @@
 - [x] Add cheating player tests in referee for players trying to place/move illegal options
 - [x] Document how referee handles misbehaving players
 - [ ] The strategy component is too complicated and applies the tiebreaker at every step in the algorithm
-- [ ] Hexagon position movers are marked as internal but are actually public
+- [x] Hexagon position movers are marked as internal but are actually public

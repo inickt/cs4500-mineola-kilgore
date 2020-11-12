@@ -105,8 +105,8 @@
   (define candidate-preferred ((if maximizing? > <) (cdr candidate) (cdr previous)))
   (cond [(= (cdr candidate) (cdr previous))
          (if (tiebreaker (car candidate) (car previous))
-                  candidate
-                  previous)]
+             candidate
+             previous)]
         [candidate-preferred candidate]
         [else previous]))
 
@@ -168,6 +168,22 @@
   (check-equal? (get-move test-game-2 3) (make-move (make-posn 0 0) (make-posn 1 3)))
   (check-equal? (get-move test-game-2 4) (make-move (make-posn 0 0) (make-posn 1 2)))
   (check-equal? (get-move test-game-2 10) (make-move (make-posn 0 0) (make-posn 1 3)))
+  ;; test tiebreaker
+  (check-equal?
+   (get-move
+    (create-game
+     (make-state '((1 1 1 1) (1 0 1 1) (1 2 5 0) (1 1 1 1))
+                 (list (make-player 'black 40 (list (make-posn 0 0)
+                                                    (make-posn 0 2)
+                                                    (make-posn 0 3)
+                                                    (make-posn 1 3)))
+                       (make-player 'white 31 (list (make-posn 3 0)
+                                                    (make-posn 3 1)
+                                                    (make-posn 3 2)
+                                                    (make-posn 3 3))))))
+    1)
+   (make-move (make-posn 0 0) (make-posn 0 1)))
+   
   ;; +--- tiebreaker ---+
   ;; top most from
   (check-true (tiebreaker (make-move (make-posn 3 2) (make-posn 0 0))
@@ -198,6 +214,12 @@
   ;; y1-from < y2-from but x1-from > x2-from
   (check-true (tiebreaker (make-move (make-posn 1 0) (make-posn 0 0))
                           (make-move (make-posn 0 1) (make-posn 0 0))))
+
+  (check-true (tiebreaker (make-move (make-posn 0 0) (make-posn 0 1))
+                          (make-move (make-posn 0 2) (make-posn 1 0))))
+  (check-false (tiebreaker (make-move (make-posn 0 2) (make-posn 1 0))
+                           (make-move (make-posn 0 0) (make-posn 0 1))))
+  
   ;; Internal Helper Functions
   ;; +--- maximin-search ---+
   ;; Game 1 partial searches

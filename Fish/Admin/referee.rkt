@@ -350,9 +350,9 @@
     (play-game (create-game test-state) test-pcm '() 5))
   (check-equal? play-game-test2-game
                 (create-game (make-state '((1 0 0 3) (3 0 0 5) (1 0 0 2))
-                                         (list (make-player WHITE 7 '())
-                                               (make-player RED 6 '())
-                                               (make-player BLACK 4 '())))))
+                                         (list (make-player WHITE 7 (list (make-posn 2 0) (make-posn 0 3)))
+                                               (make-player RED 6 (list (make-posn 0 0) (make-posn 1 3)))
+                                               (make-player BLACK 4 (list (make-posn 1 0) (make-posn 2 3)))))))
   (check-equal? play-game-test2-kicked '())
   (define play-game-test3-state
     (make-state '((1 2 3) (4 5 6) (7 8 9))
@@ -368,7 +368,7 @@
                 (create-game (make-state '((0 0 3) (4 0 6) (0 0 9))
                                          (list (make-player RED 0 '())
                                                (make-player WHITE 0 '())
-                                               (make-player BLACK 23 '())))))
+                                               (make-player BLACK 23 (list (make-posn 1 0) (make-posn 0 2) (make-posn 1 2)))))))
   (check-equal? play-game-test3-kicked (list WHITE RED))
   ;; +--- play-one-move ---+
   (check-equal? (game-state (play-one-move (create-game test-state) dumb-player 1))
@@ -391,7 +391,7 @@
                  RED)
                 (create-game (make-state '((1 0 0 1 1))
                                          (list (make-player RED 0 '())
-                                               (make-player WHITE 0 '())))))
+                                               (make-player WHITE 0 (list (make-posn 0 0)))))))
   ;; +--- run-with-timeout ---+
   (check-false (run-with-timeout (λ () (sleep 10)) (λ (result) result) 0.01))
   (check-false (run-with-timeout (λ () (error "Error")) (λ (result) result) 10))

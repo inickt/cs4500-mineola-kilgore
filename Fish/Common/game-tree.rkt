@@ -62,7 +62,7 @@
   (if (can-any-move? state)
       (let ([next-state (next-playable-state state)])
         (make-game next-state (delay (all-possible-moves next-state))))
-      (make-end-game (finalize-state state))))
+      (make-end-game state)))
 
 ;; apply-to-all-children : game? (-> game-tree? any/c) -> (hash-of move? any/c)
 ;; Applies the provided function to all child GameTrees of the given game
@@ -91,10 +91,7 @@
 ;; - Constructs an end-game if the resultant state has no valid moves
 ;; - Skips the turns of players who cannot move
 (define (apply-move state move)
-  (define next-state (move-penguin state move))
-  (if (can-any-move? next-state)
-      (create-game next-state)
-      (make-end-game (finalize-state next-state))))
+  (create-game (move-penguin state move)))
 
 ;; game-tree=? : game-tree? game-tree? -> bool?
 ;; Are the given game trees equal?
@@ -176,9 +173,9 @@
                                          (make-player BROWN 0 (list (make-posn 1 0)))
                                          (make-player WHITE 0 (list (make-posn 1 1))))))
   (check-equal? (create-game cg-state-ex2)
-                (make-end-game (finalize-state cg-state-ex2)))
+                (make-end-game cg-state-ex2))
   (check-equal? (create-game cg-state-ex3)
-                (make-end-game (finalize-state cg-state-ex3)))
+                (make-end-game cg-state-ex3))
   ;; valid state, some players can't move
   (define cg-state-ex4 (make-state (make-even-board 2 2 1)
                                    (list (make-player RED 0 (list (make-posn 0 0)))
@@ -217,8 +214,8 @@
                                        (make-player RED 0 (list (make-posn 0 0)))))
                      (make-move (make-posn 0 2) (make-posn 0 1)))
          (make-end-game (make-state '((1 1 0 0 1))
-                                    (list (make-player RED 0 '())
-                                          (make-player BLACK 1 '())))))
+                                    (list (make-player RED 0 (list (make-posn 0 0)))
+                                          (make-player BLACK 1 (list (make-posn 0 1)))))))
 
   ;; +--- all-possible-moves ---+
   (check-equal? (list->set (hash-keys (all-possible-moves (game-state test-game))))
@@ -236,8 +233,8 @@
          [hash-expected
           (hash (make-move (make-posn 0 2) (make-posn 0 1))
                 (make-end-game (make-state '((1 1 0 0 1))
-                                           (list (make-player RED 0 '())
-                                                 (make-player BLACK 1 '()))))
+                                           (list (make-player RED 0 (list (make-posn 0 0)))
+                                                 (make-player BLACK 1 (list (make-posn 0 1))))))
                 (make-move (make-posn 0 2) (make-posn 0 4))
                 (create-game (make-state '((1 1 0 0 1))
                                          (list (make-player RED 0 (list (make-posn 0 0)))

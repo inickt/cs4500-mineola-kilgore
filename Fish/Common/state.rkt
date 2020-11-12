@@ -37,7 +37,6 @@
          (contract-out [valid-moves (-> state? posn? (listof move?))])
          (contract-out [can-color-move? (-> state? penguin-color? boolean?)])
          (contract-out [can-any-move? (-> state? boolean?)])
-         (contract-out [finalize-state (-> state? state?)])
          (contract-out [remove-penguins (-> state? penguin-color? state?)])
          (contract-out [draw-state (-> state? natural? image?)]))
 
@@ -167,14 +166,6 @@
   (ormap (λ (posn) (cons? (valid-movements posn hole-board)))
          (append-map player-places (state-players state))))
 
-;; finalize-state : state? -> state?
-;; Removes all penguins, adding the values of the tiles the penguins were on to their players' scores
-;; scores appropriately.
-(define (finalize-state end-state)
-  (make-state (state-board end-state)
-              (map (λ (player) (finalize-player player))
-                   (state-players end-state))))
-
 ;; remove-penguins : state? penguin-color? -> state?
 ;; Remove the given player's penguins
 (define (remove-penguins state color)
@@ -229,11 +220,6 @@
 (define (penguins-to-holes state)
   (define penguin-list (append-map player-places (state-players state)))
   (foldr remove-tile (state-board state) penguin-list))
-
-;; finalize-player : player? -> player?
-;; Adds the score of the tiles a player's penguins are on, and removes all of their penguins
-(define (finalize-player player)
-  (make-player (player-color player) (player-score player) '()))
 
 ;; draw-board-penguins : board? (listof player?) natural? -> image?
 ;; Draws the players' penguins on the given board
@@ -366,14 +352,6 @@
                                                        (state-board test-state))))
                 (state-players test-state)))
   (check-false (can-any-move? can-move-test-state))
-  ;; +--- finalize-state ---+
-  (check-equal? (finalize-state (make-state '((4)) (list (make-player RED 0 (list (make-posn 0 0))))))
-                (make-state '((4)) (list (make-player RED 0 '()))))
-  (check-equal? (finalize-state test-state)
-                (make-state (state-board test-state)
-                            (list (make-player RED 1 '())
-                                  (make-player BLACK  0 '())
-                                  (make-player WHITE 5 '()))))
   ;; +--- draw-state ---+
   ;; TODO
   
@@ -423,12 +401,6 @@
                    (make-player BLACK 0 (list (make-posn 2 2) (make-posn 3 0) (make-posn 3 2)))
                    (make-player BROWN 0 (list (make-posn 3 3) (make-posn 4 3))))))
                 '((1 1 1 1) (0 0 0 1) (1 1 0 1) (0 1 0 0) (1 1 1 0)))
-  ;; +--- finalize-player ---+
-  (check-equal? (finalize-player (make-player BLACK 0 (list (make-posn 0 0))))
-                (make-player BLACK 0 '()))
-  (check-equal? (finalize-player (make-player RED 15 (list (make-posn 0 0) (make-posn 0 1)
-                                                           (make-posn 1 0) (make-posn  2 2))))
-                (make-player RED 15 '()))
   ;; +--- draw-board-penguins ---+
   ;; TODO
   ;; +--- draw-players ---+

@@ -182,6 +182,48 @@
              (+ (* (tile-height size) (/ (posn-y posn) 2))
                 (/ (tile-height size) 2))))
 
+;; top-hexagon-posn : posn? -> posn?
+;; Produces the position directly above the given hexagon coordinate position
+(define (top-hexagon-posn posn)
+  (make-posn (posn-x posn) (- (posn-y posn) 2)))
+
+;; bottom-hexagon-posn : posn? -> posn?
+;; Produces the position directly below the given hexagon coordinate position
+(define (bottom-hexagon-posn posn)
+  (make-posn (posn-x posn) (+ (posn-y posn) 2)))
+
+;; top-right-hexagon-posn : posn? -> posn?
+;; Produces the position directly to the top right of the given hexagon coordinate position
+(define (top-right-hexagon-posn posn)
+  (make-posn (if (even? (posn-y posn))
+                 (posn-x posn)
+                 (add1 (posn-x posn)))
+             (sub1 (posn-y posn))))
+
+;; bottom-right-hexagon-posn : posn? -> posn?
+;; Produces the position directly to the bottom right of the given hexagon coordinate position
+(define (bottom-right-hexagon-posn posn)
+  (make-posn (if (even? (posn-y posn))
+                 (posn-x posn)
+                 (add1 (posn-x posn)))
+             (add1 (posn-y posn))))
+
+;; top-left-hexagon-posn : posn? -> posn?
+;; Produces the position directly to the top left of the given hexagon coordinate position
+(define (top-left-hexagon-posn posn)
+  (make-posn (if (odd? (posn-y posn))
+                 (posn-x posn)
+                 (sub1 (posn-x posn)))
+             (sub1 (posn-y posn))))
+
+;; bottom-left-hexagon-posn : posn? -> posn?
+;; Produces the position directly to the bottom left of the given hexagon coordinate position
+(define (bottom-left-hexagon-posn posn)
+  (make-posn (if (odd? (posn-y posn))
+                 (posn-x posn)
+                 (sub1 (posn-x posn)))
+             (add1 (posn-y posn))))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
@@ -231,48 +273,6 @@
   (if (valid-tile? moved board)
       (cons moved (valid-movements-direction moved board mover))
       '()))
-
-;; top-hexagon-posn : posn? -> posn?
-;; Produces the position directly above the given hexagon coordinate position
-(define (top-hexagon-posn posn)
-  (make-posn (posn-x posn) (- (posn-y posn) 2)))
-
-;; bottom-hexagon-posn : posn? -> posn?
-;; Produces the position directly below the given hexagon coordinate position
-(define (bottom-hexagon-posn posn)
-  (make-posn (posn-x posn) (+ (posn-y posn) 2)))
-
-;; top-right-hexagon-posn : posn? -> posn?
-;; Produces the position directly to the top right of the given hexagon coordinate position
-(define (top-right-hexagon-posn posn)
-  (make-posn (if (even? (posn-y posn))
-                 (posn-x posn)
-                 (add1 (posn-x posn)))
-             (sub1 (posn-y posn))))
-
-;; bottom-right-hexagon-posn : posn? -> posn?
-;; Produces the position directly to the bottom right of the given hexagon coordinate position
-(define (bottom-right-hexagon-posn posn)
-  (make-posn (if (even? (posn-y posn))
-                 (posn-x posn)
-                 (add1 (posn-x posn)))
-             (add1 (posn-y posn))))
-
-;; top-left-hexagon-posn : posn? -> posn?
-;; Produces the position directly to the top left of the given hexagon coordinate position
-(define (top-left-hexagon-posn posn)
-  (make-posn (if (odd? (posn-y posn))
-                 (posn-x posn)
-                 (sub1 (posn-x posn)))
-             (sub1 (posn-y posn))))
-
-;; bottom-left-hexagon-posn : posn? -> posn?
-;; Produces the position directly to the bottom left of the given hexagon coordinate position
-(define (bottom-left-hexagon-posn posn)
-  (make-posn (if (odd? (posn-y posn))
-                 (posn-x posn)
-                 (sub1 (posn-x posn)))
-             (add1 (posn-y posn))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS

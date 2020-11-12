@@ -33,6 +33,11 @@
     ;;
     ;; If, during this process, a player fails to make a move or cheats, the Referee will kick the
     ;; player from the game and then resume the game without that player or it's penguins.
+    ;; A player is considered cheating when:
+    ;; - they try to take an action not considered valid by the rules of the game
+    ;; A player fails to take an action when:
+    ;; - they timeout
+    ;; - they throw an error
     ;;
     ;; The Referee will finally return a list of the players sorted by their final score such that
     ;; the highest scores come first, and the list of players who were kicked.

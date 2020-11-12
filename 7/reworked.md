@@ -10,3 +10,7 @@ When the game ends, we remove all players' penguins from the state, which is not
 Missing tests for in referee for misbehaving players
   - We added more types of bad players and passed the to all the unit tests
   - [Commit](https://github.ccs.neu.edu/CS4500-F20/kilgore/commit/6553c6d4c8066eedd3eb55ee4f4fbc52e80bfa29)
+
+Missing documentation for how referee handles misbehaving players
+  - We added documentation.
+  - [Commit](https://github.ccs.neu.edu/CS4500-F20/kilgore/commit/9780176b9935693a4cfcf07473eebf9a4881f99a)

@@ -2,10 +2,8 @@
 
 (require lang/posn
          racket/class
-         racket/contract
          racket/engine
          racket/list
-         racket/math
          racket/promise
          "referee-interface.rkt"
          "../Common/board.rkt"

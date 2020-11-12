@@ -187,9 +187,7 @@
   (define run-engine (engine (λ (_) (run-proc))))
   (with-handlers ([exn:fail? (λ (exn) #f)])
     (engine-run (* timer 1000) run-engine)
-    (if (engine-result run-engine)
-        (result-proc (engine-result run-engine))
-        (engine-result run-engine))))
+    (and (engine-result run-engine) (result-proc (engine-result run-engine)))))
   
 ;; get-rankings : (listof player?) (listof penguin-color?) -> (listof player?)
 ;; Filters out kicked players and returns the list of players sorted in descending order by score

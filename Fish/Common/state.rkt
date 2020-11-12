@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require 2htdp/image
+         2htdp/universe
          lang/posn
          racket/contract
          racket/list
@@ -38,7 +39,8 @@
          (contract-out [can-color-move? (-> state? penguin-color? boolean?)])
          (contract-out [can-any-move? (-> state? boolean?)])
          (contract-out [remove-penguins (-> state? penguin-color? state?)])
-         (contract-out [draw-state (-> state? natural? image?)]))
+         (contract-out [draw-state (-> state? natural? image?)])
+         (contract-out [display-state (-> state? natural? void?)]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; DATA DEFINITIONS
@@ -181,6 +183,12 @@
 (define (draw-state state tile-size)
   (beside (draw-board-penguins (state-board state) (state-players state) tile-size)
           (draw-players (state-players state) tile-size)))
+
+;; display-state: state? natural? -> void?
+;; Pop open a window that displays the state at the given tile size
+(define (display-state state tile-size)
+  (big-bang (draw-state state tile-size)
+    [to-draw values]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL

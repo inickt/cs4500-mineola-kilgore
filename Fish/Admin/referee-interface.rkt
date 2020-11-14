@@ -1,27 +1,40 @@
 #lang racket/base
 
-(require racket/class
+(require racket/bool
+         racket/class
          racket/contract
          racket/math
          "../Common/board.rkt"
          "../Common/player-interface.rkt"
          "observer-interface.rkt")
 
-(provide referee-interface)
+(provide board-options
+         (contract-out [make-board-options (-> posint? posint? (or/c (integer-in 1 5) false?))])
+         (contract-out [board-options-rows (-> board-options? posint?)])
+         (contract-out [board-options-columns (-> board-options? posint?)])
+         (contract-out [board-options-fish (-> board-options? (or/c (integer-in 1 5) false?))])
+         (contract-out [board-options? (-> any/c boolean?)])
+         referee-interface)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
+(define-struct board-options [rows columns fish])
+;; A BoardOptions is a (make-board posint? posint? (or/c (integer-in 1 5) false?))
+;; and represents options available for configuring a board in a Fish game where
+;; rows and columns are the number of rows and columns in the board and
+;; fish is the number of fish on every tile or #f for a randomized board with holes
+
 (define referee-interface
   (interface ()
-    ;; Inputs: players, num-rows, num-columns, observers
-    ;; Output: pairs of players and their respective score, kicked players
+    ;; Inputs: players, board options, observers
+    ;; Output: players and their respective score, kicked players
     ;; 
     ;; When called by a Tournament Manager, causes the Referee to run a game of Fish.
     ;;
     ;; The Referee determines the initial layout of the board, which will have a number of rows
-    ;; specified by num-rows, and a number of columns specified by num-columns. The referee may remove
-    ;; some tiles, creating holes on the initial board.
+    ;; a number of columns, and number of fish on every tile (or a random board with holes) based on
+    ;; the provided board options.
     ;;
     ;; The Referee will then determine a play order, which starts with the player who's age is lowest
     ;; and cycles through the players in a round-robin fashion.
@@ -49,8 +62,7 @@
     ;; NOTE: The Tournament Manager must provide between 2 and 4 players, inclusive.
     ;;
     [run-game (->m (non-empty-listof (is-a?/c player-interface))
-                   posint?
-                   posint?
+                   board-options?
                    (listof (is-a?/c game-observer-interface))
-                   (list/c (non-empty-listof (list/c (is-a?/c player-interface) natural?))
-                           (listof (is-a?/c player-interface))))]))
+                   (non-empty-listof (list/c (is-a?/c player-interface) natural?))
+                   (listof (is-a?/c player-interface)))]))

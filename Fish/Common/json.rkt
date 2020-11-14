@@ -9,7 +9,9 @@
          "penguin-color.rkt"
          "state.rkt")
 
-(provide (contract-out [parse-json-depth-state (-> (list/c (integer-in 1 2) (hash/c symbol? jsexpr?))
+(provide (struct-out game-description)
+         (contract-out [parse-json-game-description (-> (hash/c symbol? jsexpr?) game-description?)])
+         (contract-out [parse-json-depth-state (-> (list/c (integer-in 1 2) (hash/c symbol? jsexpr?))
                                                    (list/c (integer-in 1 2) state?))])
          (contract-out [parse-json-move-response-query
                         (-> (hash/c symbol? jsexpr?) (list/c state? move?))])
@@ -37,16 +39,36 @@
 
 (define BOARD-KEY 'board)
 (define COLOR-KEY 'color)
+(define COLUMN-KEY 'column)
+(define FISH-KEY 'fish)
 (define FROM-KEY 'from)
 (define PLACES-KEY 'places)
 (define PLAYERS-KEY 'players)
 (define POSITION-KEY 'position)
+(define ROW-KEY 'row)
 (define SCORE-KEY 'score)
 (define STATE-KEY 'state)
 (define TO-KEY 'to)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED PARSING
+
+;; A GameDescription is a (make-game-description (integer-in 2 5) 
+;;                                               (integer-in 2 5)) 
+;;                                               (listof (list/c string? (integer-in 1 2)))
+;;                                               (integer-in 1 5))
+;; and represents information a referee can use to run a game, including number of rows, columns,
+;; 2-4 players/search depth, and the number of fish on each tile
+(define-struct game-description [row column players fish] #:transparent)
+
+;; parse-json-game-description : (hash/c symbol? jsexpr?) -> game-description?
+;; Parse number or rows, columns, players/search depth, and number of fish from well formed JSON
+;; JSON: Game Description
+(define (parse-json-game-description json-obj) 
+  (make-game-description (hash-ref json-obj ROW-KEY)
+                         (hash-ref json-obj COLUMN-KEY)
+                         (hash-ref json-obj PLAYERS-KEY)
+                         (hash-ref json-obj FISH-KEY)))
 
 ;; parse-json-depth-state :
 ;; (list/c (integer-in 1 2) (hash/c symbol? jsexpr?)) -> (list/c (integer-in 1 2) state?)

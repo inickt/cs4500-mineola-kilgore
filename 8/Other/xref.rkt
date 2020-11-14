@@ -1,0 +1,97 @@
+#lang racket/base
+
+(require json
+         lang/posn
+         racket/class
+         racket/function
+         racket/list
+         racket/match
+         "../../Fish/Admin/referee-interface.rkt"
+         "../../Fish/Admin/referee.rkt"
+         "../../Fish/Common/json.rkt"
+         "../../Fish/Common/state.rkt"
+         "../../Fish/Player/player.rkt")
+
+(provide xref)
+
+;; +-------------------------------------------------------------------------------------------------+
+;; PROVIDED
+
+;; xref : -> void?
+;; Read a JSON Game Description from STDIN, runs a game, and outputs the winners written to STDOUT
+(define (xref)
+  (write-json
+   (match (parse-json-game-description (read-json))
+     [(game-description r c p f) (xref-helper r c p f)]))
+  (newline))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL HELPER FUNCTIONS
+
+;; xref-helper : 
+;; (integer-in 2 5) (integer-in 2 5) (listof (list/c string? (integer-in 1 2))) (integer-in 1 5)
+;;  -> (listof string?)
+(define (xref-helper rows columns players fish)
+  (define player-interfaces (map (λ (player-depth) (new player% (second player-depth))) players))
+  (define players-to-names
+    (for/hasheq ([player-depth players]
+                 [player-interface player-interfaces])
+      (values player-interface (first player-depth))))
+
+  ;; INVARIENT: Our own players won't be kicked, so we don't bother checking the kicked players
+  (define-values (players-and-scores _)
+    (send (new referee%) run-game player-interfaces (make-board-options rows columns fish) '()))
+  (find-winners players-and-scores players-to-names))
+
+;; find-winners : (non-empty-listof (list/c (is-a?/c player-interface) natural?))
+;;                (hasheq/c (is-a?/c player-interface) string?)
+;;                -> (listof string?)
+(define (find-winners players-and-scores players-to-names)
+  (define max-score (second (argmax second players-and-scores)))
+  (define winning-players (filter (λ (player-and-score) (= (second player-and-score) max-score))
+                                  players-and-scores))
+  (define winner-names 
+    (map (λ (player-and-score) (hash-ref players-to-names (first player-and-score))) winning-players))
+  (sort winner-names string<=?))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; TESTS
+(module+ test
+  (require lang/posn
+           rackunit
+           "../../Fish/Other/util.rkt")
+
+  ;; +--- find-winners ---+
+  (define p1 (new player%))
+  (define p2 (new player%))
+  (define p3 (new player%))
+  (define p4 (new player%))
+  (define names (hasheq p1 "p1" 
+                        p2 "p2" 
+                        p3 "p3"
+                        p4 "p4"))
+
+  (check-equal? (find-winners (list (list p2 1)
+                                    (list p1 4)
+                                    (list p3 2)
+                                    (list p4 3))
+                              names)
+                (list "p1"))
+  (check-equal? (find-winners (list (list p4 4)
+                                    (list p2 1)
+                                    (list p1 4)
+                                    (list p3 2))
+                              names)
+                (list "p1" "p4"))
+  (check-equal? (find-winners (list (list p2 4)
+                                    (list p1 4)
+                                    (list p3 4)
+                                    (list p4 4))
+                              names)
+                (list "p1" "p2" "p3" "p4"))
+
+  ;; Integration tests
+  ;(check-integration xref "../Tests/1-in.json" "../Tests/1-out.json")
+  ;(check-integration xref "../Tests/2-in.json" "../Tests/2-out.json")
+  ;(check-integration xref "../Tests/3-in.json" "../Tests/3-out.json")
+  )

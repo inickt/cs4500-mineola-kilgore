@@ -31,8 +31,10 @@
 ;; xref-helper : 
 ;; (integer-in 2 5) (integer-in 2 5) (listof (list/c string? (integer-in 1 2))) (integer-in 1 5)
 ;;  -> (listof string?)
+;; runs a game with the specified number of players on a "row" by "column" board with each tile 
+;;   populated by the given number of fish 
 (define (xref-helper rows columns players fish)
-  (define player-interfaces (map (λ (player-depth) (new player% (second player-depth))) players))
+  (define player-interfaces (map (λ (player-depth) (new player% [depth (second player-depth)])) players))
   (define players-to-names
     (for/hasheq ([player-depth players]
                  [player-interface player-interfaces])
@@ -40,7 +42,7 @@
 
   ;; INVARIENT: Our own players won't be kicked, so we don't bother checking the kicked players
   (define-values (players-and-scores _)
-    (send (new referee%) run-game player-interfaces (make-board-options rows columns fish) '()))
+    (send (new referee%) run-game player-interfaces (make-board-options columns rows fish) '()))
   (find-winners players-and-scores players-to-names))
 
 ;; find-winners : (non-empty-listof (list/c (is-a?/c player-interface) natural?))
@@ -68,9 +70,13 @@
   ;; Both players can move once and get 1 fish
   (check-equal? (xref-helper 5 2 '(("appa" 1) ("bo" 1)) 3) '("appa" "bo"))
   ;; All players move the same way down the map
-  (check-equal? (xref-helper 5 3 '(("appa" 1) ("bo" 1) ("cat" 1)) 3) '("appa" "bo"))
-  ;; Odd number of tiles. P1 gets them
+  (check-equal? (xref-helper 5 3 '(("appa" 1) ("bo" 1) ("cat" 1)) 3) '("appa" "bo" "cat"))
+  ;; Odd number of tiles. P1 gets extra
   (check-equal? (xref-helper 5 3 '(("appa" 1) ("bo" 1)) 3) '("appa"))
+  ;; 16-9=7 open tiles, P1 gets te extra
+  (check-equal? (xref-helper 3 4 '(("appa" 1) ("bo" 1) ("cat" 1)) 3) '("appa"))
+  ;; Same as previous, but P2 is smart
+  (check-equal? (xref-helper 3 4 '(("appa" 1) ("bo" 1) ("cat" 1)) 3) '("bo"))
 
   ;; +--- find-winners ---+
   (define p1 (new player%))

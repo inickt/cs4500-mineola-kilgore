@@ -6,6 +6,7 @@
          racket/list
          racket/match
          racket/promise
+         2htdp/universe
          "referee-interface.rkt"
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
@@ -48,7 +49,7 @@
         (get-all-placements init-state player-color-map timeout))
       
       (define-values (final-game final-kicked)
-        (play-game (create-game state-with-placements) player-color-map kicked timeout))
+        (step-game (create-game state-with-placements) player-color-map kicked timeout))
       (define results (state-players (end-game-state final-game)))
 
       (call-on-all-players
@@ -164,6 +165,29 @@
               (begin (run-with-timeout (λ () (send player terminate)) (λ (_) (void)) timeout)
                      (play (kick-player game player-color) (cons player-color kicked)))
               (play maybe-game-tree kicked))))))
+
+;; step-game :
+;; game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) (list-of penguin-color?) positive?
+;; -> end-game? (listof penguin-color?)
+;; Step through complete game of Fish by querying each player. Press any key for next move
+(define (step-game initial-game player-color-map initial-kicked timeout)
+  (define (tree-state t) ; TODO this could be exported from game-tree?
+    (cond 
+      [(game? t) (game-state t)]
+      [(end-game? t) (end-game-state t)]))
+  (define (draw s) (draw-state (tree-state (first s)) 40))
+  (define (step game kicked)
+    (let* ([player-color (player-color (state-current-player (game-state game)))]
+           [player (get-player player-color-map (game-state game))]
+           [maybe-game-tree (play-one-move game player timeout)])
+      (if (not maybe-game-tree)
+          (begin (run-with-timeout (λ () (send player terminate)) (λ (_) (void)) timeout)
+                 (list (kick-player game player-color) (cons player-color kicked)))
+          (list maybe-game-tree kicked))))
+  (apply values (big-bang (list initial-game initial-kicked)
+                  [to-draw draw]
+                  [on-key (λ (s _) (apply step s))]
+                  [stop-when (λ (s) (end-game? (first s))) draw])))
 
 ;; play-one-move : game? (is-a?/c player-interface?) positive? -> (or/c false? game-tree?)
 ;; Gets a player's move and applies it to the given game tree

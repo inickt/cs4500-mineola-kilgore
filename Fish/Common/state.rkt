@@ -172,10 +172,10 @@
 ;; Remove the given player's penguins
 (define (remove-penguins state color)
   (make-state (state-board state)
-               (map (λ (player) (if (penguin-color=? (player-color player) color)
-                                    (make-player color (player-score player) '())
-                                    player))
-                    (state-players state))))
+              (map (λ (player) (if (penguin-color=? (player-color player) color)
+                                   (make-player color (player-score player) '())
+                                   player))
+                   (state-players state))))
 
 ;; draw-state : state? natural? -> image?
 ;; Draws a game state at the given tile size
@@ -188,7 +188,8 @@
 ;; Pop open a window that displays the state at the given tile size
 (define (display-state state tile-size)
   (big-bang (draw-state state tile-size)
-    [to-draw values]))
+    [to-draw values])
+  (void))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL

@@ -28,7 +28,8 @@
 (define referee%
   (class* object% (referee-interface)
     (super-new)
-    (init-field [timeout TIMEOUT])
+    (init-field [timeout TIMEOUT]
+                [debug #f])
     ;; NOTE: Observer updates not implemented as of Milestone 6, per Piazza @317
     ;; The spec for this may vary drastically pending the method in which the game is networked,
     ;; so we have chosen to hold off on implementing this for now.
@@ -48,8 +49,9 @@
       (define-values (state-with-placements kicked)
         (get-all-placements init-state player-color-map timeout))
       
+      (define game-runner (if debug step-game play-game))
       (define-values (final-game final-kicked)
-        (step-game (create-game state-with-placements) player-color-map kicked timeout))
+        (game-runner (create-game state-with-placements) player-color-map kicked timeout))
       (define results (state-players (end-game-state final-game)))
 
       (call-on-all-players

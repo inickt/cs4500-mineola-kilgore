@@ -46,6 +46,7 @@
 ;; find-winners : (non-empty-listof (list/c (is-a?/c player-interface) natural?))
 ;;                (hasheq/c (is-a?/c player-interface) string?)
 ;;                -> (listof string?)
+;; Get the names of the winners from their scores, in alphabetical order
 (define (find-winners players-and-scores players-to-names)
   (define max-score (second (argmax second players-and-scores)))
   (define winning-players (filter (λ (player-and-score) (= (second player-and-score) max-score))
@@ -60,6 +61,16 @@
   (require lang/posn
            rackunit
            "../../Fish/Other/util.rkt")
+
+  ;; +--- xref-helper ---+
+  ;; Board is stuck - no one goes and everyone ties
+  (check-equal? (xref-helper 4 2 '(("appa" 1) ("bo" 1)) 3) '("appa" "bo"))
+  ;; Both players can move once and get 1 fish
+  (check-equal? (xref-helper 5 2 '(("appa" 1) ("bo" 1)) 3) '("appa" "bo"))
+  ;; All players move the same way down the map
+  (check-equal? (xref-helper 5 3 '(("appa" 1) ("bo" 1) ("cat" 1)) 3) '("appa" "bo"))
+  ;; Odd number of tiles. P1 gets them
+  (check-equal? (xref-helper 5 3 '(("appa" 1) ("bo" 1)) 3) '("appa"))
 
   ;; +--- find-winners ---+
   (define p1 (new player%))

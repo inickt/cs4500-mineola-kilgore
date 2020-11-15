@@ -49,7 +49,7 @@
       (define-values (state-with-placements kicked)
         (get-all-placements init-state player-color-map timeout))
       
-      (define game-runner (if debug step-game play-game))
+      (define game-runner (if debug play-game-debug play-game))
       (define-values (final-game final-kicked)
         (game-runner (create-game state-with-placements) player-color-map kicked timeout))
       (define results (state-players (end-game-state final-game)))
@@ -160,36 +160,36 @@
              [kicked initial-kicked])
     (if (end-game? game)
         (values game kicked)
-        (let* ([player-color (player-color (state-current-player (game-state game)))]
-               [player (get-player player-color-map (game-state game))]
-               [maybe-game-tree (play-one-move game player timeout)])
-          (if (not maybe-game-tree)
-              (begin (run-with-timeout (λ () (send player terminate)) (λ (_) (void)) timeout)
-                     (play (kick-player game player-color) (cons player-color kicked)))
-              (play maybe-game-tree kicked))))))
+        (apply play (step-game game player-color-map kicked timeout)))))
 
-;; step-game :
+;; play-game-debug :
 ;; game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) (list-of penguin-color?) positive?
 ;; -> end-game? (listof penguin-color?)
-;; Step through complete game of Fish by querying each player. Press any key for next move
-(define (step-game initial-game player-color-map initial-kicked timeout)
+;; Big-bang through complete game of Fish by querying each player. Press any key for next move
+(define (play-game-debug initial-game player-color-map initial-kicked timeout)
   (define (tree-state t) ; TODO this could be exported from game-tree?
     (cond 
       [(game? t) (game-state t)]
       [(end-game? t) (end-game-state t)]))
   (define (draw s) (draw-state (tree-state (first s)) 40))
-  (define (step game kicked)
-    (let* ([player-color (player-color (state-current-player (game-state game)))]
-           [player (get-player player-color-map (game-state game))]
-           [maybe-game-tree (play-one-move game player timeout)])
-      (if (not maybe-game-tree)
-          (begin (run-with-timeout (λ () (send player terminate)) (λ (_) (void)) timeout)
-                 (list (kick-player game player-color) (cons player-color kicked)))
-          (list maybe-game-tree kicked))))
+  (define (step game kicked) (step-game game player-color-map kicked timeout))
   (apply values (big-bang (list initial-game initial-kicked)
                   [to-draw draw]
                   [on-key (λ (s _) (apply step s))]
                   [stop-when (λ (s) (end-game? (first s))) draw])))
+
+;; step-game :
+;; game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) (list-of penguin-color?) positive?
+;; -> (list/c end-game? (listof penguin-color?))
+;; Apply the current player's move and kick them if they misbehave
+(define (step-game game pcm kicked timeout)
+  (let* ([player-color (player-color (state-current-player (game-state game)))]
+         [player (get-player pcm (game-state game))]
+         [maybe-game-tree (play-one-move game player timeout)])
+    (if (not maybe-game-tree)
+        (begin (run-with-timeout (λ () (send player terminate)) (λ (_) (void)) timeout)
+               (list (kick-player game player-color) (cons player-color kicked)))
+        (list maybe-game-tree kicked))))
 
 ;; play-one-move : game? (is-a?/c player-interface?) positive? -> (or/c false? game-tree?)
 ;; Gets a player's move and applies it to the given game tree
@@ -284,6 +284,7 @@
       (define/public (finalize end-game) (void))))
   (define bad-player-garbage (new bad-player-garbage%))
 
+  (define bad-pcm (create-player-color-map (list bad-player-error bad-player-timeout bad-player-garbage) test-state)) 
   ;; Provided
   ;; +--- run-game ---+
   #| TODO fix using define values
@@ -399,9 +400,7 @@
   (check-equal? (penguins-per-player 4) 2)
   ;; +--- play-game ---+
   (define-values (play-game-test1-game play-game-test1-kicked)
-    (play-game (create-game test-state)
-               (create-player-color-map (list bad-player-error bad-player-timeout bad-player-garbage) test-state)
-               '() 1))
+    (play-game (create-game test-state) bad-pcm '() 1))
   (check-equal? play-game-test1-game
                 (create-game (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
                                          (list (make-player WHITE 2 '())
@@ -432,6 +431,17 @@
                                                (make-player WHITE 0 '())
                                                (make-player BLACK 23 (list (make-posn 1 0) (make-posn 0 2) (make-posn 1 2)))))))
   (check-equal? play-game-test3-kicked (list WHITE RED))
+  ;; +--- step-game ---+
+  ;; no one kicked
+  (check-equal? (game-state (first (step-game (create-game test-state) test-pcm '() 1)))
+                (game-state (play-one-move (create-game test-state) dumb-player 1)))
+  (check-equal? (second (step-game (create-game test-state) test-pcm '() 1))
+                '())
+  ;; kick first player
+  (check-equal? (game-state (first (step-game (create-game test-state) bad-pcm '() 1)))
+                (game-state (kick-player (create-game test-state) RED)))
+  (check-equal? (second (step-game (create-game test-state) bad-pcm '() 1))
+                (list RED))
   ;; +--- play-one-move ---+
   (check-equal? (game-state (play-one-move (create-game test-state) dumb-player 1))
                 (game-state (hash-ref children (make-move (make-posn 1 1) (make-posn 1 2)))))

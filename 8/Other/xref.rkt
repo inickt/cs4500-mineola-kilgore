@@ -74,9 +74,9 @@
   ;; Odd number of tiles. P1 gets extra
   (check-equal? (xref-helper 5 3 '(("appa" 1) ("bo" 1)) 3) '("appa"))
   ;; 16-9=7 open tiles, P1 gets te extra
-  (check-equal? (xref-helper 3 4 '(("appa" 1) ("bo" 1) ("cat" 1)) 3) '("appa"))
+  (check-equal? (xref-helper 4 4 '(("appa" 1) ("bo" 1) ("cat" 1)) 3) '("appa"))
   ;; Same as previous, but P2 is smart
-  (check-equal? (xref-helper 3 4 '(("appa" 1) ("bo" 1) ("cat" 1)) 3) '("bo"))
+  (check-equal? (xref-helper 4 4 '(("appa" 1) ("bo" 2) ("cat" 1)) 3) '("bo"))
 
   ;; +--- find-winners ---+
   (define p1 (new player%))

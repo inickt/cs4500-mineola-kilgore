@@ -9,7 +9,7 @@
          "observer-interface.rkt")
 
 (provide board-options
-         (contract-out [make-board-options (-> posint? posint? (or/c (integer-in 1 5) false?))])
+         (contract-out [make-board-options (-> posint? posint? (or/c (integer-in 1 5) false?) board-options?)])
          (contract-out [board-options-rows (-> board-options? posint?)])
          (contract-out [board-options-columns (-> board-options? posint?)])
          (contract-out [board-options-fish (-> board-options? (or/c (integer-in 1 5) false?))])
@@ -64,5 +64,5 @@
     [run-game (->m (non-empty-listof (is-a?/c player-interface))
                    board-options?
                    (listof (is-a?/c game-observer-interface))
-                   (non-empty-listof (list/c (is-a?/c player-interface) natural?))
-                   (listof (is-a?/c player-interface)))]))
+                   (values (non-empty-listof (list/c (is-a?/c player-interface) natural?))
+                           (listof (is-a?/c player-interface))))]))

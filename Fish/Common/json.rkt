@@ -205,6 +205,15 @@
   (require rackunit)
   
   ;; Provided Functions
+  ;; parse-json-game-description
+  (check-equal?
+   (parse-json-game-description
+    (hash ROW-KEY 2
+          COLUMN-KEY 5
+          PLAYERS-KEY (list (list "a" 1) (list "b" 2) (list "c" 1))
+          FISH-KEY 3))
+   (make-game-description 2 5 (list (list "a" 1) (list "b" 2) (list "c" 1)) 3))
+
   ;; parse-json-depth-state
   (check-equal?
    (parse-json-depth-state

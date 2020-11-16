@@ -28,7 +28,7 @@
 (define referee-interface
   (interface ()
     ;; Inputs: players, board options, observers
-    ;; Output: players and their respective score, kicked players
+    ;; Output: a pair of players and their respective score and kicked players
     ;; 
     ;; When called by a Tournament Manager, causes the Referee to run a game of Fish.
     ;;
@@ -64,5 +64,5 @@
     [run-game (->m (non-empty-listof (is-a?/c player-interface))
                    board-options?
                    (listof (is-a?/c game-observer-interface))
-                   (values (non-empty-listof (list/c (is-a?/c player-interface) natural?))
+                   (list/c (non-empty-listof (list/c (is-a?/c player-interface) natural?))
                            (listof (is-a?/c player-interface))))]))

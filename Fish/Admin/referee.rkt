@@ -59,10 +59,10 @@
        (λ (player _) (send player finalize final-game))
        timeout)
       
-      (values (map (λ (player) (list (hash-ref player-color-map (player-color player))
-                                     (player-score player)))
-                   (get-rankings results final-kicked))
-              (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
+      (list (map (λ (player) (list (hash-ref player-color-map (player-color player))
+                                   (player-score player)))
+                 (get-rankings results final-kicked))
+            (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -284,23 +284,36 @@
       (define/public (finalize end-game) (void))))
   (define bad-player-garbage (new bad-player-garbage%))
 
-  (define bad-pcm (create-player-color-map (list bad-player-error bad-player-timeout bad-player-garbage) test-state)) 
+  (define bad-pcm (create-player-color-map
+                   (list bad-player-error bad-player-timeout bad-player-garbage)
+                   test-state))
   ;; Provided
   ;; +--- run-game ---+
-  #| TODO fix using define values
-  (check-equal? (second (send referee run-game (list dumb-player dumb-player) 4 4 '())) '())
-  (check-equal? (second (send referee run-game (list dumb-player bad-player-error) 4 4 '()))
+  (check-equal? (second (send referee run-game (list dumb-player dumb-player)
+                              (make-board-options 4 4 #f)
+                              '()))
+                '())
+  (check-equal? (second (send referee run-game (list dumb-player bad-player-error)
+                              (make-board-options 4 4 #f)
+                              '()))
                 (list bad-player-error))
-  (check-equal? (second (send referee run-game (list dumb-player bad-player-timeout) 4 4 '()))
+  (check-equal? (second (send referee run-game (list dumb-player bad-player-timeout)
+                              (make-board-options 4 4 #f)
+                              '()))
                 (list bad-player-timeout))
-  (check-equal? (second (send referee run-game (list dumb-player bad-player-garbage) 4 4 '()))
+  (check-equal? (second (send referee run-game (list dumb-player bad-player-garbage)
+                              (make-board-options 4 4 #f)
+                              '()))
                 (list bad-player-garbage))
-  (check-equal? (map first (first (send referee run-game (list dumb-player bad-player-error) 4 4 '())))
+  (check-equal? (map first (first (send referee run-game (list dumb-player bad-player-error)
+                                        (make-board-options 4 4 #f)
+                                        '())))
                 (list dumb-player))
   (define results
-    (first (send referee run-game (list smart-player smart-player dumb-player) 5 5 '())))
+    (first (send referee run-game (list smart-player smart-player dumb-player)
+                 (make-board-options 5 5 #f)
+                 '())))
   (check-equal? results (sort results > #:key second))
-  |#
   ;; Internal Helper Functions
   ;; +--- create-player-color-map ---+
   (check-equal? (create-player-color-map (list dumb-player smart-player)
@@ -308,14 +321,14 @@
                                                                   (make-player BLACK 0 '()))))
                 (hash RED dumb-player BLACK smart-player))
   ;; +--- create-initial-board ---+
-  #| TODO update tests
-  (check-equal? (length (create-initial-board 4 3 2)) 4)
-  (check-equal? (length (first (create-initial-board 4 3 2))) 3)
+  (check-equal? (length (create-initial-board (make-board-options 4 3 #f) 2)) 4)
+  (check-equal? (length (first (create-initial-board (make-board-options 4 3 #f) 2))) 3)
   (check-true (<= (foldr (λ (tile count) (if (zero? tile) (add1 count) count))
                          0
-                         (foldr append '() (create-initial-board 4 4 2)))
+                         (foldr append '() (create-initial-board (make-board-options 4 4 #f) 2)))
                   (floor (* INIT-MAX-HOLE-RATIO 8))))
- |#
+  (check-equal? (create-initial-board (make-board-options 3 5 2) 3)
+                (make-even-board 3 5 2))
   ;; +--- build-random-holes ---+
   (check-equal? (length (build-random-holes 0 4 4)) 0)
   (check-true (<= (length (build-random-holes 4 4 4)) 4))
@@ -345,11 +358,18 @@
                                                              (make-posn 0 2))))))
   (check-equal? get-all-placements-test2-kicked '())
   (define bad-placement-state (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
-                                          (list (make-player RED 0 '()) (make-player BLACK 0 '()) (make-player WHITE 0 '()) (make-player BROWN 0 '()))))
+                                          (list (make-player RED 0 '())
+                                                (make-player BLACK 0 '())
+                                                (make-player WHITE 0 '())
+                                                (make-player BROWN 0 '()))))
   (define-values (get-all-placements-test3-state get-all-placements-test3-kicked)
     (get-all-placements
      bad-placement-state
-     (create-player-color-map (list smart-player bad-player-error bad-player-timeout bad-player-timeout) bad-placement-state)
+     (create-player-color-map (list smart-player
+                                    bad-player-error
+                                    bad-player-timeout
+                                    bad-player-timeout)
+                              bad-placement-state)
      1))
   (check-equal? get-all-placements-test3-state
                 (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))
@@ -410,10 +430,11 @@
   (define-values (play-game-test2-game play-game-test2-kicked)
     (play-game (create-game test-state) test-pcm '() 5))
   (check-equal? play-game-test2-game
-                (create-game (make-state '((1 0 0 3) (3 0 0 5) (1 0 0 2))
-                                         (list (make-player WHITE 7 (list (make-posn 2 0) (make-posn 0 3)))
-                                               (make-player RED 6 (list (make-posn 0 0) (make-posn 1 3)))
-                                               (make-player BLACK 4 (list (make-posn 1 0) (make-posn 2 3)))))))
+                (create-game
+                 (make-state '((1 0 0 3) (3 0 0 5) (1 0 0 2))
+                             (list (make-player WHITE 7 (list (make-posn 2 0) (make-posn 0 3)))
+                                   (make-player RED 6 (list (make-posn 0 0) (make-posn 1 3)))
+                                   (make-player BLACK 4 (list (make-posn 1 0) (make-posn 2 3)))))))
   (check-equal? play-game-test2-kicked '())
   (define play-game-test3-state
     (make-state '((1 2 3) (4 5 6) (7 8 9))
@@ -429,7 +450,9 @@
                 (create-game (make-state '((0 0 3) (4 0 6) (0 0 9))
                                          (list (make-player RED 0 '())
                                                (make-player WHITE 0 '())
-                                               (make-player BLACK 23 (list (make-posn 1 0) (make-posn 0 2) (make-posn 1 2)))))))
+                                               (make-player BLACK 23 (list (make-posn 1 0)
+                                                                           (make-posn 0 2)
+                                                                           (make-posn 1 2)))))))
   (check-equal? play-game-test3-kicked (list WHITE RED))
   ;; +--- step-game ---+
   ;; no one kicked

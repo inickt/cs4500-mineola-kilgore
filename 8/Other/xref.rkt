@@ -34,15 +34,18 @@
 ;; runs a game with the specified number of players on a "row" by "column" board with each tile 
 ;;   populated by the given number of fish 
 (define (xref-helper rows columns players fish)
-  (define player-interfaces (map (λ (player-depth) (new player% [depth (second player-depth)])) players))
+  (define player-interfaces (map (λ (player-depth) (new player% [depth (second player-depth)]))
+                                 players))
   (define players-to-names
     (for/hasheq ([player-depth players]
                  [player-interface player-interfaces])
       (values player-interface (first player-depth))))
 
   ;; INVARIENT: Our own players won't be kicked, so we don't bother checking the kicked players
-  (define-values (players-and-scores _)
-    (send (new referee%) run-game player-interfaces (make-board-options columns rows fish) '()))
+  (define players-and-scores
+    (first (send (new referee%) run-game player-interfaces 
+                 (make-board-options columns rows fish) 
+                 '())))
   (find-winners players-and-scores players-to-names))
 
 ;; find-winners : (non-empty-listof (list/c (is-a?/c player-interface) natural?))
@@ -83,10 +86,7 @@
   (define p2 (new player%))
   (define p3 (new player%))
   (define p4 (new player%))
-  (define names (hasheq p1 "p1" 
-                        p2 "p2" 
-                        p3 "p3"
-                        p4 "p4"))
+  (define names (hasheq p1 "p1" p2 "p2"  p3 "p3" p4 "p4"))
 
   (check-equal? (find-winners (list (list p2 1)
                                     (list p1 4)

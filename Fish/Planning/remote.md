@@ -3,7 +3,7 @@ We will use the remote proxy pattern to translate communication over the network
 
 ## Timing of the protocol
 
-1. The signup component creates a proxy player when players signup.
+1. A signup component creates a proxy player when players signup. Players have to implement the communication protocol to talk to the proxy player for all interactions.
 2. When a tournament begins, the tournament manager creates a referee and passes it the proxy players.
 3. The referee sends the `initialize` to each player.
 4. The referee sends `get-placement` and `get-move` as the game progresses.

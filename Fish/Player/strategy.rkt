@@ -112,9 +112,7 @@
 ;; Gets the score of the maximizing player
 (define (fish-heuristic game-tree maximizing-player)
   (player-score (findf (λ (player) (penguin-color=? (player-color player) maximizing-player))
-                       (state-players (if (end-game? game-tree)
-                                          (end-game-state game-tree)
-                                          (game-state game-tree))))))
+                       (state-players (game-tree-state game-tree)))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS

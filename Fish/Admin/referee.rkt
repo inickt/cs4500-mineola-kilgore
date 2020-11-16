@@ -167,11 +167,7 @@
 ;; -> end-game? (listof penguin-color?)
 ;; Big-bang through complete game of Fish by querying each player. Press any key for next move
 (define (play-game-debug initial-game player-color-map initial-kicked timeout)
-  (define (tree-state t) ; TODO this could be exported from game-tree?
-    (cond 
-      [(game? t) (game-state t)]
-      [(end-game? t) (end-game-state t)]))
-  (define (draw s) (draw-state (tree-state (first s)) 40))
+  (define (draw s) (draw-state (game-tree-state (first s)) 40))
   (define (step game kicked) (step-game game player-color-map kicked timeout))
   (apply values (big-bang (list initial-game initial-kicked)
                   [to-draw draw]

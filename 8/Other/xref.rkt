@@ -1,15 +1,12 @@
 #lang racket/base
 
 (require json
-         lang/posn
          racket/class
-         racket/function
          racket/list
          racket/match
          "../../Fish/Admin/referee-interface.rkt"
          "../../Fish/Admin/referee.rkt"
          "../../Fish/Common/json.rkt"
-         "../../Fish/Common/state.rkt"
          "../../Fish/Player/player.rkt")
 
 (provide xref)
@@ -63,8 +60,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
 (module+ test
-  (require lang/posn
-           rackunit
+  (require rackunit
            "../../Fish/Other/util.rkt")
 
   ;; +--- xref-helper ---+

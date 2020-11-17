@@ -2,35 +2,24 @@
 
 (require racket/class
          racket/contract
+         racket/list
          "../Common/board.rkt"
          "../Common/player-interface.rkt"
          "observer-interface.rkt"
+         "referee-interface.rkt"
          "referee.rkt")
 
 (provide ranking?
          manager-interface)
 
-;; A Ranking is a (list (is-a?/c player-interface) posint?)
-(define ranking? (list/c (is-a?/c player-interface) posint?))
-;; representing a player-interface implementing object and that player's rank within a Fish
-;; tournament.
-;;
-;; Ranks are not necessarily unique within a Fish tournament.
-;; If players in a tournament tie, they share the highest rank achieved, and the following ranks
-;; skip the number of tying players minus 1.
-;; For example:
-;; (list (list P1 1) (list P2 2) (list P3 2) (list P4 2) (list P5 5))
-;; Represents a list of Rankings in a tournament with 5 players where P1 is 1st, P2-P4 tie for 2nd,
-;; and P5 comes in 5th.
-
 ;; A TournamentManager is an object of a class implementing the manager-interface.
 (define manager-interface
   (interface ()
     ;; run-tournament
-    ;; Inputs: player-age-pairs, observers
+    ;; Inputs: player-age-pairs, board-options, observers
     ;;
     ;; Runs a Fish tournament with the provided list of player/age pairs (each pair is a 2 element
-    ;; list), and the provided list of Tournament Observers.
+    ;; list), creating game boards according to options, and reporting to Tournament Observers.
     ;;
     ;; Called by the Server Component when enough players have registered for a tournament to be run.
     ;; The Server Component may include as many house players as it chooses.
@@ -47,5 +36,6 @@
     ;; sorted by player rank in ascending order such that the player(s) who won the tournament in 1st
     ;; place appear at the beginning of the list.
     [run-tournament (-> (non-empty-listof (list/c (is-a?/c player-interface) positive?))
+                        (board-options?)
                         (listof tournament-observer?)
-                        (listof ranking?))]))
+                        (listof (is-a?/c player-interface)))]))

@@ -8,9 +8,9 @@
          racket/promise
          2htdp/universe
          "referee-interface.rkt"
+         "manager-interface.rkt"
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
-         "../Common/manager-interface.rkt"
          "../Common/state.rkt"
          "../Player/player.rkt")
 
@@ -20,7 +20,7 @@
     (super-new)
     (init-field [timeout TIMEOUT])
 
-    (define/public (run-tournament player-age-pairs observers)
+    (define/public (run-tournament player-age-pairs board-options observers)
       (define players (map first player-age-pairs))
       (tell-players-started players)
       (report-results (run-knock-out player-age-pairs observers)))))
@@ -64,3 +64,51 @@
 ;;  - 2 rounds produce the exact same winners
 ;;  - There are too few players for a single game
 (define (is-tournament-over? players last-winners))
+
+;; +-------------------------------------------------------------------------------------------------+
+;; TESTS
+
+(module+ test
+  (require rackunit)
+
+  (define dumb-player (new player% [depth 1]))
+  (define manager (new manager%))
+
+  (define 5by5 (make-board-options 5 5 1))
+
+  ;; We define this constant so that we can refer to specific players by equality
+  (define players (build-list 10 (λ (_) (new player% [depth 1]))))
+  ;; Get the players by indices
+  (define (player-n . indices) (map (λ (i) (list-ref players i)) indices))
+  
+  ;; Provided
+  ;; run-tournament
+
+  ;; round 1:
+  ;; (0 1 2) => (0)
+  (check-equal? (send manager run-tournament (take players 3) 5by5 '()) (player-n 0))
+
+  ;; round 1:
+  ;; (0 1 2 3) => (0 3)
+  (check-equal? (send manager run-tournament (take players 4) 5by5 '()) (player-n 0 3))
+
+  ;; round 1:
+  ;; (0 1 2) => (0)
+  ;; (3 4) => (3)
+  ;; round 2:
+  ;; (0 3) => (0)
+  (check-equal? (send manager run-tournament (take players 5) 5by5 '()) (player-n 0))
+
+  ;; round 1:
+  ;; (0 1 2 3) => (0 3)
+  ;; (4 5) => (4)
+  ;; round 2:
+  ;; (0 3 4) => (0)
+  (check-equal? (send manager run-tournament (take players 6) 5by5 '()) (player-n 0))
+
+  ;; round 1:
+  ;; (0 1 2 3) => (0 3)
+  ;; (4 5 6 7) => (4 7)
+  ;; round 2:
+  ;; (0 3 4 7) => (0 7)
+  (check-equal? (send manager run-tournament (take players 8) 5by5 '()) (player-n 0 7)))

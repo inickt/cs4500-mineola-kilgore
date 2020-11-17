@@ -104,7 +104,9 @@
                 (list "p1" "p2" "p3" "p4"))
 
   ;; Integration tests
-  ;(check-integration xref "../Tests/1-in.json" "../Tests/1-out.json")
-  ;(check-integration xref "../Tests/2-in.json" "../Tests/2-out.json")
-  ;(check-integration xref "../Tests/3-in.json" "../Tests/3-out.json")
-  )
+  ;; all winners - no moves and game ends immediately
+  (check-integration xref "../Tests/1-in.json" "../Tests/1-out.json")
+  ;; all dumb and move the same way, but only 2/3 win
+  (check-integration xref "../Tests/2-in.json" "../Tests/2-out.json")
+  ;; some interesting example with depth actually making a difference
+  (check-integration xref "../Tests/3-in.json" "../Tests/3-out.json"))

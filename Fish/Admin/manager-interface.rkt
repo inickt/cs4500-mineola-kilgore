@@ -34,7 +34,7 @@
     ;; Once the tournament is complete, the TournamentManager  will return a list Rankings,
     ;; sorted by player rank in ascending order such that the player(s) who won the tournament in 1st
     ;; place appear at the beginning of the list.
-    [run-tournament (-> (non-empty-listof (list/c (is-a?/c player-interface) positive?))
-                        board-options?
-                        (listof tournament-observer?)
-                        (listof (is-a?/c player-interface)))]))
+    [run-tournament (->m (non-empty-listof (list/c (is-a?/c player-interface) positive?))
+                         board-options?
+                         (listof tournament-observer?)
+                         (listof (is-a?/c player-interface)))]))

@@ -14,6 +14,15 @@
          "../Common/state.rkt"
          "../Player/player.rkt")
 
+(provide manager%)
+
+;; +-------------------------------------------------------------------------------------------------+
+;; CONSTANTS
+
+(define TIMEOUT 30)
+
+;; +-------------------------------------------------------------------------------------------------+
+;; PROVIDED
 
 (define manager%
   (class* object% (manager-interface)
@@ -21,25 +30,40 @@
     (init-field [timeout TIMEOUT])
 
     (define/public (run-tournament player-age-pairs board-options observers)
+      ;; TODO is this sorted? make sure documented in interface
       (define players (map first player-age-pairs))
-      (tell-players-started players)
-      (report-results (run-knock-out player-age-pairs observers)))))
+      (define bad-players (tell-players-starting players))
+      ;; TODO handle bad players
 
-;; =========== Internal =============
+      (define winning-players (run-knock-out player-age-pairs observers))
+      ;; TODO do we tell all players or only winners? will change signature/implementation
+      (define winning-players-to-kick (tell-players-ending winning-players))
+      ;; TODO get rid of winning players that didn't respond from final answer
+      '())))
 
-;; A Bracket is a (list-of (list-of (is-a?/c player-interface))))
-;; INTERPRETATION: A Bracket defines one round of a knock-out elimination tournament.
-;;   The inner list represents the players that will play against each other and must have 2-4 players
+;; +-------------------------------------------------------------------------------------------------+
+;; INTERNAL
 
+;; tell-players-starting : (listof (is-a?/c player-interface)) -> (is-a?/c player-interface))
+;; Informs players the tournament is starting (with the initial number of players) and returns players
+;; that should be kicked, caused by them timing or erroring out.
+(define (tell-players-starting players)
+  (void))
 
-;; run-knock-out: (list-of (list/c (is-a?/c player-interface) posint?)) board-options? 
-;; -> (list-of (is-a?/c player-interface))
+;; tell-players-ending : (listof (is-a?/c player-interface)) -> (is-a?/c player-interface))
+;; Informs players the tournament is ending and whether they have won or not. Returns players
+;; that should be kicked, caused by them timing or erroring out.
+(define (tell-players-ending players)
+  (void))
+
+;; run-knock-out : (listof (list/c (is-a?/c player-interface) posint?)) board-options? 
+;; -> (listof (is-a?/c player-interface))
 ;; Run the games until the tournament is over, as determined by is-tournament-over?
 ;;  - The number of participants has become small enough to run a single final game
 (define (run-knock-out init-player-age-pairs board-options) 
   ;; run: 
-  ;; (list-of (list/c (is-a?/c player-interface) posint?)) (list-of (is-a?/c player-interface))
-  ;; -> (list-of (is-a?/c player-interface))
+  ;; (listof (list/c (is-a?/c player-interface) posint?)) (listof (is-a?/c player-interface))
+  ;; -> (listof (is-a?/c player-interface))
   (let run ([player-ages init-player-age-pairs]
             [last-winners '()])
     (define players (map first player-ages))
@@ -47,32 +71,46 @@
       [(is-tournament-over? players last-winners) ]
       [(should-run-final? players) (run-game players)]
       [else (run 
-             (sort (run-round player-ages observers) < #:key second) 
+             (sort (run-round player-ages) < #:key second) 
              players)])))
 
-;; run-round: (list-of (is-a?/c player-interface)) -> (list-of (is-a?/c player-interface))
+;; run-round : (non-empty-listof (is-a?/c player-interface)) -> (listof (is-a?/c player-interface))
 ;; Run 1 round of knock-out and return winners
 (define (run-round players board-options)
-  (define bracket (create-bracket players))
-  (flatten (map (λ (p) (run-game p) bracket))))
+  (define player-groupings (allocate-items players))
+  (append-map (λ (players) (run-game players board-options) player-groupings)))
 
+;; allocate-items : (non-empty-listof any/c) -> (non-empty-listof (non-empty-listof any/c))
+;; Create groups (size 2-4) of items. Items will attempted to be put into groups of 4, unless the last
+;; group has less than 4 items in it. In the case that 2 or 3 items are left, that will remain the
+;; last grouping. If 1 item remains, then it will backtrack and the last two groups will be composed
+;; of 3 and 2 items, respecively. The items remain in the same order as the initial list.
+;; INVARIANT: There must be at least 2 elements in the given list
+(define (allocate-items initial-items)
+  (let allocate ([items initial-items]
+                 [groups-so-far '()])
+    (define remaining (length items))
+    (define next-remaining (- remaining 4))
+    (cond [(<= remaining 4) (append groups-so-far (list items))]
+          [(= next-remaining 1) (append groups-so-far (list (take items 3) (drop items 3)))]
+          [else (allocate (drop items 4) (append groups-so-far (list (take items 4))))])))
 
-;; create-bracket: (list-of (is-a?c player-interface)) -> Bracket
-;; Create a bracket for this round of the knock-out
-(define (create-bracket players board-options))
-
-;; run-game: (list-of (is-a?c player-interface)) -> (list-of (is-a?c player-interface))
+;; run-game : (non-empty-listof (is-a?/c player-interface)) -> (listof (is-a?/c player-interface))
 ;; Creates the referees and gives them players, then runs games to completions, returning the winners
-(define (run-game players board-options))
+(define (run-game players board-options)
+  (void))
 
-
-;; is-tournament-over?: 
-;; (list-of (is-a?c player-interface)) (list-of (is-a?c player-interface)) 
+;; is-tournament-over? : 
+;; (listof (is-a?c player-interface)) (listof (is-a?/c player-interface)) 
 ;; -> boolean?
 ;; Decides if the tournament is over based on:
 ;;  - 2 rounds produce the exact same winners
 ;;  - There are too few players for a single game
-(define (is-tournament-over? players last-winners))
+(define (is-tournament-over? players last-winners)
+  (void))
+
+(define (should-run-final? players)
+  (void))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
@@ -91,8 +129,9 @@
   (define (player-n . indices) (map (λ (i) (list-ref players i)) indices))
   
   ;; Provided
-  ;; run-tournament
+  ;; +--- run-tournament ---+
 
+  #|
   ;; round 1:
   ;; (0 1 2) => (0)
   (check-equal? (send manager run-tournament (take players 3) 5by5 '()) (player-n 0))
@@ -120,4 +159,21 @@
   ;; (4 5 6 7) => (4 7)
   ;; round 2:
   ;; (0 3 4 7) => (0 7)
-  (check-equal? (send manager run-tournament (take players 8) 5by5 '()) (player-n 0 7)))
+  (check-equal? (send manager run-tournament (take players 8) 5by5 '()) (player-n 0 7))
+  |#
+
+  ;; Internal Helper Functions
+  ;; +--- allocate-items ---+
+  (check-equal? (allocate-items (build-list 2 add1)) '((1 2)))
+  (check-equal? (allocate-items (build-list 3 add1)) '((1 2 3)))
+  (check-equal? (allocate-items (build-list 4 add1)) '((1 2 3 4)))
+  (check-equal? (allocate-items (build-list 5 add1)) '((1 2 3) (4 5)))
+  (check-equal? (allocate-items (build-list 6 add1)) '((1 2 3 4) (5 6)))
+  (check-equal? (allocate-items (build-list 7 add1)) '((1 2 3 4) (5 6 7)))
+  (check-equal? (allocate-items (build-list 8 add1)) '((1 2 3 4) (5 6 7 8)))
+  (check-equal? (allocate-items (build-list 9 add1)) '((1 2 3 4) (5 6 7) (8 9)))
+  (check-equal? (allocate-items (build-list 10 add1)) '((1 2 3 4) (5 6 7 8) (9 10)))
+
+  
+  
+  )

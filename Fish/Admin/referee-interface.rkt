@@ -15,6 +15,11 @@
          (contract-out [board-options-columns (-> board-options? posint?)])
          (contract-out [board-options-fish (-> board-options? (or/c (integer-in 1 5) false?))])
          (contract-out [board-options? (-> any/c boolean?)])
+         player-score
+         (contract-out [make-player-score (-> player-interface? natural? player-score?)])
+         (contract-out [player-score-player (-> player-score? player-interface?)])
+         (contract-out [player-score-score (-> player-score? natural?)])
+         (contract-out [player-score? (-> any/c boolean?)])
          referee-interface)
 
 ;; +-------------------------------------------------------------------------------------------------+
@@ -25,6 +30,10 @@
 ;; and represents options available for configuring a board in a Fish game where
 ;; rows and columns are the number of rows and columns in the board and
 ;; fish is the number of fish on every tile or #f for a randomized board with holes
+
+(define-struct player-score [player score])
+;; A PlayerScore is a (make-player-score player-interface? natural?)
+;; and represents a player and their score at the end of a Fish game
 
 (define referee-interface
   (interface ()
@@ -62,8 +71,7 @@
     ;;
     ;; NOTE: The Tournament Manager must provide between 2 and 4 players, inclusive.
     ;;
-    [run-game (->m (non-empty-listof (is-a?/c player-interface))
+    [run-game (->m (non-empty-listof player-interface?)
                    board-options?
                    (listof (is-a?/c game-observer-interface))
-                   (list/c (non-empty-listof (list/c (is-a?/c player-interface) natural?))
-                           (listof (is-a?/c player-interface))))]))
+                   (list/c (non-empty-listof player-score?) (listof player-interface?)))]))

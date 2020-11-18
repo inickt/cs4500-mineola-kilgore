@@ -13,6 +13,9 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERFACE
 
+;; Shorthand for something that implements a player interface, used for signatures
+(define player-interface? (is-a?/c player-interface))
+
 ;; The PlayerInterface is the API for a player in a Fish game.
 ;; Software components that implement this interface may be entered into Fish games and tournaments.
 ;; The goal of the player is to only perform legal actions to win a game of Fish by moving penguins

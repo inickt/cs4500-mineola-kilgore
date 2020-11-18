@@ -67,8 +67,8 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; create-player-color-map : (non-empty-listof (is-a?/c player-interface)) state?
-;;                           -> (hash/c penguin-color? (is-a?/c player-interface))
+;; create-player-color-map : (non-empty-listof player-interface?) state?
+;;                           -> (hash/c penguin-color? player-interface?)
 ;; Creates a mapping of player penguin-color to player-interface implementing object
 ;; NOTES:
 ;; - Players and state players must be the same length
@@ -102,7 +102,7 @@
 (define (build-random-holes n num-rows num-cols)
   (remove-duplicates (build-list n (λ (_) (make-posn (random num-cols) (random num-rows))))))
 
-;; get-all-placements : state? (hash-of penguin-color? (is-a?/c player-interface?)) positive?
+;; get-all-placements : state? (hash-of penguin-color? player-interface?) positive?
 ;;                      -> state? (listof penguin-color?)
 ;; Recursively gets placements for the current player until each player has 
 (define (get-all-placements initial-state player-color-map timeout)
@@ -121,7 +121,7 @@
                            (place (skip-player (remove-penguins state color)) (cons color kicked)))
                     (place maybe-state kicked))))))))
 
-;; get-single-placement : state? (is-a?/c player-interface?) positive? -> (or/c state? false?)
+;; get-single-placement : state? (player-interface? positive? -> (or/c state? false?)
 ;; Gets a single placement from the current player. Returns false if the placement is invalid or
 ;; if timer expires before the placement has been chosen.
 (define (get-single-placement state player timeout)
@@ -130,8 +130,7 @@
    (λ (result-posn) (place-penguin state result-posn))
    timeout))
 
-;; get-player :
-;; (hash-of penguin-color? (is-a?/c player-interface?)) state? -> (is-a?/c player-interface?))
+;; get-player : (hash-of penguin-color? player-interface?) state? -> player-interface?)
 ;; Gets the player object assigned the given color
 ;; NOTE: The player color has an assigned player
 (define (get-player player-color-map state)
@@ -150,7 +149,7 @@
 (define (penguins-per-player n) (- 6 n))
 
 ;; play-game :
-;; game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) (list-of penguin-color?) positive?
+;; game-tree? (hash-of penguin-color? player-interface?) (list-of penguin-color?) positive?
 ;; -> end-game? (listof penguin-color?)
 ;; Plays a complete game of Fish by querying each player for its desired move.
 ;; NOTE: If a player cheats, or exceeds the timeout threshold for choosing a move, it is kicked from
@@ -163,7 +162,7 @@
         (apply play (step-game game player-color-map kicked timeout)))))
 
 ;; play-game-debug :
-;; game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) (list-of penguin-color?) positive?
+;; game-tree? (hash-of penguin-color? player-interface?) (list-of penguin-color?) positive?
 ;; -> end-game? (listof penguin-color?)
 ;; Big-bang through complete game of Fish by querying each player. Press any key for next move
 (define (play-game-debug initial-game player-color-map initial-kicked timeout)
@@ -175,7 +174,7 @@
                   [stop-when (λ (s) (end-game? (first s))) draw])))
 
 ;; step-game :
-;; game-tree? (hash-of penguin-color? (is-a?/c player-interface?)) (list-of penguin-color?) positive?
+;; game-tree? (hash-of penguin-color? player-interface?) (list-of penguin-color?) positive?
 ;; -> (list/c end-game? (listof penguin-color?))
 ;; Apply the current player's move and kick them if they misbehave
 (define (step-game game pcm kicked timeout)
@@ -187,7 +186,7 @@
                (list (kick-player game player-color) (cons player-color kicked)))
         (list maybe-game-tree kicked))))
 
-;; play-one-move : game? (is-a?/c player-interface?) positive? -> (or/c false? game-tree?)
+;; play-one-move : game? player-interface? positive? -> (or/c false? game-tree?)
 ;; Gets a player's move and applies it to the given game tree
 ;; NOTES:
 ;; - It must be the given player's turn in the provided game
@@ -221,7 +220,7 @@
         #:key player-score))
 
 ;; call-on-all-players :
-;; (hashof penguin-color? (is-a/c? player-interface?)) [void? -> void?] positive? -> void?
+;; (hashof penguin-color? player-interface?) [void? -> void?] positive? -> void?
 (define (call-on-all-players player-color-map procedure timeout)
   (for ([(color player) (in-hash player-color-map)])
     (run-with-timeout (λ () (procedure player color)) (λ (_) (void)) timeout)))

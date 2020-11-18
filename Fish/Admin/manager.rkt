@@ -44,26 +44,24 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; tell-players-starting : (listof (is-a?/c player-interface)) -> (is-a?/c player-interface))
+;; tell-players-starting : (listof player-interface?) -> (listof player-interface?)
 ;; Informs players the tournament is starting (with the initial number of players) and returns players
 ;; that should be kicked, caused by them timing or erroring out.
 (define (tell-players-starting players)
   (void))
 
-;; tell-players-ending : (listof (is-a?/c player-interface)) -> (is-a?/c player-interface))
+;; tell-players-ending : (listof player-interface?) -> (listof player-interface?)
 ;; Informs players the tournament is ending and whether they have won or not. Returns players
 ;; that should be kicked, caused by them timing or erroring out.
 (define (tell-players-ending players)
   (void))
 
-;; run-knock-out : (listof (list/c (is-a?/c player-interface) posint?)) board-options? 
-;; -> (listof (is-a?/c player-interface))
+;; run-knock-out : (listof player-score?) board-options? number? -> (listof player-interface?)
 ;; Run the games until the tournament is over, as determined by is-tournament-over?
 ;;  - The number of participants has become small enough to run a single final game
-(define (run-knock-out init-player-age-pairs board-options) 
+(define (run-knock-out init-player-age-pairs board-options timeout) 
   ;; run: 
-  ;; (listof (list/c (is-a?/c player-interface) posint?)) (listof (is-a?/c player-interface))
-  ;; -> (listof (is-a?/c player-interface))
+  ;; (listof player-score?) (listof player-interface?) -> (listof player-interface?)
   (let run ([player-ages init-player-age-pairs]
             [last-winners '()])
     (define players (map first player-ages))
@@ -74,9 +72,9 @@
              (sort (run-round player-ages) < #:key second) 
              players)])))
 
-;; run-round : (non-empty-listof (is-a?/c player-interface)) -> (listof (is-a?/c player-interface))
+;; run-round : (non-empty-listof player-interface?) number? -> (listof player-interface?)
 ;; Run 1 round of knock-out and return winners
-(define (run-round players board-options)
+(define (run-round players board-options timeout)
   (define player-groupings (allocate-items players))
   (append-map (λ (players) (run-game players board-options) player-groupings)))
 
@@ -95,14 +93,16 @@
           [(= next-remaining 1) (append groups-so-far (list (take items 3) (drop items 3)))]
           [else (allocate (drop items 4) (append groups-so-far (list (take items 4))))])))
 
-;; run-game : (non-empty-listof (is-a?/c player-interface)) -> (listof (is-a?/c player-interface))
+;; run-game : (non-empty-listof player-interface?) -> (listof player-interface?)
 ;; Creates the referees and gives them players, then runs games to completions, returning the winners
-(define (run-game players board-options)
+(define (run-game players board-options timeout)
+  (define ref (new referee% [timeout timeout]))
+  (define (send ref run-game players board-options '())
   (void))
 
-;; is-tournament-over? : 
-;; (listof (is-a?c player-interface)) (listof (is-a?/c player-interface)) 
-;; -> boolean?
+
+
+;; is-tournament-over? : (listof player-interface?) (listof player-interface?) -> boolean?
 ;; Decides if the tournament is over based on:
 ;;  - 2 rounds produce the exact same winners
 ;;  - There are too few players for a single game

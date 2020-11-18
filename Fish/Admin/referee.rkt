@@ -2,17 +2,17 @@
 
 (require lang/posn
          racket/class
-         racket/engine
          racket/list
          racket/match
          racket/promise
          2htdp/universe
-         "referee-interface.rkt"
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
          "../Common/player-interface.rkt"
          "../Common/state.rkt"
-         "../Player/player.rkt")
+         "../Player/player.rkt"
+         "referee-interface.rkt"
+         "util.rkt")
 
 (provide referee%)
 
@@ -202,15 +202,6 @@
 ;; Removes the player with the given color from the GameTree by removing their penguins
 (define (kick-player game penguin-color)
   (create-game (remove-penguins (game-state game) penguin-color)))
-
-;; run-with-timeout : (X Y) (-> X) (X -> Y) positive? -> (or/c Y false?)
-;; Runs run-proc for up to TIMEOUT seconds, then calls result-proc on the result value
-;; Returns false if run-proc times out, or if either run-proc or result-proc error
-(define (run-with-timeout run-proc result-proc timer)
-  (define run-engine (engine (λ (_) (run-proc))))
-  (with-handlers ([exn:fail? (λ (exn) #f)])
-    (engine-run (* timer 1000) run-engine)
-    (and (engine-result run-engine) (result-proc (engine-result run-engine)))))
   
 ;; get-rankings : (listof player?) (listof penguin-color?) -> (listof player?)
 ;; Filters out kicked players and returns the list of players sorted in descending order by score

@@ -7,12 +7,13 @@
          racket/match
          racket/promise
          2htdp/universe
-         "referee-interface.rkt"
-         "manager-interface.rkt"
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
          "../Common/state.rkt"
-         "../Player/player.rkt")
+         "../Player/player.rkt"
+         "referee-interface.rkt"
+         "manager-interface.rkt"
+         "util.rkt")
 
 (provide manager%)
 

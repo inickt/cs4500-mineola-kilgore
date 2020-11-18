@@ -61,8 +61,8 @@
 ;; Run the games until the tournament is over, as determined by is-tournament-over?
 ;;  - The number of participants has become small enough to run a single final game
 (define (run-knock-out init-player-age-pairs board-options timeout) 
-  ;; run: 
-  ;; (listof player-score?) (listof player-interface?) -> (listof player-interface?)
+  ;; run : (non-empty-listof (list/c player-interface? positive?)) (listof player-interface?)
+  ;;        -> (listof player-interface?)
   (let run ([player-ages init-player-age-pairs]
             [last-winners '()])
     (define players (map first player-ages))
@@ -77,6 +77,7 @@
 ;; Run 1 round of knock-out and return winners
 (define (run-round players board-options timeout)
   (define player-groupings (allocate-items players))
+  ;; TODO should this sort here? document in ps if so
   (append-map (λ (players) (run-game players board-options) player-groupings)))
 
 ;; allocate-items : (non-empty-listof any/c) -> (non-empty-listof (non-empty-listof any/c))
@@ -98,10 +99,8 @@
 ;; Creates the referees and gives them players, then runs games to completions, returning the winners
 (define (run-game players board-options timeout)
   (define ref (new referee% [timeout timeout]))
-  (define (send ref run-game players board-options '())
+  (match-define (list players-scores kicked) (send ref run-game players board-options '()))
   (void))
-
-
 
 ;; is-tournament-over? : (listof player-interface?) (listof player-interface?) -> boolean?
 ;; Decides if the tournament is over based on:

@@ -59,8 +59,8 @@
        (λ (player _) (send player finalize final-game))
        timeout)
       
-      (list (map (λ (player) (list (hash-ref player-color-map (player-color player))
-                                   (player-score player)))
+      (list (map (λ (player) (make-player-result (hash-ref player-color-map (player-color player))
+                                                 (player-score player)))
                  (get-rankings results final-kicked))
             (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
 
@@ -306,15 +306,26 @@
                               (make-board-options 4 4 #f)
                               '()))
                 (list bad-player-garbage))
-  (check-equal? (map first (first (send referee run-game (list dumb-player bad-player-error)
-                                        (make-board-options 4 4 #f)
-                                        '())))
+  (check-equal? (map player-result-player
+                     (first (send referee run-game (list dumb-player bad-player-error)
+                                  (make-board-options 4 4 #f)
+                                  '())))
                 (list dumb-player))
   (define results
     (first (send referee run-game (list smart-player smart-player dumb-player)
                  (make-board-options 5 5 #f)
                  '())))
-  (check-equal? results (sort results > #:key second))
+  (check-equal? results (sort results > #:key player-result-score))
+
+  ;; all players are kicked and there are no winners
+  (match (send referee run-game
+               (list bad-player-garbage bad-player-error bad-player-timeout)
+               (make-board-options 5 5 #f)
+               '())
+    [(list players-scores kicked-players)
+     (check-equal? players-scores '())
+     (check-equal? kicked-players (list bad-player-garbage bad-player-timeout bad-player-error))])
+  
   ;; Internal Helper Functions
   ;; +--- create-player-color-map ---+
   (check-equal? (create-player-color-map (list dumb-player smart-player)

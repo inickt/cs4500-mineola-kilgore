@@ -15,11 +15,11 @@
          (contract-out [board-options-columns (-> board-options? posint?)])
          (contract-out [board-options-fish (-> board-options? (or/c (integer-in 1 5) false?))])
          (contract-out [board-options? (-> any/c boolean?)])
-         player-score
-         (contract-out [make-player-score (-> player-interface? natural? player-score?)])
-         (contract-out [player-score-player (-> player-score? player-interface?)])
-         (contract-out [player-score-score (-> player-score? natural?)])
-         (contract-out [player-score? (-> any/c boolean?)])
+         player-result
+         (contract-out [make-player-result (-> player-interface? natural? player-result?)])
+         (contract-out [player-result-player (-> player-result? player-interface?)])
+         (contract-out [player-result-score (-> player-result? natural?)])
+         (contract-out [player-result? (-> any/c boolean?)])
          referee-interface)
 
 ;; +-------------------------------------------------------------------------------------------------+
@@ -31,8 +31,8 @@
 ;; rows and columns are the number of rows and columns in the board and
 ;; fish is the number of fish on every tile or #f for a randomized board with holes
 
-(define-struct player-score [player score])
-;; A PlayerScore is a (make-player-score player-interface? natural?)
+(define-struct player-result [player score])
+;; A PlayerResult is a (make-player-result player-interface? natural?)
 ;; and represents a player and their score at the end of a Fish game
 
 (define referee-interface
@@ -74,4 +74,4 @@
     [run-game (->m (non-empty-listof player-interface?)
                    board-options?
                    (listof (is-a?/c game-observer-interface))
-                   (list/c (non-empty-listof player-score?) (listof player-interface?)))]))
+                   (list/c (listof player-result?) (listof player-interface?)))]))

@@ -45,7 +45,7 @@
                  '())))
   (find-winners players-and-scores players-to-names))
 
-;; find-winners : (non-empty-listof player-score?) (hasheq/c player-interface? string?)
+;; find-winners : (non-empty-listof player-result?) (hasheq/c player-interface? string?)
 ;;                -> (listof string?)
 ;; Get the names of the winners from their scores, in alphabetical order
 (define (find-winners players-and-scores players-to-names)

@@ -8,13 +8,10 @@
          "../Common/penguin-color.rkt"
          "../Common/state.rkt")
 
-(provide player-interface)
+(provide player-interface player-interface?)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERFACE
-
-;; Shorthand for something that implements a player interface, used for signatures
-(define player-interface? (is-a?/c player-interface))
 
 ;; The PlayerInterface is the API for a player in a Fish game.
 ;; Software components that implement this interface may be entered into Fish games and tournaments.
@@ -53,3 +50,6 @@
     ;; Receives the final game state, where no more moves are possible.
     ;; The Referee will call this exactly once with the final state of the game when it ends.
     [finalize (->m state? void?)]))
+
+;; Shorthand for something that implements a player interface, used for signatures
+(define player-interface? (is-a?/c player-interface))

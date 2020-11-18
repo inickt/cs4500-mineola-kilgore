@@ -195,7 +195,7 @@
 (define (play-one-move game player timeout)
   (define children (force (game-children game)))
   (run-with-timeout
-   (λ () (send player get-move game))
+   (λ () (send player get-move (game-state game)))
    (λ (result-move) (hash-ref children result-move))
    timeout))
 
@@ -251,6 +251,8 @@
   (define bad-player-error%
     (class* object% (player-interface)
       (super-new)
+      (define/public (tournament-started num-players) (error "fail"))
+      (define/public (tournament-ended did-win) (error "fail"))
       (define/public (initialize board num-players color) (error "fail"))
       (define/public (get-placement state) (error "fail"))
       (define/public (get-move game) (error "fail"))
@@ -262,6 +264,8 @@
   (define bad-player-timeout%
     (class* object% (player-interface)
       (super-new)
+      (define/public (tournament-started num-players) (tournament-started num-players))
+      (define/public (tournament-ended did-win) (tournament-ended did-win))
       (define/public (initialize board num-players color) (initialize board num-players color))
       (define/public (get-placement state) (get-placement state))
       (define/public (get-move game) (get-move game))
@@ -273,6 +277,8 @@
   (define bad-player-garbage%
     (class* object% (player-interface)
       (super-new)
+      (define/public (tournament-started num-players) (void))
+      (define/public (tournament-ended did-win) (void))
       (define/public (initialize board num-players color) (void))
       (define/public (get-placement state) (make-posn 0 0))
       (define/public (get-move game) (make-move (make-posn 0 0) (make-posn 0 1)))

@@ -9,8 +9,7 @@
          "referee-interface.rkt"
          "referee.rkt")
 
-(provide ranking?
-         manager-interface)
+(provide manager-interface)
 
 ;; A TournamentManager is an object of a class implementing the manager-interface.
 (define manager-interface
@@ -36,6 +35,6 @@
     ;; sorted by player rank in ascending order such that the player(s) who won the tournament in 1st
     ;; place appear at the beginning of the list.
     [run-tournament (-> (non-empty-listof (list/c (is-a?/c player-interface) positive?))
-                        (board-options?)
+                        board-options?
                         (listof tournament-observer?)
                         (listof (is-a?/c player-interface)))]))

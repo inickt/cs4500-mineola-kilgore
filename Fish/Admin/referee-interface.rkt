@@ -9,7 +9,8 @@
          "observer-interface.rkt")
 
 (provide board-options
-         (contract-out [make-board-options (-> posint? posint? (or/c (integer-in 1 5) false?) board-options?)])
+         (contract-out [make-board-options
+                        (-> posint? posint? (or/c (integer-in 1 5) false?) board-options?)])
          (contract-out [board-options-rows (-> board-options? posint?)])
          (contract-out [board-options-columns (-> board-options? posint?)])
          (contract-out [board-options-fish (-> board-options? (or/c (integer-in 1 5) false?))])

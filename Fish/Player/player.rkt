@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/class
+         "../Common/game-tree.rkt"
          "../Common/player-interface.rkt"
          (prefix-in strategy: "strategy.rkt"))
 
@@ -22,11 +23,17 @@
     (define/public (initialize board num-players color)
       (void))
 
+    (define/public (tournament-started num-players)
+      (void))
+
+    (define/public (tournament-ended did-win)
+      (void))
+
     (define/public (get-placement state)
       (strategy:get-placement state))
     
-    (define/public (get-move game)
-      (strategy:get-move game search-depth))
+    (define/public (get-move state)
+      (strategy:get-move (create-game state) search-depth))
 
     (define/public (terminate)
       (void))
@@ -39,7 +46,6 @@
 (module+ test
   (require lang/posn
            rackunit
-           "../Common/game-tree.rkt"
            "../Common/penguin-color.rkt"
            "../Common/state.rkt")
 
@@ -57,7 +63,7 @@
                                   (list (make-player RED 0 (list (make-posn 0 0)))
                                         (make-player WHITE 0 (list (make-posn 2 0))))))
                 (make-posn 0 1))
-  (check-equal? (send player1 get-move (create-game test-state))
+  (check-equal? (send player1 get-move test-state)
                 (make-move (make-posn 0 0) (make-posn 0 1)))
-  (check-equal? (send player2 get-move (create-game test-state))
+  (check-equal? (send player2 get-move test-state)
                 (make-move (make-posn 0 0) (make-posn 0 2))))

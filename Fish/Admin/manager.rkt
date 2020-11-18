@@ -44,19 +44,20 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-;; tell-players-starting : (listof player-interface?) -> (listof player-interface?)
+;; tell-players-starting : (non-empty-listof player-interface?) -> (listof player-interface?)
 ;; Informs players the tournament is starting (with the initial number of players) and returns players
 ;; that should be kicked, caused by them timing or erroring out.
 (define (tell-players-starting players)
   (void))
 
-;; tell-players-ending : (listof player-interface?) -> (listof player-interface?)
+;; tell-players-ending : (non-empty-listof player-interface?) -> (listof player-interface?)
 ;; Informs players the tournament is ending and whether they have won or not. Returns players
 ;; that should be kicked, caused by them timing or erroring out.
 (define (tell-players-ending players)
   (void))
 
-;; run-knock-out : (listof player-score?) board-options? number? -> (listof player-interface?)
+;; run-knock-out : (non-empty-listof (list/c player-interface? positive?)) board-options? number?
+;;                 -> (listof player-interface?)
 ;; Run the games until the tournament is over, as determined by is-tournament-over?
 ;;  - The number of participants has become small enough to run a single final game
 (define (run-knock-out init-player-age-pairs board-options timeout) 

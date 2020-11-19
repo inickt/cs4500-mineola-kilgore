@@ -6,6 +6,7 @@
          racket/list
          racket/match
          racket/promise
+         racket/bool
          2htdp/universe
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
@@ -33,7 +34,7 @@
     (define/public (run-tournament player-age-pairs board-options observers)
       ;; TODO is this sorted? make sure documented in interface
       (define players (map first player-age-pairs))
-      (define bad-players (tell-players-starting players))
+      (define bad-players (tell-players-starting players timeout))
       ;; TODO handle bad players
 
       (define winning-players (run-knock-out player-age-pairs observers))
@@ -48,8 +49,13 @@
 ;; tell-players-starting : (non-empty-listof player-interface?) -> (listof player-interface?)
 ;; Informs players the tournament is starting (with the initial number of players) and returns players
 ;; that should be kicked, caused by them timing or erroring out.
-(define (tell-players-starting players)
-  (void))
+(define (tell-players-starting players timeout)
+  (filter (λ (player)
+            (false? (run-with-timeout 
+                     (λ () (send player tournament-started (length players))) 
+                     (λ (_) (void)) 
+                     timeout)))
+          players))
 
 ;; tell-players-ending : (non-empty-listof player-interface?) -> (listof player-interface?)
 ;; Informs players the tournament is ending and whether they have won or not. Returns players
@@ -117,9 +123,11 @@
 ;; TESTS
 
 (module+ test
-  (require rackunit)
+  (require rackunit
+           "./bad-players.rkt")
 
   (define dumb-player (new player% [depth 1]))
+  (define bad-player-error (new bad-player-error%))
   (define manager (new manager%))
 
   (define 5by5 (make-board-options 5 5 1))
@@ -164,6 +172,14 @@
   |#
 
   ;; Internal Helper Functions
+  ;; +--- tell-players-starting ---+
+  (check-equal? (tell-players-starting (list dumb-player dumb-player) 1) '())
+  (check-equal? (tell-players-starting (list bad-player-error dumb-player) 1) (list bad-player-error))
+
+  ;; +--- tell-players-ending ---+
+  (check-equal? (tell-players-ending (list dumb-player dumb-player) 1) '())
+  (check-equal? (tell-players-ending (list bad-player-error dumb-player) 1) (list bad-player-error))
+
   ;; +--- allocate-items ---+
   (check-equal? (allocate-items (build-list 2 add1)) '((1 2)))
   (check-equal? (allocate-items (build-list 3 add1)) '((1 2 3)))

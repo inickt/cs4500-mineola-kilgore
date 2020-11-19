@@ -20,20 +20,30 @@
          (contract-out [player-result-player (-> player-result? player-interface?)])
          (contract-out [player-result-score (-> player-result? natural?)])
          (contract-out [player-result? (-> any/c boolean?)])
+         game-result
+         (contract-out [make-game-result
+                        (-> (listof player-result?) (listof player-interface?) game-result?)])
+         (contract-out [game-result-players (-> game-result? (listof player-result?))])
+         (contract-out [game-result-kicked (-> game-result? (listof player-interface?))])
+         (contract-out [game-result? (-> any/c boolean?)])
          referee-interface)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; PROVIDED
 
-(define-struct board-options [rows columns fish])
+(define-struct board-options [rows columns fish] #:transparent)
 ;; A BoardOptions is a (make-board posint? posint? (or/c (integer-in 1 5) false?))
 ;; and represents options available for configuring a board in a Fish game where
 ;; rows and columns are the number of rows and columns in the board and
 ;; fish is the number of fish on every tile or #f for a randomized board with holes
 
-(define-struct player-result [player score])
+(define-struct player-result [player score] #:transparent)
 ;; A PlayerResult is a (make-player-result player-interface? natural?)
 ;; and represents a player and their score at the end of a Fish game
+
+(define-struct game-result [players kicked] #:transparent)
+;; A GameResult is a (make-game-result (listof player-result?) (listof player-interface?))
+;; and represents the players/their scores that completed the game and players that were kicked.
 
 (define referee-interface
   (interface ()
@@ -74,4 +84,4 @@
     [run-game (->m (non-empty-listof player-interface?)
                    board-options?
                    (listof (is-a?/c game-observer-interface))
-                   (list/c (listof player-result?) (listof player-interface?)))]))
+                   game-result?)]))

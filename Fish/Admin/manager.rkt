@@ -12,6 +12,7 @@
          "../Common/state.rkt"
          "../Player/player.rkt"
          "referee-interface.rkt"
+         "referee.rkt"
          "manager-interface.rkt"
          "util.rkt")
 
@@ -100,7 +101,7 @@
 ;; Creates the referees and gives them players, then runs games to completions, returning the winners
 (define (run-game players board-options timeout)
   (define ref (new referee% [timeout timeout]))
-  (match-define (list players-scores kicked) (send ref run-game players board-options '()))
+  (match-define (list players-results kicked) (send ref run-game players board-options '()))
   (void))
 
 ;; is-tournament-over? : (listof player-interface?) (listof player-interface?) -> boolean?

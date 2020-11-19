@@ -99,8 +99,6 @@
             [prev-competing '()])
     (define competing (sort-players curr-competing player-to-age))
     (define sorted-prev-competing (sort-players prev-competing player-to-age))
-    (displayln (length competing))
-    (displayln (set-count kicked))
     (cond 
       [(equal? competing sorted-prev-competing) (make-result competing kicked)]
       [(= (length competing) 1) (make-result competing kicked)]
@@ -228,15 +226,6 @@
   ;; (4 5 6 7) => (4 5 6 7)
   (check-equal? (send manager run-tournament (player-to-pairs (take players 8)) 4by2 '()) 
                 (player-n 0 1 2 3 4 5 6 7))
-
-  ;; round 1:
-  ;; (0 1 2 3) => (0 1 2 3)
-  ;; (4 5 6) => (4 5)
-  ;; round 2:
-  ;; (0 1 2 3) => (0 1 2 3)
-  ;; (4 5) => (4 5)
-  (check-equal? (send manager run-tournament (player-to-pairs (take players 7)) 4by2 '()) 
-                (player-n 0 1 2 3 4 5))
   |#
 
   ;; +--- get-winners ---+
@@ -313,17 +302,20 @@
 
   ;; round 1:
   ;; (0 1 2 3) => (0 1 2 3)
-  ;; (4 5 6) => (4 5)
+  ;; (4 5 6 7) => (4 5 6 7)
+  ;; (bad bad)
   ;; round 2:
   ;; (0 1 2 3) => (0 1 2 3)
-  ;; (4 5) => (4 5)
-  (check-equal? (run-knock-out (players-to-pairs (take players 7)) 4by2 1)
-                (make-result (player-n 0 1 2 3 4 5) (set)))
-
-  ;; round 1:
-  ;; () TODO bad player but mmake to round 2
-  (check-equal? (run-knock-out (players-to-pairs (take players 7)) 4by2 1)
-                (make-result (player-n 0 1 3 4) (set)))
+  ;; (4 5 6 7) => (4 5 6 7)
+  ;; round 3:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5 6 7) => (4 5 6 7)
+  ;; round 4: end cause repeate winner
+  (check-equal? (run-knock-out 
+                 (players-to-pairs (append (take players 8) (list bad-player1 bad-player2))) 
+                 4by2 
+                 1)
+                (make-result (player-n 0 1 2 3 4 5 6 7) (set bad-player1 bad-player2)))
 
   ;; +--- run-round ---+
   (check-equal? (run-round (take players 2) 5by5 1)

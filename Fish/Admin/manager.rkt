@@ -2,6 +2,7 @@
 
 (require lang/posn
          racket/class
+         racket/contract
          racket/engine
          racket/list
          racket/match
@@ -10,13 +11,16 @@
          2htdp/universe
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
+         "../Common/player-interface.rkt"
          "../Common/state.rkt"
          "../Player/player.rkt"
          "referee-interface.rkt"
+         "referee.rkt"
          "manager-interface.rkt"
          "util.rkt")
 
-(provide manager%)
+(provide manager%
+         (contract-out [get-winners (-> (listof player-result?) (listof player-interface?))]))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -43,8 +47,20 @@
       ;; TODO get rid of winning players that didn't respond from final answer
       '())))
 
+;; get-winners : (listof player-result?) -> (listof player-interface?)
+;; Return the winning players based on their score, removing any kicked players
+(define (get-winners player-results)
+  (if (empty? player-results)
+      empty
+      (let ([max-score (apply max (map player-result-score player-results))])
+        (filter-map (λ (player-result) (and (= (player-result-score player-result) max-score)
+                                            (player-result-player player-result)))
+                    player-results))))
+
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
+
+(define-struct result [winners kicked])
 
 ;; tell-players-starting : (non-empty-listof player-interface?) -> (listof player-interface?)
 ;; Informs players the tournament is starting (with the initial number of players) and returns players
@@ -102,12 +118,12 @@
           [(= next-remaining 1) (append groups-so-far (list (take items 3) (drop items 3)))]
           [else (allocate (drop items 4) (append groups-so-far (list (take items 4))))])))
 
-;; run-game : (non-empty-listof player-interface?) -> (listof player-interface?)
+;; run-game : (non-empty-listof player-interface?) -> result?
 ;; Creates the referees and gives them players, then runs games to completions, returning the winners
 (define (run-game players board-options timeout)
   (define ref (new referee% [timeout timeout]))
-  (match-define (list players-scores kicked) (send ref run-game players board-options '()))
-  (void))
+  (define game-result (send ref run-game players board-options '()))
+  (make-result (get-winners (game-result-players game-result)) (game-result-kicked game-result)))
 
 ;; is-tournament-over? : (listof player-interface?) (listof player-interface?) -> boolean?
 ;; Decides if the tournament is over based on:
@@ -170,6 +186,25 @@
   ;; (0 3 4 7) => (0 7)
   (check-equal? (send manager run-tournament (take players 8) 5by5 '()) (player-n 0 7))
   |#
+
+  ;; +--- get-winners ---+
+  (define p1 (new player% [depth 1]))
+  (define p2 (new player% [depth 1]))
+  (define p3 (new player% [depth 1]))
+  
+  (check-equal? (get-winners (list (make-player-result p1 2)
+                                   (make-player-result p2 2)
+                                   (make-player-result p3 2)))
+                (list p1 p2 p3))
+  (check-equal? (get-winners (list (make-player-result p1 5)
+                                   (make-player-result p2 2)
+                                   (make-player-result p3 2)))
+                (list p1))
+  (check-equal? (get-winners (list (make-player-result p1 1)
+                                   (make-player-result p2 2)
+                                   (make-player-result p3 2)))
+                (list p2 p3))
+                             
 
   ;; Internal Helper Functions
   ;; +--- tell-players-starting ---+

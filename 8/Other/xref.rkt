@@ -4,6 +4,7 @@
          racket/class
          racket/list
          racket/match
+         "../../Fish/Admin/manager.rkt"
          "../../Fish/Admin/referee-interface.rkt"
          "../../Fish/Admin/referee.rkt"
          "../../Fish/Common/json.rkt"
@@ -38,24 +39,18 @@
                  [player-interface player-interfaces])
       (values player-interface (first player-depth))))
 
-  ;; INVARIENT: Our own players won't be kicked, so we don't bother checking the kicked players
-  (define players-and-scores
-    (first (send (new referee%) run-game player-interfaces 
-                 (make-board-options columns rows fish) 
-                 '())))
-  (find-winners players-and-scores players-to-names))
+  (define game-result
+    (send (new referee%) run-game player-interfaces 
+          (make-board-options columns rows fish) 
+          '()))
+  (find-winners (game-result-players game-result) players-to-names))
 
-;; find-winners : (non-empty-listof player-result?) (hasheq/c player-interface? string?)
-;;                -> (listof string?)
+;; find-winners : (listof player-result?) (hasheq/c player-interface? string?) -> (listof string?)
 ;; Get the names of the winners from their scores, in alphabetical order
 (define (find-winners player-results players-to-names)
-  (define max-score (player-result-score (argmax player-result-score player-results)))
-  (define winning-players
-    (filter (λ (player-result) (= (player-result-score player-result) max-score)) player-results))
-  (define winning-names
-    (map (λ (player-result) (hash-ref players-to-names (player-result-player player-result)))
-         winning-players))
-  (sort winning-names string<=?))
+  (define winner-names 
+    (map (λ (player) (hash-ref players-to-names player)) (get-winners player-results)))
+  (sort winner-names string<=?))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS

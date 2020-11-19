@@ -48,13 +48,14 @@
 ;; find-winners : (non-empty-listof player-result?) (hasheq/c player-interface? string?)
 ;;                -> (listof string?)
 ;; Get the names of the winners from their scores, in alphabetical order
-(define (find-winners players-and-scores players-to-names)
-  (define max-score (second (argmax second players-and-scores)))
-  (define winning-players (filter (λ (player-and-score) (= (second player-and-score) max-score))
-                                  players-and-scores))
-  (define winner-names 
-    (map (λ (player-and-score) (hash-ref players-to-names (first player-and-score))) winning-players))
-  (sort winner-names string<=?))
+(define (find-winners player-results players-to-names)
+  (define max-score (player-result-score (argmax player-result-score player-results)))
+  (define winning-players
+    (filter (λ (player-result) (= (player-result-score player-result) max-score)) player-results))
+  (define winning-names
+    (map (λ (player-result) (hash-ref players-to-names (player-result-player player-result)))
+         winning-players))
+  (sort winning-names string<=?))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; TESTS
@@ -83,24 +84,28 @@
   (define p4 (new player%))
   (define names (hasheq p1 "p1" p2 "p2"  p3 "p3" p4 "p4"))
 
-  (check-equal? (find-winners (list (list p2 1)
-                                    (list p1 4)
-                                    (list p3 2)
-                                    (list p4 3))
+  (check-equal? (find-winners (list (make-player-result p2 1)
+                                    (make-player-result p1 4)
+                                    (make-player-result p3 2)
+                                    (make-player-result p4 3))
                               names)
                 (list "p1"))
-  (check-equal? (find-winners (list (list p4 4)
-                                    (list p2 1)
-                                    (list p1 4)
-                                    (list p3 2))
+  (check-equal? (find-winners (list (make-player-result p4 4)
+                                    (make-player-result p2 1)
+                                    (make-player-result p1 4)
+                                    (make-player-result p3 2))
                               names)
                 (list "p1" "p4"))
-  (check-equal? (find-winners (list (list p2 4)
-                                    (list p1 4)
-                                    (list p3 4)
-                                    (list p4 4))
+  (check-equal? (find-winners (list (make-player-result p2 4)
+                                    (make-player-result p1 4)
+                                    (make-player-result p3 4)
+                                    (make-player-result p4 4))
                               names)
                 (list "p1" "p2" "p3" "p4"))
+
+  ;; Prelim tests
+  (check-integration xref "prelims/1-in.json" "prelims/1-out.json")
+  (check-integration xref "prelims/2-in.json" "prelims/2-out.json")
 
   ;; Integration tests
   ;; all winners - no moves and game ends immediately

@@ -62,7 +62,7 @@
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
 
-(define-struct result [winners kicked] #:transparent)
+(define-struct result [competing kicked] #:transparent)
 ;; A Result is a (make-result (listof player-interface?) (set/c player-interface?)
 ;; and represents the results from a tournament round/game with the winners and players kicekd
 
@@ -84,24 +84,39 @@
   (void))
 
 ;; run-knock-out : (non-empty-listof (list/c player-interface? positive?)) board-options? number?
-;;                 -> (listof player-interface?)
-;; Run the games until the tournament is over, as determined by is-tournament-over?
-;;  - The number of participants has become small enough to run a single final game
-(define (run-knock-out init-player-age-pairs board-options timeout) 
-  ;; run : (non-empty-listof (list/c player-interface? positive?)) (listof player-interface?)
-  ;;        -> (listof player-interface?)
-  (let run ([player-ages init-player-age-pairs]
-            [last-winners '()])
-    (define players (map first player-ages))
-    (cond
-      [(is-tournament-over? players last-winners) ]
-      [(should-run-final? players) (run-game players)]
-      [else (run 
-             (sort (run-round player-ages) < #:key second) 
-             players)])))
+;;                 -> result?
+;; Run the games until the tournament is over, as determined by if:
+;;  - 2 rounds produce the exact same winners
+;;  - There are too few players for a single game
+;;  - the number of participants has become small enough to run a single final game
+(define (run-knock-out player-age-pairs board-options timeout) 
+  (define player-to-age (for/hash ([p player-age-pairs]) (values (first p) (second p))))
+  ;; TERMINATION: Every recurrence, the list of competing players either:
+  ;;  - grows smaller, eventually reaching 1 and terminating
+  ;;  - stays the same and terminates
+  (let run ([curr-competing (map first player-age-pairs)]
+            [kicked (set)]
+            [prev-competing '()])
+    (define competing (sort-players curr-competing player-to-age))
+    (define sorted-prev-competing (sort-players prev-competing player-to-age))
+    (displayln (length competing))
+    (displayln (set-count kicked))
+    (cond 
+      [(equal? competing sorted-prev-competing) (make-result competing kicked)]
+      [(= (length competing) 1) (make-result competing kicked)]
+      [(<= (length competing) 4) 
+       (append-results
+        (make-result '() kicked) 
+        (run-game competing board-options timeout))]
+      [else 
+       (match-define (result round-winners round-kicked) (run-round competing board-options timeout))
+       (run round-winners
+            (set-union kicked round-kicked)
+            competing)])))
 
 ;; run-round : (non-empty-listof player-interface?) board-options? number? -> result?
 ;; Run 1 round of knock-out and return winners (unsorted)
+;; INVARIANT: players need to be sorted in increasing order of age
 (define (run-round players board-options timeout)
   (define player-groupings (allocate-items players))
   (apply append-results
@@ -129,21 +144,19 @@
   (define game-result (send ref run-game players board-options '()))
   (make-result (get-winners (game-result-players game-result)) (game-result-kicked game-result)))
 
-;; is-tournament-over? : (listof player-interface?) (listof player-interface?) -> boolean?
-;; Decides if the tournament is over based on:
-;;  - 2 rounds produce the exact same winners
-;;  - There are too few players for a single game
-(define (is-tournament-over? players last-winners)
-  (void))
-
-(define (should-run-final? players)
-  (void))
+;; sort-players: 
+;; (listof player-interface?) (hasheq/c player-interface? number?) 
+;; -> (listof player-interface?)
+;; Sort the given list of players according to their ages, as given by the mapping of players to ages
+;; INVARIANT: All players are in the player-to-age hash
+(define (sort-players players player-to-age)
+  (sort players < #:key (λ (p) (hash-ref player-to-age p))))
 
 ;; append-results : result? ...  -> result?
 ;; Combines any number of results into a singular result
 (define (append-results . results)
   (foldr (λ (r1 r2)
-           (make-result (append (result-winners r1) (result-winners r2))
+           (make-result (append (result-competing r1) (result-competing r2))
                         (set-union (result-kicked r1) (result-kicked r2))))
          (make-result '() (set))
          results))
@@ -161,11 +174,17 @@
   (define manager (new manager%))
 
   (define 5by5 (make-board-options 5 5 1))
+  (define 4by2 (make-board-options 4 2 1))
 
   ;; We define this constant so that we can refer to specific players by equality
   (define players (build-list 10 (λ (_) (new player% [depth 1]))))
   ;; Get the players by indices
   (define (player-n . indices) (map (λ (i) (list-ref players i)) indices))
+  ;; players to player-age-pairs with ages in incrementing order
+  (define (players-to-pairs players) 
+    (map (λ (p i) (list p i)) 
+         players 
+         (build-list (length players) add1)))
   
   ;; Provided
   ;; +--- run-tournament ---+
@@ -173,32 +192,51 @@
   #|
   ;; round 1:
   ;; (0 1 2) => (0)
-  (check-equal? (send manager run-tournament (take players 3) 5by5 '()) (player-n 0))
+  (check-equal? (send manager run-tournament (player-to-pairs (take players 3)) 5by5 '()) (player-n 0))
 
   ;; round 1:
   ;; (0 1 2 3) => (0 3)
-  (check-equal? (send manager run-tournament (take players 4) 5by5 '()) (player-n 0 3))
+  (check-equal? (send manager run-tournament (player-to-pairs (take players 4)) 5by5 '()) (player-n 0 3))
 
   ;; round 1:
   ;; (0 1 2) => (0)
   ;; (3 4) => (3)
   ;; round 2:
   ;; (0 3) => (0)
-  (check-equal? (send manager run-tournament (take players 5) 5by5 '()) (player-n 0))
+  (check-equal? (send manager run-tournament (player-to-pairs (take players 5)) 5by5 '()) (player-n 0))
 
   ;; round 1:
   ;; (0 1 2 3) => (0 3)
   ;; (4 5) => (4)
   ;; round 2:
   ;; (0 3 4) => (0)
-  (check-equal? (send manager run-tournament (take players 6) 5by5 '()) (player-n 0))
+  (check-equal? (send manager run-tournament (player-to-pairs (take players 6)) 5by5 '()) (player-n 0))
 
   ;; round 1:
   ;; (0 1 2 3) => (0 3)
   ;; (4 5 6 7) => (4 7)
   ;; round 2:
   ;; (0 3 4 7) => (0 7)
-  (check-equal? (send manager run-tournament (take players 8) 5by5 '()) (player-n 0 7))
+  (check-equal? (send manager run-tournament (player-to-pairs (take players 8)) 5by5 '()) (player-n 0 7))
+
+  ;; USING 4x2 BOARD
+  ;; round 1:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5 6 7) => (4 5 6 7)
+  ;; round 2:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5 6 7) => (4 5 6 7)
+  (check-equal? (send manager run-tournament (player-to-pairs (take players 8)) 4by2 '()) 
+                (player-n 0 1 2 3 4 5 6 7))
+
+  ;; round 1:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5 6) => (4 5)
+  ;; round 2:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5) => (4 5)
+  (check-equal? (send manager run-tournament (player-to-pairs (take players 7)) 4by2 '()) 
+                (player-n 0 1 2 3 4 5))
   |#
 
   ;; +--- get-winners ---+
@@ -231,6 +269,62 @@
   (check-equal? (tell-players-ending (list bad-player-error dumb-player) 1) (list bad-player-error))
   |#
 
+  ;; +--- run-knock-out ---+
+  ;; round 1: run final round
+  ;; (p2 p3 p1) => (p2)
+  (check-equal? (run-knock-out `((,p1 3) (,p2 1) (,p3 2)) 5by5 1)
+                (make-result (list p2) (set)))
+
+  ;; round 1:
+  ;; (0 1 2) => (0)
+  ;; (3 4) => (4)
+  ;; round 2: run final round
+  ;; (0 4) => (0)
+  (check-equal? (run-knock-out (players-to-pairs (take players 5)) 5by5 1)
+                (make-result (player-n 0) (set)))
+
+  ;; round 1:
+  ;; (0 1 2) => (0)
+  ;; (bad1 bad2) => ()
+  ;; round 2: not enough players, 0 wins
+  (check-equal? (run-knock-out 
+                 (players-to-pairs (append (take players 3) (list bad-player1 bad-player2)))
+                 5by5 
+                 1)
+                (make-result (player-n 0) (set bad-player1 bad-player2)))
+
+  ;; round 1:
+  ;; (0 1 2 3) => (0 3)
+  ;; (4 5) => (4)
+  ;; round 2: run final round
+  ;; (0 3 4) => (0)
+  (check-equal? (run-knock-out (players-to-pairs (take players 6)) 5by5 1)
+                (make-result (player-n 0) (set)))
+
+  ;; 4x2 board. 2 rounds produce same winners
+  ;; round 1:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5 6 7) => (4 5 6 7)
+  ;; round 2:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5 6 7) => (4 5 6 7)
+  (check-equal? (run-knock-out (players-to-pairs (take players 8)) 4by2 1)
+                (make-result (player-n 0 1 2 3 4 5 6 7) (set)))
+
+  ;; round 1:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5 6) => (4 5)
+  ;; round 2:
+  ;; (0 1 2 3) => (0 1 2 3)
+  ;; (4 5) => (4 5)
+  (check-equal? (run-knock-out (players-to-pairs (take players 7)) 4by2 1)
+                (make-result (player-n 0 1 2 3 4 5) (set)))
+
+  ;; round 1:
+  ;; () TODO bad player but mmake to round 2
+  (check-equal? (run-knock-out (players-to-pairs (take players 7)) 4by2 1)
+                (make-result (player-n 0 1 3 4) (set)))
+
   ;; +--- run-round ---+
   (check-equal? (run-round (take players 2) 5by5 1)
                 (make-result (player-n 0) (set)))
@@ -242,6 +336,10 @@
                 (make-result (player-n 0 3) (set)))
   (check-equal? (run-round (take players 9) 5by5 1)
                 (make-result (player-n 0 3 4 7) (set)))
+  (check-equal? (run-round (cons bad-player1 (take players 3)) 5by5 1)
+                (make-result (player-n 0) (set bad-player1)))
+  (check-equal? (run-round (list bad-player1 bad-player2) 5by5 1)
+                (make-result '() (set bad-player1 bad-player2)))
 
   ;; +--- allocate-items ---+
   (check-equal? (allocate-items (build-list 2 add1)) '((1 2)))
@@ -273,4 +371,10 @@
                                 (make-result (list bad-player1) (set bad-player2)))
                 (make-result (list p1 p2 bad-player1) (set p3 bad-player2)))
   
+
+  ;; +--- sort-players ---+
+  (check-equal? (sort-players (list p3 p1 p2) (hasheq p1 1 p2 2 p3 3))
+                (list p1 p2 p3))
+  (check-equal? (sort-players (list p3 p2 p1) (hasheq p1 1 p2 2 p3 3))
+                (list p1 p2 p3))
   )

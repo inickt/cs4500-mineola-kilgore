@@ -4,6 +4,7 @@
          racket/class
          racket/contract
          racket/math
+         racket/set
          "../Common/board.rkt"
          "../Common/player-interface.rkt"
          "observer-interface.rkt")
@@ -22,9 +23,9 @@
          (contract-out [player-result? (-> any/c boolean?)])
          game-result
          (contract-out [make-game-result
-                        (-> (listof player-result?) (listof player-interface?) game-result?)])
+                        (-> (listof player-result?) (set/c player-interface?) game-result?)])
          (contract-out [game-result-players (-> game-result? (listof player-result?))])
-         (contract-out [game-result-kicked (-> game-result? (listof player-interface?))])
+         (contract-out [game-result-kicked (-> game-result? (set/c player-interface?))])
          (contract-out [game-result? (-> any/c boolean?)])
          referee-interface)
 
@@ -42,7 +43,7 @@
 ;; and represents a player and their score at the end of a Fish game
 
 (define-struct game-result [players kicked] #:transparent)
-;; A GameResult is a (make-game-result (listof player-result?) (listof player-interface?))
+;; A GameResult is a (make-game-result (listof player-result?) (set/c player-interface?))
 ;; and represents the players/their scores that completed the game and players that were kicked.
 
 (define referee-interface
@@ -73,7 +74,7 @@
     ;; - they throw an error
     ;;
     ;; The Referee will finally return a list of the players sorted by their final score such that
-    ;; the highest scores come first (remiving kicked players), and the list of players who were
+    ;; the highest scores come first (remiving kicked players), and the set of players who were
     ;; kicked from the game.
     ;;
     ;; For each step of the game for which a FishGameEvent can be produced (start, placement, move,

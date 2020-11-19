@@ -5,6 +5,7 @@
          racket/list
          racket/match
          racket/promise
+         racket/set
          2htdp/universe
          "../Common/board.rkt"
          "../Common/game-tree.rkt"
@@ -14,10 +15,7 @@
          "referee-interface.rkt"
          "util.rkt")
 
-(provide referee%
-         #;
-         (contract-out [get-winners (-> (list/c (listof player-result) (listof player-interface?))
-                                        (listof player-interface?))]))
+(provide referee%)
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; CONSTANTS
@@ -66,8 +64,9 @@
         (map (λ (player) (make-player-result (hash-ref player-color-map (player-color player))
                                              (player-score player)))
              (get-rankings final-players final-kicked)))
-      (make-game-result passing-players
-                        (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
+      (define kicked-players
+        (list->set (map (λ (player) (hash-ref player-color-map player)) final-kicked)))
+      (make-game-result passing-players kicked-players))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -255,19 +254,19 @@
   (check-equal? (game-result-kicked (send referee run-game (list dumb-player dumb-player)
                                           (make-board-options 4 4 #f)
                                           '()))
-                '())
+                (set))
   (check-equal? (game-result-kicked (send referee run-game (list dumb-player bad-player-error)
                                           (make-board-options 4 4 #f)
                                           '()))
-                (list bad-player-error))
+                (set bad-player-error))
   (check-equal? (game-result-kicked (send referee run-game (list dumb-player bad-player-timeout)
                                           (make-board-options 4 4 #f)
                                           '()))
-                (list bad-player-timeout))
+                (set bad-player-timeout))
   (check-equal? (game-result-kicked (send referee run-game (list dumb-player bad-player-garbage)
                                           (make-board-options 4 4 #f)
                                           '()))
-                (list bad-player-garbage))
+                (set bad-player-garbage))
   (check-equal? (map player-result-player
                      (game-result-players (send referee run-game (list dumb-player bad-player-error)
                                                 (make-board-options 4 4 #f)
@@ -284,7 +283,7 @@
                       (list bad-player-garbage bad-player-error bad-player-timeout)
                       (make-board-options 5 5 #f)
                       '())
-                (make-game-result '() (list bad-player-garbage bad-player-timeout bad-player-error)))
+                (make-game-result '() (set bad-player-garbage bad-player-timeout bad-player-error)))
   
   ;; Internal Helper Functions
   ;; +--- create-player-color-map ---+

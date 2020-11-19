@@ -4,6 +4,7 @@
          racket/class
          racket/list
          racket/match
+         "../../Fish/Admin/manager.rkt"
          "../../Fish/Admin/referee-interface.rkt"
          "../../Fish/Admin/referee.rkt"
          "../../Fish/Common/json.rkt"
@@ -47,13 +48,8 @@
 ;; find-winners : (listof player-result?) (hasheq/c player-interface? string?) -> (listof string?)
 ;; Get the names of the winners from their scores, in alphabetical order
 (define (find-winners player-results players-to-names)
-  ;; TODO use shared helper with manager
-  (define max-score (player-result-score (argmax player-result-score player-results)))
-  (define winning-players
-    (filter (λ (player-result) (= (player-result-score player-result) max-score)) player-results))
   (define winner-names 
-    (map (λ (player-result) (hash-ref players-to-names (player-result-player player-result)))
-         winning-players))
+    (map (λ (player) (hash-ref players-to-names player)) (get-winners player-results)))
   (sort winner-names string<=?))
 
 ;; +-------------------------------------------------------------------------------------------------+

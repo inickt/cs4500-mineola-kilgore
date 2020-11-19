@@ -55,18 +55,19 @@
       (define game-runner (if debug play-game-debug play-game))
       (define-values (final-game final-kicked)
         (game-runner (create-game state-with-placements) player-color-map kicked timeout))
-      (define results (state-players (end-game-state final-game)))
+      (define final-players (state-players (end-game-state final-game)))
 
       (call-on-all-players
        player-color-map
        (λ (player _) (send player finalize final-game))
        timeout)
-      
-      (make-game-result
-       (map (λ (player) (make-player-result (hash-ref player-color-map (player-color player))
-                                            (player-score player)))
-            (get-rankings results final-kicked))
-       (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
+
+      (define passing-players
+        (map (λ (player) (make-player-result (hash-ref player-color-map (player-color player))
+                                             (player-score player)))
+             (get-rankings final-players final-kicked)))
+      (make-game-result passing-players
+                        (map (λ (player) (hash-ref player-color-map player)) final-kicked)))))
 
 ;; +-------------------------------------------------------------------------------------------------+
 ;; INTERNAL
@@ -225,7 +226,7 @@
 
 (module+ test
   (require rackunit
-          "./bad-players.rkt"
+           "./bad-players.rkt"
            "../Common/penguin-color.rkt")
 
   (define test-state (make-state '((1 0 5 3) (3 3 3 5) (1 1 2 2))

@@ -73,7 +73,8 @@
     ;; - they throw an error
     ;;
     ;; The Referee will finally return a list of the players sorted by their final score such that
-    ;; the highest scores come first, and the list of players who were kicked.
+    ;; the highest scores come first (remiving kicked players), and the list of players who were
+    ;; kicked from the game.
     ;;
     ;; For each step of the game for which a FishGameEvent can be produced (start, placement, move,
     ;; kick, end), the Referee will call observe once on each observer of the game and pass it the

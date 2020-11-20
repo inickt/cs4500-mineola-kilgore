@@ -92,7 +92,8 @@
                 timeout))
 
 ;; tell-players : (listof player-interface?) [player-interface? -> void?] number? -> result?
-;; TODO
+;; Calls a proc on each player, safely handling errors/timeouts. Returns players that sucessfully
+;; execute the proc and a set of players that fail to run the proc.
 (define (tell-players players proc timeout)
   (define kicked-players
     (filter (λ (player) (false? (run-with-timeout (λ () (proc player)) (λ (_) (void)) timeout)))
@@ -108,7 +109,6 @@
 ;;  - There are too few players for a single game
 ;;  - the number of participants has become small enough to run a single final game
 ;; INVARIANTS:
-;; - Must be given at least 2 players
 ;; - All players must be in the age map
 ;; - Board options must be big enough to fit all eligible players
 (define (run-knock-out players player-to-age board-options timeout)
@@ -135,7 +135,9 @@
 
 ;; run-round : (non-empty-listof player-interface?) board-options? number? -> result?
 ;; Run 1 round of knock-out and return winners (unsorted)
-;; INVARIANT: players need to be sorted in increasing order of age
+;; INVARIANTS:
+;; - Must be given at least 2 players
+;; - players need to be sorted in increasing order of age
 (define (run-round players board-options timeout)
   (define player-groupings (allocate-items players))
   (apply append-results
@@ -158,7 +160,9 @@
 
 ;; run-game : (non-empty-listof player-interface?) board-options? number? -> result?
 ;; Creates the referees and gives them players, then runs games to completions, returning the winners
-;; INVARIANT: Must be given 2-4 players
+;; INVARIANTS:
+;; - Must be given 2-4 players
+;; - players need to be sorted in increasing order of age
 (define (run-game players board-options timeout)
   (define ref (new referee% [timeout timeout]))
   (define game-result (send ref run-game players board-options '()))
@@ -322,6 +326,14 @@
                 (make-result (list dumb-player) (set bad-player1)))
 
   ;; +--- run-knock-out ---+
+  ;; no players
+  (check-equal? (run-knock-out '() (hash) 5by5 1)
+                (make-result '() (set)))
+
+  ;; 1 player
+  (check-equal? (run-knock-out (list p1) (player-age-mapping (list p1)) 5by5 1)
+                (make-result (list p1) (set)))
+  
   ;; round 1: run final round
   ;; (p2 p3 p1) => (p2)
   (check-equal? (run-knock-out (list p1 p2 p3) (player-age-mapping (list p2 p3 p1)) 5by5 1)

@@ -8,6 +8,13 @@ library that wraps the communication and calls the appropriate methods on the `p
 implemented by the user. Note that users can also register remote players implemented in any
 language, as long as they follow our communication protocol.
 
+At signup, the server component will create a proxy player that the newly signed up player can use
+to interact with tournament manager and referees.
+
+## Interaction Diagram
+
+<img src="./remote-diagram.jpg" width="700"/>
+
 ## Message Protocol
 
 All of the following messages are from the server to remote clients.
@@ -65,9 +72,7 @@ the tournament. No payload should be sent back.
 8. As the tournament progresses, steps 3-7 are repeated until the winners are determined.
 9. When the tournament ends, the tournament manager sends the `tournament-ended` to remaining active players.
 
-# TODO TESTS
-# TODO TOURNAMENT INTERFACE
-maybe sets
-# TODO DIAGRAM
-things in email from last milestone
-run on ccis server
+- TODO TOURNAMENT INTERFACE
+- TODO maybe sets
+- TODO things in email from last milestone
+- TODO run on ccis server

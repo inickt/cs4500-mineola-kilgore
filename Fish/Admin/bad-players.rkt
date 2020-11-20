@@ -30,9 +30,9 @@
     (define/public (tournament-ended did-win) (tournament-ended did-win))
     (define/public (initialize board num-players color) (initialize board num-players color))
     (define/public (get-placement state) (get-placement state))
-    (define/public (get-move state) (get-move game))
+    (define/public (get-move state) (get-move state))
     (define/public (terminate) (terminate))
-    (define/public (finalize state) (finalize end-game))))
+    (define/public (finalize state) (finalize state))))
   
 ;; Player that gives garbage moves
 (define bad-player-garbage%

@@ -38,7 +38,7 @@
     (define/public (terminate)
       (void))
 
-    (define/public (finalize end-game)
+    (define/public (finalize state)
       (void))))
 
 ;; +-------------------------------------------------------------------------------------------------+

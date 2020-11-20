@@ -57,7 +57,7 @@
 
       (call-on-all-players
        player-color-map
-       (λ (player _) (send player finalize final-game))
+       (λ (player _) (send player finalize (end-game-state final-game)))
        timeout)
 
       (define passing-players

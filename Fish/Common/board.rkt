@@ -139,6 +139,8 @@
 
 ;; valid-movements : posn? board? -> (listof posn?)
 ;; Creates a list of valid movements on the board, starting from the top and moving clockwise
+;; A valid movement is one from the current position on the board which moves north, northeast,
+;; southeast, south, southwest, or northwest in a straight line by not crossing over holes.
 (define (valid-movements posn board)
   (when (not (posn-within-bounds? posn (board-columns board) (board-rows board)))
     (raise-arguments-error 'valid-movements

@@ -71,8 +71,3 @@ the tournament. No payload should be sent back.
 7. When the game ends, the referee sends `finalize`.
 8. As the tournament progresses, steps 3-7 are repeated until the winners are determined.
 9. When the tournament ends, the tournament manager sends the `tournament-ended` to remaining active players.
-
-- TODO TOURNAMENT INTERFACE
-- TODO maybe sets
-- TODO things in email from last milestone
-- TODO run on ccis server

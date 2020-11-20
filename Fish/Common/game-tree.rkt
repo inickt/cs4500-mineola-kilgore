@@ -34,10 +34,7 @@
 ;; An EndGame is a (make-end-game state?])
 ;; and represents a terminal GameTree with a final state.
 ;;
-;; EndGames are created from states in which no valid move is remaining for any player, and the
-;; EndGame itself will be finalized such that all remaining penguins are removed from the board and
-;; the fish on the tiles they occupied will be added to their players' scores.
-;; INVARIANT: EndGames have no penguins placed on the board.
+;; EndGames are created from states in which no valid move is remaining for any player.
 
 ;; A Game is a (make-game state? (promise? (hash/c move? game-tree?)))
 ;; and represents a node in a game tree with a state, a current player, and a list of kicked players.
